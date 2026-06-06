@@ -76,23 +76,23 @@ class JobSourceTest < ActiveSupport::TestCase
   end
 
   test "seed_defaults bootstraps curated adapter settings for blank existing sources" do
-    source = JobSource.create!(
-      name: "Lever",
-      slug: "lever",
-      source_kind: :ats,
-      base_url: "https://jobs.lever.co",
-      host: "jobs.lever.co",
-      priority: 20,
-      enabled: true,
-      adapter_key: "lever_company_boards",
-      supports_backfill: true,
-      scan_window_days: 20,
-      settings: {}
-    )
+    JobSource.seed_defaults!
+    source = JobSource.find_by!(slug: "lever")
+    recrutei = JobSource.find_by!(slug: "recrutei")
+    smartrecruiters = JobSource.find_by!(slug: "smartrecruiters")
+
+    source.update!(settings: {})
+    recrutei.update!(settings: {})
+    smartrecruiters.update!(settings: {})
 
     JobSource.seed_defaults!
     source.reload
+    recrutei.reload
+    smartrecruiters.reload
 
     assert_equal %w[ciandt jobgether decilegroup toptal], source.settings["company_slugs"]
+    assert_equal [ "maxxi" ], recrutei.settings["company_labels"]
+    assert_equal [ "https://jobs.recrutei.com.br/maxxi/vacancy/145107-desenvolvedora-front-end-reactnextjs-senior" ], recrutei.settings["vacancy_urls"]
+    assert_equal [ "smartrecruiters" ], smartrecruiters.settings["company_identifiers"]
   end
 end

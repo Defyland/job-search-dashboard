@@ -18,7 +18,23 @@ class JobSource < ApplicationRecord
       }
     },
     { name: "Sólides", slug: "solides", source_kind: :ats, base_url: "https://vagas.solides.com.br", host: "vagas.solides.com.br", priority: 20, adapter_key: "solides_portal_vacancies", supports_backfill: true, scan_window_days: 20 },
-    { name: "Recrutei", slug: "recrutei", source_kind: :ats, base_url: "https://jobs.recrutei.com.br", host: "jobs.recrutei.com.br", priority: 20, adapter_key: "recrutei_company_boards", supports_backfill: true, scan_window_days: 20 },
+    {
+      name: "Recrutei",
+      slug: "recrutei",
+      source_kind: :ats,
+      base_url: "https://jobs.recrutei.com.br",
+      host: "jobs.recrutei.com.br",
+      priority: 20,
+      adapter_key: "recrutei_company_boards",
+      supports_backfill: true,
+      scan_window_days: 20,
+      settings: {
+        company_labels: [ "maxxi" ],
+        vacancy_urls: [
+          "https://jobs.recrutei.com.br/maxxi/vacancy/145107-desenvolvedora-front-end-reactnextjs-senior"
+        ]
+      }
+    },
     {
       name: "Inhire",
       slug: "inhire",
@@ -77,7 +93,20 @@ class JobSource < ApplicationRecord
     },
     { name: "Teamtailor", slug: "teamtailor", source_kind: :ats, base_url: "https://career.teamtailor.com", host: "teamtailor.com", priority: 20, adapter_key: "teamtailor_company_boards", supports_backfill: true, scan_window_days: 20 },
     { name: "Workable", slug: "workable", source_kind: :ats, base_url: "https://jobs.workable.com", host: "jobs.workable.com", priority: 20, adapter_key: "workable_global_api", supports_backfill: true, scan_window_days: 20 },
-    { name: "SmartRecruiters", slug: "smartrecruiters", source_kind: :ats, base_url: "https://jobs.smartrecruiters.com", host: "smartrecruiters.com", priority: 20, adapter_key: "smartrecruiters_postings_api", supports_backfill: true, scan_window_days: 20 },
+    {
+      name: "SmartRecruiters",
+      slug: "smartrecruiters",
+      source_kind: :ats,
+      base_url: "https://jobs.smartrecruiters.com",
+      host: "smartrecruiters.com",
+      priority: 20,
+      adapter_key: "smartrecruiters_postings_api",
+      supports_backfill: true,
+      scan_window_days: 20,
+      settings: {
+        company_identifiers: [ "smartrecruiters" ]
+      }
+    },
     { name: "Remotar", slug: "remotar", source_kind: :platform, base_url: "https://remotar.com.br", host: "remotar.com.br", priority: 30, adapter_key: "remotar_jobs_api", supports_backfill: true, scan_window_days: 20 },
     { name: "ProgramaThor", slug: "programathor", source_kind: :platform, base_url: "https://programathor.com.br", host: "programathor.com.br", priority: 30, adapter_key: "programathor_remote_senior", supports_backfill: true, scan_window_days: 20 },
     { name: "Coodesh", slug: "coodesh", source_kind: :platform, base_url: "https://coodesh.com", host: "coodesh.com", priority: 30, adapter_key: "manual_only", supports_backfill: false, scan_window_days: 20 },
