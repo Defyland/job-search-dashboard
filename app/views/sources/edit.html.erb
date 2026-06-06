@@ -43,7 +43,10 @@
 
     <div>
       <%= form.label :adapter_key, "Adapter", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
-      <%= form.text_field :adapter_key, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
+      <%= form.select :adapter_key, @adapter_options, {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
+      <% if @legacy_adapter_key.present? %>
+        <p class="mt-2 text-sm font-semibold text-amber-200">O adapter atual nao faz parte do catalogo suportado. Corrija antes de reativar backfill nativo.</p>
+      <% end %>
       <% if @source.errors[:adapter_key].any? %>
         <p class="mt-2 text-sm font-semibold text-rose-300"><%= @source.errors[:adapter_key].to_sentence %></p>
       <% end %>

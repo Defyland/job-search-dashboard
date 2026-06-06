@@ -38,6 +38,19 @@ class SourcesControllerTest < ActionDispatch::IntegrationTest
   test "should get edit" do
     get edit_source_path(job_sources(:gupy))
     assert_response :success
+    assert_match('option selected="selected" value="manual_only"', response.body)
+    assert_match('option value="gupy_company_boards"', response.body)
+  end
+
+  test "edit preserves legacy adapter outside the supported catalog" do
+    source = job_sources(:gupy)
+    source.update_columns(adapter_key: "legacy_adapter_key")
+
+    get edit_source_path(source)
+
+    assert_response :success
+    assert_match('option selected="selected" value="legacy_adapter_key"', response.body)
+    assert_match("legado fora do catalogo", response.body)
   end
 
   test "should update source with valid settings json" do
