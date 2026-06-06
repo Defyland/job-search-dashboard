@@ -15,6 +15,11 @@ Verificacao executada:
 - smoke local do adapter `Sólides`: `3` borderline e `0` strong em `20d` com as queries padrao `react`, `react native`, `ruby` e `rails`; a integracao publica esta funcional, mas o indice atual da fonte parece entregar mais titulos senior genericos do que titulos com stack explicita
 - smoke local do adapter `Teamtailor`: `0` candidatos em `20d` no board publico `career.teamtailor.com`; a integracao de paginação/extração ficou funcional, mas o board atual nao expõe titulos aderentes ao recorte monitorado
 - smoke local do adapter `SmartRecruiters`: `0` strong, `0` borderline e `3` rejected em `20d` para `company_identifier=smartrecruiters`; a API oficial respondeu bem, mas o board atual trouxe Python e frontend generico fora do foco estrito do radar
+- investigacao publica de `Trampos`:
+  - `https://trampos.co/api/v2/opportunities` expõe feed paginado publico com `pagination.total_pages`, `published_at`, empresa e metadata suficiente para corte por janela
+  - `https://trampos.co/oportunidades/:id` e `GET /api/v2/opportunities/:id` expõem o detalhe canonico da vaga, incluindo `url`, `apply_url`, `apply_method`, `home_office` e corpo completo
+  - a busca por termo no endpoint (`tr=react`, `tr=ruby`, `tr=rails`) nao trouxe valor operacional confiavel; o caminho correto foi varrer o feed cronologico global e filtrar no backend
+  - smoke local do adapter `Trampos`: `19` paginas varridas em `20d`, `0` strong, `0` borderline e `1` rejected; a integracao esta saudavel, mas o feed atual quase nao tem titulo tecnico aderente ao recorte Ruby/React senior
 - smoke local dos novos adapters ATS:
   - `Recrutei` com URL publica real `maxxi/145107`: `1` strong em `20d`, extraido do HTML atual com link direto em `talent.recrutei.com.br`; o mesmo board `maxxi/vacancies` retornou `0` resultados por SSR, o que confirmou a necessidade do fallback por URLs ja conhecidas
   - `Inhire` com career pages `yandeh`, `deal`, `mb`, `lighthouseit`, `matera`, `dotgroup`, `inco` e `casacred`: `2` strong e `7` rejected em `20d`; os matches fortes vieram da `Lighthouse`
@@ -86,6 +91,7 @@ S: Simplificar/Otimizar
   - `Workable` entrou por API publica global, mas o valor real no nicho atual parece menor que o de `Remotar`
   - `Teamtailor` saiu do gap principal; o adapter usa boards `*.teamtailor.com/jobs`, paginação por `show_more` e validacao da propria pagina da vaga antes de aceitar a candidatura na URL canonica
   - `SmartRecruiters` saiu do backlog de ATS principais; o adapter usa a Posting API oficial por `company_identifier`, pagina em `limit/offset` e evita depender das paginas publicas com challenge JS
+  - `Trampos` saiu de `manual_only`; o adapter usa a API publica `api/v2/opportunities`, pagina cronologicamente ate a janela expirar e, quando a candidatura é interna (`apply_url` vazio), usa a propria URL canonica da vaga como link aplicavel
   - o deploy Railway deixou de falhar por `ActiveRecord::ConcurrentMigrationError` quando `web` e `worker` sobem juntos; `bin/predeploy` agora faz retry de `db:prepare`
   - o status final de `SearchRun` na descoberta Rails nao trata mais rejeicoes normais como `partial`; agora `partial` significa apenas falha real de alguma fonte
   - a descoberta diaria nativa agora existe no proprio Rails via `config/recurring.yml`, com `DiscoverJobsRunJob(window_days: 1, trigger_source: "cron")` agendado para `08:30 BRT`
@@ -101,6 +107,7 @@ S: Simplificar/Otimizar
   - `Teamtailor` hoje cobre boards `*.teamtailor.com`, mas nao consegue redescobrir boards servidos por dominios customizados sem o sufixo `teamtailor.com`
   - `SmartRecruiters` depende de `company_identifiers` seedados via URL conhecida ou tela de fontes; sem isso, a API oficial nao oferece um indice global publico por empresa
   - `SmartRecruiters` nao valida a pagina HTML publica porque ela esta protegida por challenge JS; a confianca operacional fica ancorada no `active` + `applyUrl` retornados pela API oficial
+  - `Trampos` hoje nao oferece busca por stack confiavel na API publica; a cobertura depende do scan cronologico global e da filtragem backend por titulo/descricao
   - `ProgramaThor` nao expõe recencia forte nas paginas usadas; o adapter ainda depende de ordem do board e limite de paginas como fallback
   - `Lever` hoje gera muito rejeitado estrutural porque a heuristica de pre-filtro aceita muitos titulos senior genericos antes da checagem final de stack; isso infla logs e counters sem aumentar cobertura util
   - o endpoint de ingestao Codex continua existente e util para importacao complementar, mas como nao ha mais automacao agendada nele, essa trilha pode ficar sem uso por longos periodos ate ser exercitada manualmente
