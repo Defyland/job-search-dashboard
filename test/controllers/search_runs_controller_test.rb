@@ -42,7 +42,7 @@ class SearchRunsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "create enqueues a rails backfill" do
-    assert_enqueued_with(job: DiscoverJobsRunJob, args: [ { window_days: 20 } ]) do
+    assert_enqueued_with(job: DiscoverJobsRunJob, args: [ { window_days: 20, trigger_source: :manual } ]) do
       post search_runs_path, params: { window_days: 20 }
     end
 
