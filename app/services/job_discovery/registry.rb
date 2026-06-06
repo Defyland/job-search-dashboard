@@ -16,12 +16,20 @@ module JobDiscovery
       "workable_global_api" => JobDiscovery::Adapters::WorkableGlobalApiAdapter
     }.freeze
 
+    def self.supported_adapter_keys
+      ADAPTERS.keys
+    end
+
+    def self.supports?(adapter_key)
+      ADAPTERS.key?(adapter_key)
+    end
+
     def fetch(adapter_key)
       ADAPTERS.fetch(adapter_key)
     end
 
     def supports?(adapter_key)
-      ADAPTERS.key?(adapter_key)
+      self.class.supports?(adapter_key)
     end
   end
 end

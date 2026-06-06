@@ -82,4 +82,23 @@ class SourcesControllerTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
     assert_match("JSON inv", response.body)
   end
+
+  test "should reject unsupported adapter for backfillable source" do
+    patch source_path(job_sources(:gupy)), params: {
+      job_source: {
+        name: "Gupy",
+        base_url: "https://gupy.io",
+        host: "gupy.io",
+        adapter_key: "unsupported_adapter",
+        priority: 10,
+        scan_window_days: 20,
+        enabled: "1",
+        supports_backfill: "1",
+        settings_json: "{}"
+      }
+    }
+
+    assert_response :unprocessable_entity
+    assert_match("Adapter key nao suporta backfill nativo", response.body)
+  end
 end

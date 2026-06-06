@@ -56,7 +56,7 @@ class SearchRunsControllerTest < ActionDispatch::IntegrationTest
       host: "scoped.example.com",
       base_url: "https://scoped.example.com",
       source_kind: :platform,
-      adapter_key: "manual_only",
+      adapter_key: "gupy_company_boards",
       enabled: true,
       supports_backfill: true,
       scan_window_days: 14

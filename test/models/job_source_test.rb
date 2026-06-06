@@ -95,4 +95,23 @@ class JobSourceTest < ActiveSupport::TestCase
     assert_equal [ "https://jobs.recrutei.com.br/maxxi/vacancy/145107-desenvolvedora-front-end-reactnextjs-senior" ], recrutei.settings["vacancy_urls"]
     assert_equal [ "smartrecruiters" ], smartrecruiters.settings["company_identifiers"]
   end
+
+  test "backfillable sources require a supported adapter key" do
+    source = JobSource.new(
+      name: "Broken Source",
+      slug: "broken-source",
+      source_kind: :platform,
+      base_url: "https://broken.example.com",
+      host: "broken.example.com",
+      priority: 10,
+      enabled: true,
+      adapter_key: "unsupported_adapter",
+      supports_backfill: true,
+      scan_window_days: 20,
+      settings: {}
+    )
+
+    assert_not source.valid?
+    assert_includes source.errors[:adapter_key], "nao suporta backfill nativo"
+  end
 end

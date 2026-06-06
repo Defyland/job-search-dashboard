@@ -27,9 +27,12 @@ module JobDiscovery
       discovery_counts = { discovered_count: 0, source_scans_count: 0 }
 
       @source_scope.order(priority: :asc, name: :asc).each do |source|
-        next unless @registry.supports?(source.adapter_key)
-
         discovery_counts[:source_scans_count] += 1
+        unless @registry.supports?(source.adapter_key)
+          mark_unsupported_source!(search_run:, source:)
+          next
+        end
+
         scan_source(search_run:, source:, recorder:, discovery_counts:)
       end
 
@@ -104,6 +107,18 @@ module JobDiscovery
       rescue StandardError => error
         @errors << "#{source.name}: #{error.message}"
         source_scan.update!(status: :failed, finished_at: Time.current, error_message: error.message)
+      end
+
+      def mark_unsupported_source!(search_run:, source:)
+        message = "adapter #{source.adapter_key} nao suportado"
+        @errors << "#{source.name}: #{message}"
+        search_run.source_scans.create!(
+          job_source: source,
+          status: :failed,
+          started_at: Time.current,
+          finished_at: Time.current,
+          error_message: message
+        )
       end
 
       def persist_discovered_job(search_run:, source_scan:, source:, candidate:)

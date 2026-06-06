@@ -125,6 +125,7 @@ class JobSource < ApplicationRecord
   validates :slug, uniqueness: true
   validates :priority, numericality: { greater_than_or_equal_to: 0 }
   validates :scan_window_days, numericality: { greater_than: 0 }
+  validate :validate_backfill_adapter_support
 
   scope :enabled, -> { where(enabled: true) }
   scope :backfillable, -> { enabled.where(supports_backfill: true) }
@@ -212,5 +213,12 @@ class JobSource < ApplicationRecord
       return if url.blank?
 
       url.to_s.strip.delete_suffix("/")
+    end
+
+    def validate_backfill_adapter_support
+      return unless supports_backfill?
+      return if JobDiscovery::Registry.supports?(adapter_key)
+
+      errors.add(:adapter_key, "nao suporta backfill nativo")
     end
 end

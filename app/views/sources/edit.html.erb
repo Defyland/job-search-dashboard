@@ -9,6 +9,17 @@
     <%= link_to "Voltar", sources_path, class: "inline-flex rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-white/5" %>
   </div>
 
+  <% if @source.errors.any? %>
+    <div class="mt-6 rounded-[1.5rem] border border-rose-400/20 bg-rose-400/10 px-4 py-4 text-sm text-rose-100">
+      <p class="font-semibold">A fonte nao pode ser salva com a configuracao atual.</p>
+      <ul class="mt-2 space-y-1 text-rose-100/90">
+        <% @source.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
   <%= form_with model: @source, scope: :job_source, url: source_path(@source), method: :patch, class: "mt-6 grid gap-5 md:grid-cols-2" do |form| %>
     <div>
       <%= form.label :name, "Nome", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
@@ -33,6 +44,9 @@
     <div>
       <%= form.label :adapter_key, "Adapter", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
       <%= form.text_field :adapter_key, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
+      <% if @source.errors[:adapter_key].any? %>
+        <p class="mt-2 text-sm font-semibold text-rose-300"><%= @source.errors[:adapter_key].to_sentence %></p>
+      <% end %>
     </div>
 
     <div class="grid gap-5 sm:grid-cols-2">

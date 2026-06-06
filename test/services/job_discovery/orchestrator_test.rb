@@ -50,7 +50,7 @@ class JobDiscovery::OrchestratorTest < ActiveSupport::TestCase
 
   class FakeRegistry
     def supports?(adapter_key)
-      adapter_key == "fake_adapter"
+      adapter_key == "gupy_company_boards"
     end
 
     def fetch(_adapter_key)
@@ -66,14 +66,14 @@ class JobDiscovery::OrchestratorTest < ActiveSupport::TestCase
 
   class MixedRegistry
     def supports?(adapter_key)
-      %w[fake_adapter failing_adapter].include?(adapter_key)
+      %w[gupy_company_boards lever_company_boards].include?(adapter_key)
     end
 
     def fetch(adapter_key)
       case adapter_key
-      when "fake_adapter"
+      when "gupy_company_boards"
         FakeAdapter
-      when "failing_adapter"
+      when "lever_company_boards"
         FailingAdapter
       else
         raise "unknown adapter #{adapter_key}"
@@ -88,10 +88,11 @@ class JobDiscovery::OrchestratorTest < ActiveSupport::TestCase
       host: "example.com",
       base_url: "https://example.com",
       source_kind: :platform,
-      adapter_key: "fake_adapter",
-      supports_backfill: true,
+      adapter_key: "gupy_company_boards",
+      supports_backfill: false,
       scan_window_days: 20
     )
+    source.update_columns(supports_backfill: true)
 
     result = JobDiscovery::Orchestrator.new(
       window_days: 20,
@@ -115,20 +116,22 @@ class JobDiscovery::OrchestratorTest < ActiveSupport::TestCase
       host: "good.example.com",
       base_url: "https://good.example.com",
       source_kind: :platform,
-      adapter_key: "fake_adapter",
-      supports_backfill: true,
+      adapter_key: "gupy_company_boards",
+      supports_backfill: false,
       scan_window_days: 20
     )
+    good_source.update_columns(supports_backfill: true)
     bad_source = JobSource.create!(
       name: "Bad Source",
       slug: "bad-source",
       host: "bad.example.com",
       base_url: "https://bad.example.com",
       source_kind: :platform,
-      adapter_key: "failing_adapter",
-      supports_backfill: true,
+      adapter_key: "lever_company_boards",
+      supports_backfill: false,
       scan_window_days: 20
     )
+    bad_source.update_columns(supports_backfill: true)
 
     result = JobDiscovery::Orchestrator.new(
       window_days: 20,
@@ -150,10 +153,11 @@ class JobDiscovery::OrchestratorTest < ActiveSupport::TestCase
       host: "bad.example.com",
       base_url: "https://bad.example.com",
       source_kind: :platform,
-      adapter_key: "failing_adapter",
-      supports_backfill: true,
+      adapter_key: "lever_company_boards",
+      supports_backfill: false,
       scan_window_days: 20
     )
+    source.update_columns(supports_backfill: true)
 
     result = JobDiscovery::Orchestrator.new(
       window_days: 20,
@@ -164,5 +168,31 @@ class JobDiscovery::OrchestratorTest < ActiveSupport::TestCase
     assert_predicate result.search_run, :status_failed?
     assert_empty result.search_run.search_run_items
     assert_equal [ "Bad Source: adapter failure for Bad Source in 20d" ], result.errors
+  end
+
+  test "marks run failed and records source scan when a backfillable source has unsupported adapter" do
+    source = JobSource.create!(
+      name: "Broken Source",
+      slug: "broken-source",
+      host: "broken.example.com",
+      base_url: "https://broken.example.com",
+      source_kind: :platform,
+      adapter_key: "unsupported_adapter",
+      supports_backfill: false,
+      scan_window_days: 20
+    )
+    source.update_columns(supports_backfill: true)
+
+    result = JobDiscovery::Orchestrator.new(
+      window_days: 20,
+      source_scope: JobSource.where(id: source.id),
+      registry: FakeRegistry.new
+    ).call
+
+    assert_predicate result.search_run, :status_failed?
+    assert_empty result.search_run.search_run_items
+    assert_equal 1, result.search_run.source_scans.status_failed.count
+    assert_equal "adapter unsupported_adapter nao suportado", result.search_run.source_scans.status_failed.first.error_message
+    assert_equal [ "Broken Source: adapter unsupported_adapter nao suportado" ], result.errors
   end
 end
