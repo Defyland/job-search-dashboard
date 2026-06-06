@@ -3,6 +3,8 @@ class SearchRun < ApplicationRecord
   enum :status, { pending: 0, running: 1, succeeded: 2, failed: 3, partial: 4 }, prefix: true
 
   has_many :search_run_items, dependent: :destroy
+  has_many :source_scans, dependent: :destroy
+  has_many :discovered_jobs, dependent: :destroy
 
   validates :window_label, presence: true
 

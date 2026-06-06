@@ -2,6 +2,7 @@ class Job < ApplicationRecord
   belongs_to :job_source
 
   has_many :search_run_items, dependent: :nullify
+  has_many :discovered_jobs, dependent: :nullify
 
   enum :match_strength, { strong: 0, borderline: 1 }, prefix: true
   enum :user_state, { new_match: 0, seen: 1, applied: 2, ignored: 3 }, prefix: true

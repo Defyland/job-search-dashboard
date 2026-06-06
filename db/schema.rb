@@ -10,24 +10,64 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_06_193000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_06_194700) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
+  create_table "discovered_jobs", force: :cascade do |t|
+    t.string "apply_url"
+    t.string "canonical_url"
+    t.integer "classification", default: 0, null: false
+    t.string "company_name"
+    t.datetime "created_at", null: false
+    t.text "exclusion_reason"
+    t.string "external_job_id"
+    t.string "fingerprint", null: false
+    t.bigint "job_id"
+    t.bigint "job_source_id", null: false
+    t.string "location_text"
+    t.jsonb "payload", default: {}, null: false
+    t.string "posted_text"
+    t.datetime "published_at"
+    t.text "reason"
+    t.string "remote_text"
+    t.integer "score", default: 0, null: false
+    t.bigint "search_run_id", null: false
+    t.string "seniority", default: "senior", null: false
+    t.bigint "source_scan_id", null: false
+    t.string "source_url"
+    t.text "stack_tags", default: [], null: false, array: true
+    t.string "title"
+    t.datetime "updated_at", null: false
+    t.index ["canonical_url"], name: "index_discovered_jobs_on_canonical_url"
+    t.index ["classification"], name: "index_discovered_jobs_on_classification"
+    t.index ["job_id"], name: "index_discovered_jobs_on_job_id"
+    t.index ["job_source_id"], name: "index_discovered_jobs_on_job_source_id"
+    t.index ["search_run_id"], name: "index_discovered_jobs_on_search_run_id"
+    t.index ["source_scan_id", "fingerprint"], name: "index_discovered_jobs_on_source_scan_id_and_fingerprint", unique: true
+    t.index ["source_scan_id"], name: "index_discovered_jobs_on_source_scan_id"
+  end
+
   create_table "job_sources", force: :cascade do |t|
+    t.string "adapter_key", default: "manual_only", null: false
     t.string "base_url"
     t.datetime "created_at", null: false
     t.boolean "enabled", default: true, null: false
     t.string "host", null: false
+    t.datetime "last_full_scan_at"
     t.string "name", null: false
     t.integer "priority", default: 100, null: false
+    t.integer "scan_window_days", default: 20, null: false
     t.jsonb "settings", default: {}, null: false
     t.string "slug", null: false
     t.integer "source_kind", default: 0, null: false
+    t.boolean "supports_backfill", default: false, null: false
     t.datetime "updated_at", null: false
+    t.index ["adapter_key"], name: "index_job_sources_on_adapter_key"
     t.index ["enabled"], name: "index_job_sources_on_enabled"
     t.index ["host"], name: "index_job_sources_on_host"
     t.index ["slug"], name: "index_job_sources_on_slug", unique: true
+    t.index ["supports_backfill"], name: "index_job_sources_on_supports_backfill"
   end
 
   create_table "jobs", force: :cascade do |t|
@@ -230,6 +270,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_06_193000) do
     t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
   end
 
+  create_table "source_scans", force: :cascade do |t|
+    t.integer "accepted_count", default: 0, null: false
+    t.integer "borderline_count", default: 0, null: false
+    t.integer "candidates_seen", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.string "cursor"
+    t.text "error_message"
+    t.integer "expired_count", default: 0, null: false
+    t.datetime "finished_at"
+    t.bigint "job_source_id", null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.integer "pages_scanned", default: 0, null: false
+    t.integer "rejected_count", default: 0, null: false
+    t.bigint "search_run_id", null: false
+    t.datetime "started_at"
+    t.integer "status", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["job_source_id"], name: "index_source_scans_on_job_source_id"
+    t.index ["search_run_id", "job_source_id"], name: "index_source_scans_on_search_run_id_and_job_source_id", unique: true
+    t.index ["search_run_id"], name: "index_source_scans_on_search_run_id"
+    t.index ["status"], name: "index_source_scans_on_status"
+  end
+
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "email_address", null: false
@@ -238,6 +301,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_06_193000) do
     t.index ["email_address"], name: "index_users_on_email_address", unique: true
   end
 
+  add_foreign_key "discovered_jobs", "job_sources"
+  add_foreign_key "discovered_jobs", "jobs"
+  add_foreign_key "discovered_jobs", "search_runs"
+  add_foreign_key "discovered_jobs", "source_scans"
   add_foreign_key "jobs", "job_sources"
   add_foreign_key "search_run_items", "jobs"
   add_foreign_key "search_run_items", "search_runs"
@@ -248,4 +315,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_06_193000) do
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "source_scans", "job_sources"
+  add_foreign_key "source_scans", "search_runs"
 end

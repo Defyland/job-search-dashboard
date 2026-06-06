@@ -1,29 +1,33 @@
 class JobSource < ApplicationRecord
   DEFAULT_CATALOG = [
-    { name: "Gupy", slug: "gupy", source_kind: :ats, base_url: "https://gupy.io", host: "gupy.io", priority: 10 },
-    { name: "Sólides", slug: "solides", source_kind: :ats, base_url: "https://vagas.solides.com.br", host: "vagas.solides.com.br", priority: 20 },
-    { name: "Recrutei", slug: "recrutei", source_kind: :ats, base_url: "https://jobs.recrutei.com.br", host: "jobs.recrutei.com.br", priority: 20 },
-    { name: "Lever", slug: "lever", source_kind: :ats, base_url: "https://jobs.lever.co", host: "jobs.lever.co", priority: 20 },
-    { name: "Greenhouse", slug: "greenhouse", source_kind: :ats, base_url: "https://job-boards.greenhouse.io", host: "job-boards.greenhouse.io", priority: 20 },
-    { name: "Ashby", slug: "ashby", source_kind: :ats, base_url: "https://jobs.ashbyhq.com", host: "jobs.ashbyhq.com", priority: 20 },
-    { name: "Workable", slug: "workable", source_kind: :ats, base_url: "https://jobs.workable.com", host: "jobs.workable.com", priority: 20 },
-    { name: "Remotar", slug: "remotar", source_kind: :platform, base_url: "https://remotar.com.br", host: "remotar.com.br", priority: 30 },
-    { name: "ProgramaThor", slug: "programathor", source_kind: :platform, base_url: "https://programathor.com.br", host: "programathor.com.br", priority: 30 },
-    { name: "Coodesh", slug: "coodesh", source_kind: :platform, base_url: "https://coodesh.com", host: "coodesh.com", priority: 30 },
-    { name: "Trampos", slug: "trampos", source_kind: :platform, base_url: "https://trampos.co", host: "trampos.co", priority: 30 },
-    { name: "APInfo", slug: "apinfo", source_kind: :platform, base_url: "https://apinfo.com", host: "apinfo.com", priority: 40 },
-    { name: "RubyOnRemote", slug: "rubyonremote", source_kind: :platform, base_url: "https://rubyonremote.com", host: "rubyonremote.com", priority: 40 }
+    { name: "Gupy", slug: "gupy", source_kind: :ats, base_url: "https://gupy.io", host: "gupy.io", priority: 10, adapter_key: "gupy_company_boards", supports_backfill: true, scan_window_days: 20 },
+    { name: "Sólides", slug: "solides", source_kind: :ats, base_url: "https://vagas.solides.com.br", host: "vagas.solides.com.br", priority: 20, adapter_key: "manual_only", supports_backfill: false, scan_window_days: 20 },
+    { name: "Recrutei", slug: "recrutei", source_kind: :ats, base_url: "https://jobs.recrutei.com.br", host: "jobs.recrutei.com.br", priority: 20, adapter_key: "manual_only", supports_backfill: false, scan_window_days: 20 },
+    { name: "Lever", slug: "lever", source_kind: :ats, base_url: "https://jobs.lever.co", host: "jobs.lever.co", priority: 20, adapter_key: "manual_only", supports_backfill: false, scan_window_days: 20 },
+    { name: "Greenhouse", slug: "greenhouse", source_kind: :ats, base_url: "https://job-boards.greenhouse.io", host: "job-boards.greenhouse.io", priority: 20, adapter_key: "manual_only", supports_backfill: false, scan_window_days: 20 },
+    { name: "Ashby", slug: "ashby", source_kind: :ats, base_url: "https://jobs.ashbyhq.com", host: "jobs.ashbyhq.com", priority: 20, adapter_key: "manual_only", supports_backfill: false, scan_window_days: 20 },
+    { name: "Workable", slug: "workable", source_kind: :ats, base_url: "https://jobs.workable.com", host: "jobs.workable.com", priority: 20, adapter_key: "manual_only", supports_backfill: false, scan_window_days: 20 },
+    { name: "Remotar", slug: "remotar", source_kind: :platform, base_url: "https://remotar.com.br", host: "remotar.com.br", priority: 30, adapter_key: "manual_only", supports_backfill: false, scan_window_days: 20 },
+    { name: "ProgramaThor", slug: "programathor", source_kind: :platform, base_url: "https://programathor.com.br", host: "programathor.com.br", priority: 30, adapter_key: "programathor_remote_senior", supports_backfill: true, scan_window_days: 20 },
+    { name: "Coodesh", slug: "coodesh", source_kind: :platform, base_url: "https://coodesh.com", host: "coodesh.com", priority: 30, adapter_key: "manual_only", supports_backfill: false, scan_window_days: 20 },
+    { name: "Trampos", slug: "trampos", source_kind: :platform, base_url: "https://trampos.co", host: "trampos.co", priority: 30, adapter_key: "manual_only", supports_backfill: false, scan_window_days: 20 },
+    { name: "APInfo", slug: "apinfo", source_kind: :platform, base_url: "https://apinfo.com", host: "apinfo.com", priority: 40, adapter_key: "manual_only", supports_backfill: false, scan_window_days: 20 },
+    { name: "RubyOnRemote", slug: "rubyonremote", source_kind: :platform, base_url: "https://rubyonremote.com", host: "rubyonremote.com", priority: 40, adapter_key: "manual_only", supports_backfill: false, scan_window_days: 20 }
   ].freeze
 
   enum :source_kind, { ats: 0, platform: 1, company: 2, aggregator: 3 }, prefix: true
 
   has_many :jobs, dependent: :restrict_with_exception
+  has_many :source_scans, dependent: :restrict_with_exception
+  has_many :discovered_jobs, dependent: :restrict_with_exception
 
   validates :name, :slug, :host, presence: true
   validates :slug, uniqueness: true
   validates :priority, numericality: { greater_than_or_equal_to: 0 }
+  validates :scan_window_days, numericality: { greater_than: 0 }
 
   scope :enabled, -> { where(enabled: true) }
+  scope :backfillable, -> { enabled.where(supports_backfill: true) }
 
   before_validation :normalize_fields
 
@@ -67,7 +71,10 @@ class JobSource < ApplicationRecord
       self.slug = slug.presence || name.presence || host
       self.slug = slug.to_s.parameterize
       self.priority ||= 100
+      self.adapter_key = adapter_key.presence || "manual_only"
       self.enabled = true if enabled.nil?
+      self.supports_backfill = false if supports_backfill.nil?
+      self.scan_window_days ||= 20
       self.settings ||= {}
     end
 
