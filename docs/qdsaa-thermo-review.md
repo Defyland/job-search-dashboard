@@ -10,13 +10,14 @@ Verificacao executada:
 - `bin/brakeman -q -w2`: 0 warnings
 - smoke local do adapter `Remotar`: `18` candidatos aderentes nas primeiras `4` paginas, com links diretos para `Gupy` e `Inhire`
 - smoke local do adapter `Workable`: `0` matches fortes nas primeiras `10` paginas recentes, o que sugere baixo volume atual para o nicho monitorado
+- smoke local do adapter `Sólides`: `3` borderline e `0` strong em `20d` com as queries padrao `react`, `react native`, `ruby` e `rails`; a integracao publica esta funcional, mas o indice atual da fonte parece entregar mais titulos senior genericos do que titulos com stack explicita
 - smoke local dos novos adapters ATS:
   - `Recrutei` com URL publica real `maxxi/145107`: `1` strong em `20d`, extraido do HTML atual com link direto em `talent.recrutei.com.br`; o mesmo board `maxxi/vacancies` retornou `0` resultados por SSR, o que confirmou a necessidade do fallback por URLs ja conhecidas
   - `Inhire` com career pages `yandeh`, `deal`, `mb`, `lighthouseit`, `matera`, `dotgroup`, `inco` e `casacred`: `2` strong e `7` rejected em `20d`; os matches fortes vieram da `Lighthouse`
   - `Lever` com boards `ciandt`, `jobgether`, `decilegroup` e `toptal`: `33` strong, `1` borderline e `261` rejected em `20d`
   - `Greenhouse` com boards `rdsourcing` e `fueledcareers`: `2` strong, `2` borderline e `1` rejected em `20d`
   - `Ashby` com boards `ruby-labs` e `Skydropx`: `0` matches fortes na janela e `3` rejected
-- revisao estatica dos adapters `Gupy`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `ProgramaThor`, `Remotar`, `Workable`, do `JobDiscovery::Orchestrator` e da extracao reutilizavel `JobIngestions::Recorder`
+- revisao estatica dos adapters `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `ProgramaThor`, `Remotar`, `Workable`, do `JobDiscovery::Orchestrator` e da extracao reutilizavel `JobIngestions::Recorder`
 - validacao em producao no Railway:
   - deploy novo do `web` e `worker` com `bin/predeploy`
   - trigger autenticado de `POST /search_runs`
@@ -63,6 +64,7 @@ S: Simplificar/Otimizar
   - os adapters ATS agora podem redescobrir board slugs, tokens e career pages a partir das URLs de vagas ja persistidas, usando o proprio banco como memoria operacional
   - `Gupy` agora respeita a janela temporal quando a fonte expõe `datePosted`
   - `Gupy` deixou de depender apenas de jobs ja associados a `JobSource=gupy`; agora ele consegue minerar boards vistos por outras fontes, como `Remotar`
+  - `Sólides` saiu de `manual_only`; o adapter usa o endpoint publico `portal-vacancies-new/`, quebra a paginação quando a janela temporal esgota e valida a vaga na pagina publica antes de aceitar o link direto de candidatura
   - `Inhire` ganhou descoberta publica em duas etapas (`tenants/public/resolve` -> `job-posts/public/pages`) e usa `X-Tenant` no backend, em vez de depender da SPA
   - `Lever`, `Greenhouse` e `Ashby` sairam de `manual_only` e ganharam adapters nativos
   - cada scan por fonte agora roda com transacao propria para evitar contador agregado adiantado em rollback
@@ -71,11 +73,12 @@ S: Simplificar/Otimizar
   - o deploy Railway deixou de falhar por `ActiveRecord::ConcurrentMigrationError` quando `web` e `worker` sobem juntos; `bin/predeploy` agora faz retry de `db:prepare`
   - o status final de `SearchRun` na descoberta Rails nao trata mais rejeicoes normais como `partial`; agora `partial` significa apenas falha real de alguma fonte
 - Risco residual real:
-  - o slice Rails ainda nao cobre todo o catalogo, apesar de agora incluir `Gupy`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `ProgramaThor`, `Remotar` e `Workable`
+  - o slice Rails ainda nao cobre todo o catalogo, apesar de agora incluir `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `ProgramaThor`, `Remotar` e `Workable`
   - `Recrutei` ja consegue revalidar e redescobrir a partir de URLs publicas conhecidas, mas o board `/<label>/vacancies` nao expõe uma listagem SSR confiavel hoje; por isso a cobertura nativa dessa fonte ainda depende de URLs ja vistas ou `settings.company_labels`/`settings.vacancy_urls`
+  - `Sólides` usa uma busca publica orientada por termo, nao um board oficial por empresa; a cobertura atual depende da qualidade das queries configuradas e hoje a fonte parece produzir pouco titulo senior com stack explicita, apesar de a integracao estar saudavel
   - `ProgramaThor` nao expõe recencia forte nas paginas usadas; o adapter ainda depende de ordem do board e limite de paginas como fallback
   - `Lever` hoje gera muito rejeitado estrutural porque a heuristica de pre-filtro aceita muitos titulos senior genericos antes da checagem final de stack; isso infla logs e counters sem aumentar cobertura util
-  - fontes como `Sólides` e `Teamtailor` ainda nao migraram para adapters nativos
+  - `Teamtailor` ainda nao migrou para adapter nativo
 
 A: Acelerar ciclo de feedback
 - O ciclo local esta curto e suficiente:
@@ -90,7 +93,7 @@ A: Acelerar ciclo de feedback
 A: Automatizar por ultimo
 - Agora:
   - automacao Codex diaria continua publicando e ingerindo via `POST /api/v1/job_ingestions`
-  - o Rails ja consegue fazer backfill deterministico manual com `Gupy`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `ProgramaThor`, `Remotar` e `Workable`
+  - o Rails ja consegue fazer backfill deterministico manual com `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `ProgramaThor`, `Remotar` e `Workable`
   - Railway roda `web` e `worker`, com tarefas recorrentes internas do Solid Queue para limpeza/expiracao
 - Adiado com intencao:
   - cobrir o resto do catalogo com adapters nativos
