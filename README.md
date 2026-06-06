@@ -172,7 +172,7 @@ The pre-deploy command runs through `bin/predeploy`, which retries `db:prepare` 
 ./bin/predeploy
 ```
 
-Operational note: if a legacy or manually edited `JobSource` somehow ends up with `supports_backfill=true` and an unsupported `adapter_key`, the source is no longer skipped silently. The next Rails discovery run records a failed `SourceScan` with an explicit adapter error, and the source edit form now rejects that configuration on save.
+Operational note: if a legacy or manually edited `JobSource` somehow ends up with `supports_backfill=true` and an unsupported `adapter_key`, the source is no longer skipped silently. The next Rails discovery run records a failed `SourceScan` with an explicit adapter error, the source edit form rejects that configuration on save, and the UI now limits adapter selection to the supported registry plus `manual_only`.
 
 Required service variables:
 

@@ -101,6 +101,7 @@ S: Simplificar/Otimizar
   - `dashboard:seed_sources` deixou de sobrescrever configuracao manual existente; o seed agora so cria fontes novas e preenche lacunas de catalogo, preservando overrides operacionais feitos pela UI para `adapter_key`, `priority`, `enabled`, `supports_backfill`, `scan_window_days`, `host`, `base_url` e `settings`
   - o catalogo default agora tambem carrega seeds curados para fontes que antes dependiam de memoria previa ou cirurgia manual em `settings`; no estado atual isso bootstrapa `Gupy`, `Recrutei`, `Lever`, `Greenhouse`, `Ashby`, `Inhire` e `SmartRecruiters` sem sobrescrever customizacao do operador
   - o catalogo de fontes deixou de ser apenas tela de configuracao; agora ele tambem mostra a ultima verdade operacional por fonte, o que encurta o diagnostico de cobertura sem abrir cada `SearchRun`
+  - a UI de fontes deixou de aceitar `adapter_key` como texto livre; a edicao agora oferece apenas o registry suportado mais `manual_only`, preservando valores legados invalidos apenas para correcao explicita do operador
 - Risco residual real:
   - o slice Rails ainda nao cobre todo o catalogo, apesar de agora incluir `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `Teamtailor`, `SmartRecruiters`, `ProgramaThor`, `Remotar` e `Workable`
   - `Recrutei` ja consegue revalidar e redescobrir a partir de URLs publicas conhecidas, mas o board `/<label>/vacancies` nao expõe uma listagem SSR confiavel hoje; por isso a cobertura nativa dessa fonte ainda depende de URLs ja vistas ou `settings.company_labels`/`settings.vacancy_urls`
@@ -109,7 +110,6 @@ S: Simplificar/Otimizar
   - `SmartRecruiters` depende de `company_identifiers` seedados via URL conhecida ou tela de fontes; sem isso, a API oficial nao oferece um indice global publico por empresa
   - `SmartRecruiters` nao valida a pagina HTML publica porque ela esta protegida por challenge JS; a confianca operacional fica ancorada no `active` + `applyUrl` retornados pela API oficial
   - `Trampos` hoje nao oferece busca por stack confiavel na API publica; a cobertura depende do scan cronologico global e da filtragem backend por titulo/descricao
-  - a UI ainda permite editar `adapter_key` como texto livre; o risco operacional principal foi reduzido pela nova validacao + erro explicito no `SourceScan`, mas nao existe autocomplete/enum para impedir erro humano antes da submissao
   - `ProgramaThor` nao expõe recencia forte nas paginas usadas; o adapter ainda depende de ordem do board e limite de paginas como fallback
   - `Lever` hoje gera muito rejeitado estrutural porque a heuristica de pre-filtro aceita muitos titulos senior genericos antes da checagem final de stack; isso infla logs e counters sem aumentar cobertura util
   - o endpoint de ingestao Codex continua existente e util para importacao complementar, mas como nao ha mais automacao agendada nele, essa trilha pode ficar sem uso por longos periodos ate ser exercitada manualmente
