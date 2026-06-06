@@ -58,6 +58,29 @@ class JobDiscovery::OrchestratorTest < ActiveSupport::TestCase
     end
   end
 
+  class FailingAdapter
+    def scan(source_scan:, window_days:)
+      raise "adapter failure for #{source_scan.job_source.name} in #{window_days}d"
+    end
+  end
+
+  class MixedRegistry
+    def supports?(adapter_key)
+      %w[fake_adapter failing_adapter].include?(adapter_key)
+    end
+
+    def fetch(adapter_key)
+      case adapter_key
+      when "fake_adapter"
+        FakeAdapter
+      when "failing_adapter"
+        FailingAdapter
+      else
+        raise "unknown adapter #{adapter_key}"
+      end
+    end
+  end
+
   test "creates search runs source scans discovered jobs and imports accepted jobs" do
     source = JobSource.create!(
       name: "Fake Source",
@@ -77,10 +100,69 @@ class JobDiscovery::OrchestratorTest < ActiveSupport::TestCase
     ).call
 
     assert result.success?
+    assert_predicate result.search_run, :status_succeeded?
     assert_equal 1, result.search_run.source_scans.count
     assert_equal 2, result.search_run.discovered_jobs.count
     assert_equal 1, Job.where(company_name: "Clicksign").count
     assert_equal 1, result.search_run.search_run_items.where(outcome: :created).count
     assert_equal 1, result.search_run.search_run_items.where(outcome: :rejected).count
+  end
+
+  test "marks run partial when at least one source scan fails after importing matches" do
+    good_source = JobSource.create!(
+      name: "Good Source",
+      slug: "good-source",
+      host: "good.example.com",
+      base_url: "https://good.example.com",
+      source_kind: :platform,
+      adapter_key: "fake_adapter",
+      supports_backfill: true,
+      scan_window_days: 20
+    )
+    bad_source = JobSource.create!(
+      name: "Bad Source",
+      slug: "bad-source",
+      host: "bad.example.com",
+      base_url: "https://bad.example.com",
+      source_kind: :platform,
+      adapter_key: "failing_adapter",
+      supports_backfill: true,
+      scan_window_days: 20
+    )
+
+    result = JobDiscovery::Orchestrator.new(
+      window_days: 20,
+      source_scope: JobSource.where(id: [ good_source.id, bad_source.id ]),
+      registry: MixedRegistry.new
+    ).call
+
+    refute result.success?
+    assert_predicate result.search_run, :status_partial?
+    assert_equal 1, result.search_run.source_scans.status_failed.count
+    assert_equal 1, result.search_run.search_run_items.where(outcome: :created).count
+    assert_equal [ "Bad Source: adapter failure for Bad Source in 20d" ], result.errors
+  end
+
+  test "marks run failed when every source scan fails and nothing is imported" do
+    source = JobSource.create!(
+      name: "Bad Source",
+      slug: "bad-source",
+      host: "bad.example.com",
+      base_url: "https://bad.example.com",
+      source_kind: :platform,
+      adapter_key: "failing_adapter",
+      supports_backfill: true,
+      scan_window_days: 20
+    )
+
+    result = JobDiscovery::Orchestrator.new(
+      window_days: 20,
+      source_scope: JobSource.where(id: source.id),
+      registry: MixedRegistry.new
+    ).call
+
+    assert_predicate result.search_run, :status_failed?
+    assert_empty result.search_run.search_run_items
+    assert_equal [ "Bad Source: adapter failure for Bad Source in 20d" ], result.errors
   end
 end

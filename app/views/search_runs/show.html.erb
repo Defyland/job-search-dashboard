@@ -43,6 +43,7 @@
           <tr>
             <th class="px-6 py-4">Fonte</th>
             <th class="px-6 py-4">Status</th>
+            <th class="px-6 py-4">Detalhe</th>
             <th class="px-6 py-4">Paginas</th>
             <th class="px-6 py-4">Candidatos</th>
             <th class="px-6 py-4">Aceitas</th>
@@ -57,6 +58,7 @@
                 <td class="px-6 py-5">
                   <span class="rounded-full px-3 py-1 text-xs font-semibold ring-1 <%= tone_class(source_scan.status == "failed" ? :expired : :active) %>"><%= source_scan.status.humanize %></span>
                 </td>
+                <td class="px-6 py-5 text-slate-400"><%= source_scan.error_message.presence || "Sem erro" %></td>
                 <td class="px-6 py-5 text-slate-300"><%= source_scan.pages_scanned %></td>
                 <td class="px-6 py-5 text-slate-300"><%= source_scan.candidates_seen %></td>
                 <td class="px-6 py-5 text-slate-300"><%= source_scan.accepted_count + source_scan.borderline_count %></td>
@@ -65,7 +67,7 @@
             <% end %>
           <% else %>
             <tr>
-              <td colspan="6" class="px-6 py-12 text-center">
+              <td colspan="7" class="px-6 py-12 text-center">
                 <p class="text-base font-semibold text-white">Sem scans por fonte neste run.</p>
               </td>
             </tr>

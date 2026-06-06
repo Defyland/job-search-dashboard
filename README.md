@@ -149,12 +149,10 @@ Shared config lives in [railway.json](railway.json). Both services use the same 
 - Web: `APP_SERVICE_ROLE=web`
 - Worker: `APP_SERVICE_ROLE=worker`
 
-The pre-deploy command runs:
+The pre-deploy command runs through `bin/predeploy`, which retries `db:prepare` when Railway boots `web` and `worker` concurrently:
 
 ```bash
-bundle exec rails db:prepare
-bundle exec rails dashboard:seed_sources
-bundle exec rails dashboard:bootstrap_admin
+./bin/predeploy
 ```
 
 Required service variables:
@@ -175,6 +173,12 @@ Useful optional variables:
 Solid Queue tables live in the main Rails schema because this app uses a single PostgreSQL database in Railway. Recurring tasks are configured in [config/recurring.yml](config/recurring.yml). The main daily search is intentionally not run by Rails; it is driven by the Codex automation and ingested here.
 
 The deterministic Rails backfill can already be run manually from the dashboard or via `dashboard:discover`. Migrating the full daily discovery away from Codex still depends on implementing additional adapters beyond the current `Gupy`, `ProgramaThor`, `Remotar`, and `Workable` slice.
+
+Run status semantics for native Rails discovery are:
+
+- `succeeded`: all scanned sources ended in `succeeded` or `exhausted`
+- `partial`: at least one source scan failed, but the run still imported or updated jobs
+- `failed`: every scanned source failed and nothing was imported or updated
 
 ## Review Notes
 

@@ -164,7 +164,7 @@ module JobDiscovery
 
       def final_status(search_run, summary)
         return :failed if search_run.source_scans.status_failed.exists? && summary[:imported_count].zero? && summary[:updated_count].zero?
-        return :partial if search_run.source_scans.status_failed.exists? || (summary[:rejected_count].positive? && (summary[:imported_count].positive? || summary[:updated_count].positive?))
+        return :partial if search_run.source_scans.status_failed.exists?
 
         :succeeded
       end

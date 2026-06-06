@@ -5,12 +5,16 @@ Escopo analisado:
 
 Verificacao executada:
 - `bin/rails db:migrate`: schema atualizado com `SourceScan` e `DiscoveredJob`
-- `bin/rails test`: 28 testes, 84 assertions, sem falhas
-- `bin/rubocop`: 84 arquivos inspecionados, sem offenses
+- `bin/rails test`: 33 testes, 107 assertions, sem falhas
+- `bin/rubocop`: 88 arquivos inspecionados, sem offenses
 - `bin/brakeman -q -w2`: 0 warnings
 - smoke local do adapter `Remotar`: `18` candidatos aderentes nas primeiras `4` paginas, com links diretos para `Gupy` e `Inhire`
 - smoke local do adapter `Workable`: `0` matches fortes nas primeiras `10` paginas recentes, o que sugere baixo volume atual para o nicho monitorado
 - revisao estatica dos adapters `Gupy`, `ProgramaThor`, `Remotar`, `Workable`, do `JobDiscovery::Orchestrator` e da extracao reutilizavel `JobIngestions::Recorder`
+- validacao em producao no Railway:
+  - deploy novo do `web` e `worker` com `bin/predeploy`
+  - trigger autenticado de `POST /search_runs`
+  - `DiscoverJobsRunJob` executado em producao em ~21s
 
 Assumptions:
 - o app continua pessoal e privado; login unico/pequena administracao continuam suficientes
@@ -52,6 +56,8 @@ S: Simplificar/Otimizar
   - cada scan por fonte agora roda com transacao propria para evitar contador agregado adiantado em rollback
   - `Remotar` passou a funcionar como discovery hub para ATSs externos porque a API publica entrega `externalLink`
   - `Workable` entrou por API publica global, mas o valor real no nicho atual parece menor que o de `Remotar`
+  - o deploy Railway deixou de falhar por `ActiveRecord::ConcurrentMigrationError` quando `web` e `worker` sobem juntos; `bin/predeploy` agora faz retry de `db:prepare`
+  - o status final de `SearchRun` na descoberta Rails nao trata mais rejeicoes normais como `partial`; agora `partial` significa apenas falha real de alguma fonte
 - Risco residual real:
   - o slice Rails ainda cobre pouco do catalogo frente ao objetivo final, apesar de agora incluir `Gupy`, `ProgramaThor`, `Remotar` e `Workable`
   - `ProgramaThor` nao expõe recencia forte nas paginas usadas; o adapter ainda depende de ordem do board e limite de paginas como fallback

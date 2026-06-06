@@ -18,6 +18,29 @@ class SearchRunsControllerTest < ActionDispatch::IntegrationTest
     assert_match("Run ##{search_runs(:recent).id}", response.body)
   end
 
+  test "show renders source scan errors for failed adapters" do
+    source_scan = SourceScan.create!(
+      search_run: search_runs(:older),
+      job_source: job_sources(:gupy),
+      status: :failed,
+      pages_scanned: 0,
+      candidates_seen: 0,
+      accepted_count: 0,
+      borderline_count: 0,
+      rejected_count: 0,
+      expired_count: 0,
+      error_message: "request failed: https://programathor.com.br/jobs-city/remoto?expertise=S%C3%AAnior -> 403",
+      started_at: 5.days.ago,
+      finished_at: 5.days.ago + 10.seconds
+    )
+
+    get search_run_path(source_scan.search_run)
+
+    assert_response :success
+    assert_match("Detalhe", response.body)
+    assert_match("request failed: https://programathor.com.br/jobs-city/remoto?expertise=S%C3%AAnior -&gt; 403", response.body)
+  end
+
   test "create enqueues a rails backfill" do
     assert_enqueued_with(job: DiscoverJobsRunJob, args: [ { window_days: 20 } ]) do
       post search_runs_path, params: { window_days: 20 }
