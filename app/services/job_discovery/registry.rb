@@ -4,6 +4,7 @@ module JobDiscovery
       "ashby_job_board" => JobDiscovery::Adapters::AshbyJobBoardAdapter,
       "gupy_company_boards" => JobDiscovery::Adapters::GupyCompanyBoardsAdapter,
       "greenhouse_boards_api" => JobDiscovery::Adapters::GreenhouseBoardsApiAdapter,
+      "inhire_career_pages" => JobDiscovery::Adapters::InhireCareerPagesAdapter,
       "lever_company_boards" => JobDiscovery::Adapters::LeverCompanyBoardsAdapter,
       "programathor_remote_senior" => JobDiscovery::Adapters::ProgramathorRemoteSeniorAdapter,
       "remotar_jobs_api" => JobDiscovery::Adapters::RemotarJobsApiAdapter,
