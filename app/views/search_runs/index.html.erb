@@ -13,6 +13,10 @@
           <%= form.label :window_days, "Backfill", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
           <%= form.select :window_days, options_for_select([["24h", 1], ["7 dias", 7], ["20 dias", 20], ["30 dias", 30]], 20), {}, class: "mt-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
         </div>
+        <div>
+          <%= form.label :source_slug, "Fonte", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+          <%= form.select :source_slug, options_for_select([["Todas", ""]] + @source_options.map { |source| [source.name, source.slug] }), {}, class: "mt-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
+        </div>
         <%= form.submit "Rodar Rails", class: "rounded-2xl bg-sky-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-sky-300" %>
       <% end %>
     </div>

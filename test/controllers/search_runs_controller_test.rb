@@ -42,8 +42,36 @@ class SearchRunsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "create enqueues a rails backfill" do
-    assert_enqueued_with(job: DiscoverJobsRunJob, args: [ { window_days: 20, trigger_source: :manual } ]) do
+    assert_enqueued_with(job: DiscoverJobsRunJob, args: [ { window_days: 20, trigger_source: :manual, source_slug: nil } ]) do
       post search_runs_path, params: { window_days: 20 }
+    end
+
+    assert_redirected_to search_runs_path
+  end
+
+  test "create enqueues a source-scoped rails backfill" do
+    source = JobSource.create!(
+      name: "Scoped Source",
+      slug: "scoped-source",
+      host: "scoped.example.com",
+      base_url: "https://scoped.example.com",
+      source_kind: :platform,
+      adapter_key: "manual_only",
+      enabled: true,
+      supports_backfill: true,
+      scan_window_days: 14
+    )
+
+    assert_enqueued_with(job: DiscoverJobsRunJob, args: [ { window_days: 14, trigger_source: :manual, source_slug: source.slug } ]) do
+      post search_runs_path, params: { window_days: 14, source_slug: source.slug }
+    end
+
+    assert_redirected_to search_runs_path
+  end
+
+  test "create rejects an invalid source slug" do
+    assert_no_enqueued_jobs only: DiscoverJobsRunJob do
+      post search_runs_path, params: { window_days: 20, source_slug: "missing-source" }
     end
 
     assert_redirected_to search_runs_path
