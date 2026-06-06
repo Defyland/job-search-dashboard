@@ -22,10 +22,12 @@ Verificacao executada:
 - revisao estatica dos adapters `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `Teamtailor`, `ProgramaThor`, `Remotar`, `Workable`, do `JobDiscovery::Orchestrator` e da extracao reutilizavel `JobIngestions::Recorder`
 - validacao em producao no Railway:
   - deploy novo do `web` e `worker` com `bin/predeploy`
+  - healthcheck `GET /up` verde no dominio publico
   - trigger autenticado de `POST /search_runs`
   - `DiscoverJobsRunJob` executado em producao em ~43s no `Run #7`
   - `Run #7` confirmou scans nativos bem-sucedidos de `Gupy`, `Lever`, `Greenhouse`, `Ashby`, `ProgramaThor`, `Remotar` e `Workable`
   - `Run #7` mostrou impacto real no inbox: `Lever` com `295` candidatos vistos e `34` aceitos; `Greenhouse` com `5` candidatos vistos e `4` aceitos
+  - logs do `worker` apos o deploy mostram o `Scheduler` carregando `["clear_solid_queue_finished_jobs", "daily_discovery_run", "expire_stale_jobs"]`
 
 Assumptions:
 - o app continua pessoal e privado; login unico/pequena administracao continuam suficientes
