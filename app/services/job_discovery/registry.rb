@@ -10,6 +10,7 @@ module JobDiscovery
       "recrutei_company_boards" => JobDiscovery::Adapters::RecruteiCompanyBoardsAdapter,
       "remotar_jobs_api" => JobDiscovery::Adapters::RemotarJobsApiAdapter,
       "solides_portal_vacancies" => JobDiscovery::Adapters::SolidesPortalVacanciesAdapter,
+      "teamtailor_company_boards" => JobDiscovery::Adapters::TeamtailorCompanyBoardsAdapter,
       "workable_global_api" => JobDiscovery::Adapters::WorkableGlobalApiAdapter
     }.freeze
 
