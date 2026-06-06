@@ -12,6 +12,7 @@ module JobDiscovery
       "solides_portal_vacancies" => JobDiscovery::Adapters::SolidesPortalVacanciesAdapter,
       "smartrecruiters_postings_api" => JobDiscovery::Adapters::SmartrecruitersPostingsApiAdapter,
       "teamtailor_company_boards" => JobDiscovery::Adapters::TeamtailorCompanyBoardsAdapter,
+      "trampos_opportunities_api" => JobDiscovery::Adapters::TramposOpportunitiesApiAdapter,
       "workable_global_api" => JobDiscovery::Adapters::WorkableGlobalApiAdapter
     }.freeze
 
