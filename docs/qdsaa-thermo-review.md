@@ -15,6 +15,10 @@ Verificacao executada:
 - smoke local do adapter `Sólides`: `3` borderline e `0` strong em `20d` com as queries padrao `react`, `react native`, `ruby` e `rails`; a integracao publica esta funcional, mas o indice atual da fonte parece entregar mais titulos senior genericos do que titulos com stack explicita
 - smoke local do adapter `Teamtailor`: `0` candidatos em `20d` no board publico `career.teamtailor.com`; a integracao de paginação/extração ficou funcional, mas o board atual nao expõe titulos aderentes ao recorte monitorado
 - smoke local do adapter `SmartRecruiters`: `0` strong, `0` borderline e `3` rejected em `20d` para `company_identifier=smartrecruiters`; a API oficial respondeu bem, mas o board atual trouxe Python e frontend generico fora do foco estrito do radar
+- investigacao publica de `Coodesh`:
+  - `https://coodesh.com/sitemaps/jobs.xml` expõe a lista publica de vagas ativas e evita depender de API privada ou paginação opaca
+  - cada detalhe `https://coodesh.com/jobs/<slug>` carrega um payload SSR em `self.__next_f.push(...)` com `title`, `company`, `publish_date`, `created`, `skills`, `home_office_formatted`, `status_formatted` e `external_url`
+  - smoke local do adapter `Coodesh`: `0` candidatos no recorte Ruby/React senior em `20d`; a integracao esta saudavel, mas o inventario atual da fonte nao trouxe titulos aderentes ao radar
 - investigacao publica de `Trampos`:
   - `https://trampos.co/api/v2/opportunities` expõe feed paginado publico com `pagination.total_pages`, `published_at`, empresa e metadata suficiente para corte por janela
   - `https://trampos.co/oportunidades/:id` e `GET /api/v2/opportunities/:id` expõem o detalhe canonico da vaga, incluindo `url`, `apply_url`, `apply_method`, `home_office` e corpo completo
@@ -92,6 +96,7 @@ S: Simplificar/Otimizar
   - `Teamtailor` saiu do gap principal; o adapter usa boards `*.teamtailor.com/jobs`, paginação por `show_more` e validacao da propria pagina da vaga antes de aceitar a candidatura na URL canonica
   - `SmartRecruiters` saiu do backlog de ATS principais; o adapter usa a Posting API oficial por `company_identifier`, pagina em `limit/offset` e evita depender das paginas publicas com challenge JS
   - `Trampos` saiu de `manual_only`; o adapter usa a API publica `api/v2/opportunities`, pagina cronologicamente ate a janela expirar e, quando a candidatura é interna (`apply_url` vazio), usa a propria URL canonica da vaga como link aplicavel
+  - `Coodesh` saiu de `manual_only`; o adapter usa o sitemap publico de jobs e extrai o payload SSR de cada detalhe, com fallback do link canônico quando a candidatura é interna a `coodesh.com`
   - o contrato entre catalogo e discovery nativa ficou mais forte: `JobSource` nao aceita mais `supports_backfill=true` com `adapter_key` fora do registry, e o `Orchestrator` deixou de pular silenciosamente fontes backfillable quebradas; agora ele cria `SourceScan failed` explicito para qualquer registro legado ou manual que escape dessa validacao
   - o deploy Railway deixou de falhar por `ActiveRecord::ConcurrentMigrationError` quando `web` e `worker` sobem juntos; `bin/predeploy` agora faz retry de `db:prepare`
   - o status final de `SearchRun` na descoberta Rails nao trata mais rejeicoes normais como `partial`; agora `partial` significa apenas falha real de alguma fonte
@@ -103,13 +108,14 @@ S: Simplificar/Otimizar
   - o catalogo de fontes deixou de ser apenas tela de configuracao; agora ele tambem mostra a ultima verdade operacional por fonte, o que encurta o diagnostico de cobertura sem abrir cada `SearchRun`
   - a UI de fontes deixou de aceitar `adapter_key` como texto livre; a edicao agora oferece apenas o registry suportado mais `manual_only`, preservando valores legados invalidos apenas para correcao explicita do operador
 - Risco residual real:
-  - o slice Rails ainda nao cobre todo o catalogo, apesar de agora incluir `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `Teamtailor`, `SmartRecruiters`, `ProgramaThor`, `Remotar` e `Workable`
+  - o slice Rails ainda nao cobre todo o catalogo, apesar de agora incluir `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `Teamtailor`, `SmartRecruiters`, `ProgramaThor`, `Remotar`, `Workable`, `Trampos` e `Coodesh`
   - `Recrutei` ja consegue revalidar e redescobrir a partir de URLs publicas conhecidas, mas o board `/<label>/vacancies` nao expõe uma listagem SSR confiavel hoje; por isso a cobertura nativa dessa fonte ainda depende de URLs ja vistas ou `settings.company_labels`/`settings.vacancy_urls`
   - `Sólides` usa uma busca publica orientada por termo, nao um board oficial por empresa; a cobertura atual depende da qualidade das queries configuradas e hoje a fonte parece produzir pouco titulo senior com stack explicita, apesar de a integracao estar saudavel
   - `Teamtailor` hoje cobre boards `*.teamtailor.com`, mas nao consegue redescobrir boards servidos por dominios customizados sem o sufixo `teamtailor.com`
   - `SmartRecruiters` depende de `company_identifiers` seedados via URL conhecida ou tela de fontes; sem isso, a API oficial nao oferece um indice global publico por empresa
   - `SmartRecruiters` nao valida a pagina HTML publica porque ela esta protegida por challenge JS; a confianca operacional fica ancorada no `active` + `applyUrl` retornados pela API oficial
   - `Trampos` hoje nao oferece busca por stack confiavel na API publica; a cobertura depende do scan cronologico global e da filtragem backend por titulo/descricao
+  - `Coodesh` hoje depende do payload SSR `self.__next_f.push(...)` embutido na pagina da vaga; o sitemap publico é estavel, mas qualquer mudanca forte na serializacao React Server Components exigira ajuste do parser
   - `ProgramaThor` nao expõe recencia forte nas paginas usadas; o adapter ainda depende de ordem do board e limite de paginas como fallback
   - `Lever` hoje gera muito rejeitado estrutural porque a heuristica de pre-filtro aceita muitos titulos senior genericos antes da checagem final de stack; isso infla logs e counters sem aumentar cobertura util
   - o endpoint de ingestao Codex continua existente e util para importacao complementar, mas como nao ha mais automacao agendada nele, essa trilha pode ficar sem uso por longos periodos ate ser exercitada manualmente
