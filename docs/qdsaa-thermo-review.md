@@ -5,7 +5,7 @@ Escopo analisado:
 
 Verificacao executada:
 - `bin/rails db:migrate`: schema atualizado com `SourceScan` e `DiscoveredJob`
-- `bin/rails test`: 59 testes, 218 assertions, sem falhas
+- `bin/rails test`: 59 testes, 221 assertions, sem falhas
 - `bin/rubocop`: 105 arquivos inspecionados, sem offenses
 - `bin/brakeman -q -w2`: 0 warnings
 - `bundle exec ruby -rfugit -e 'Fugit.parse("every day at 11:30 UTC").next_time'`: parse valido, proxima execucao em `08:30 -03:00`
@@ -33,6 +33,8 @@ Verificacao executada:
   - `dashboard:seed_sources` em producao agora materializa `settings` curados para fontes antes vazias; isso ficou visivel nas telas de edicao de `Gupy`, `Lever`, `Greenhouse`, `Ashby` e `Inhire`
   - `Run #10` validou efeito operacional dos seeds em producao: backfill source-scoped de `Inhire` terminou `Concluida`, com `10` paginas, `22` candidatos vistos, `7` aceitas e `15` rejeitadas; a fonte deixou de ficar zerada no catalogo
   - a tela `Fontes` em producao agora exibe o ultimo scan por fonte com link para o run, timestamp e contadores; a linha de `Inhire` mostra `Run #10`, `Paginas: 10`, `Candidatos: 22`, `Aceitas: 7` e `Rejeitadas: 15`
+  - `Recrutei` e `SmartRecruiters` tambem passaram a receber seeds curados no deploy; a tela de edicao mostra `vacancy_urls/company_labels` para `Recrutei` e `company_identifiers` para `SmartRecruiters`
+  - `Run #11` validou efeito operacional de `Recrutei` em producao: backfill source-scoped terminou `Concluida`, com `1` pagina, `1` candidato visto, `1` aceita e `0` rejeitadas
 - validacao operacional de admin:
   - tela de fontes agora permite editar `settings` JSON, prioridade, janela e flags de participacao, sem cirurgia manual no banco
   - o dashboard agora consegue disparar backfill por fonte especifica, entao editar `settings` e validar um adapter deixou de exigir um run global do catalogo inteiro
@@ -90,7 +92,7 @@ S: Simplificar/Otimizar
   - a administracao de fontes deixou de ser read-only; como varios adapters dependem de `JobSource.settings`, editar `board_urls`, `company_labels`, `company_slugs`, `search_queries` e `max_pages` pela UI agora fecha um gap operacional real do desenho
   - o disparo manual tambem deixou de ser tudo-ou-nada; `source_slug` agora permite rodar discovery de uma unica fonte, o que reduz feedback loop e custo operacional quando se ajusta um adapter
   - `dashboard:seed_sources` deixou de sobrescrever configuracao manual existente; o seed agora so cria fontes novas e preenche lacunas de catalogo, preservando overrides operacionais feitos pela UI para `adapter_key`, `priority`, `enabled`, `supports_backfill`, `scan_window_days`, `host`, `base_url` e `settings`
-  - o catalogo default agora tambem carrega seeds curados para fontes que antes dependiam de memoria previa ou cirurgia manual em `settings`; no estado atual isso bootstrapa `Gupy`, `Lever`, `Greenhouse`, `Ashby` e `Inhire` sem sobrescrever customizacao do operador
+  - o catalogo default agora tambem carrega seeds curados para fontes que antes dependiam de memoria previa ou cirurgia manual em `settings`; no estado atual isso bootstrapa `Gupy`, `Recrutei`, `Lever`, `Greenhouse`, `Ashby`, `Inhire` e `SmartRecruiters` sem sobrescrever customizacao do operador
   - o catalogo de fontes deixou de ser apenas tela de configuracao; agora ele tambem mostra a ultima verdade operacional por fonte, o que encurta o diagnostico de cobertura sem abrir cada `SearchRun`
 - Risco residual real:
   - o slice Rails ainda nao cobre todo o catalogo, apesar de agora incluir `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `Teamtailor`, `SmartRecruiters`, `ProgramaThor`, `Remotar` e `Workable`
