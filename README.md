@@ -51,6 +51,7 @@ The rest of the catalog is still present for normalization/filtering, but not ye
 - filterable and paginated job radar
 - strong vs borderline match classification
 - source catalog for ATSs and platforms
+- editable source administration, including validated JSON `settings` for adapters that need seeded boards/slugs/queries
 - secure ingestion endpoint with shared bearer token
 - deterministic backfill trigger from the Runs screen
 - native daily discovery scheduled through Solid Queue recurring tasks at `08:30 BRT` (`11:30 UTC`)
@@ -181,9 +182,9 @@ Useful optional variables:
 - `JOB_CONCURRENCY=1`
 - `JOB_STALE_AFTER_DAYS=21`
 
-Solid Queue tables live in the main Rails schema because this app uses a single PostgreSQL database in Railway. Recurring tasks are configured in [config/recurring.yml](config/recurring.yml). Rails now enqueues its own daily `24h` discovery run at `11:30 UTC`, which corresponds to `08:30 BRT`.
+Solid Queue tables live in the main Rails schema because this app uses a single PostgreSQL database in Railway. Recurring tasks are configured in [config/recurring.yml](config/recurring.yml). Rails now enqueues its own daily `24h` discovery run at `11:30 UTC`, which corresponds to `08:30 BRT`. The old Codex heartbeat automation was retired after this cutover, so Rails is the only scheduled daily engine.
 
-The deterministic Rails backfill can already be run manually from the dashboard or via `dashboard:discover`. Codex ingestion remains available as a complementary path, but the native daily run now covers the current `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `Teamtailor`, `ProgramaThor`, `Remotar`, and `Workable` slice.
+The deterministic Rails backfill can already be run manually from the dashboard or via `dashboard:discover`. The Sources screen is now the operational place to seed adapter-specific `settings` such as `board_urls`, `company_labels`, `company_slugs`, `search_queries`, and `max_pages`. Codex ingestion remains available as a complementary API path, but there is no longer a scheduled Codex automation feeding the app.
 
 Run status semantics for native Rails discovery are:
 

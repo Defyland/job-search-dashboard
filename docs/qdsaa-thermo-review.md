@@ -9,6 +9,7 @@ Verificacao executada:
 - `bin/rubocop`: 103 arquivos inspecionados, sem offenses
 - `bin/brakeman -q -w2`: 0 warnings
 - `bundle exec ruby -rfugit -e 'Fugit.parse("every day at 11:30 UTC").next_time'`: parse valido, proxima execucao em `08:30 -03:00`
+- automacao `daily-senior-ruby-react-job-search` removida do app; o heartbeat legado nao esta mais presente em `/Users/allanflavio/.codex/automations`
 - smoke local do adapter `Remotar`: `18` candidatos aderentes nas primeiras `4` paginas, com links diretos para `Gupy` e `Inhire`
 - smoke local do adapter `Workable`: `0` matches fortes nas primeiras `10` paginas recentes, o que sugere baixo volume atual para o nicho monitorado
 - smoke local do adapter `Sólides`: `3` borderline e `0` strong em `20d` com as queries padrao `react`, `react native`, `ruby` e `rails`; a integracao publica esta funcional, mas o indice atual da fonte parece entregar mais titulos senior genericos do que titulos com stack explicita
@@ -28,6 +29,8 @@ Verificacao executada:
   - `Run #7` confirmou scans nativos bem-sucedidos de `Gupy`, `Lever`, `Greenhouse`, `Ashby`, `ProgramaThor`, `Remotar` e `Workable`
   - `Run #7` mostrou impacto real no inbox: `Lever` com `295` candidatos vistos e `34` aceitos; `Greenhouse` com `5` candidatos vistos e `4` aceitos
   - logs do `worker` apos o deploy mostram o `Scheduler` carregando `["clear_solid_queue_finished_jobs", "daily_discovery_run", "expire_stale_jobs"]`
+- validacao operacional de admin:
+  - tela de fontes agora permite editar `settings` JSON, prioridade, janela e flags de participacao, sem cirurgia manual no banco
 
 Assumptions:
 - o app continua pessoal e privado; login unico/pequena administracao continuam suficientes
@@ -78,6 +81,7 @@ S: Simplificar/Otimizar
   - o deploy Railway deixou de falhar por `ActiveRecord::ConcurrentMigrationError` quando `web` e `worker` sobem juntos; `bin/predeploy` agora faz retry de `db:prepare`
   - o status final de `SearchRun` na descoberta Rails nao trata mais rejeicoes normais como `partial`; agora `partial` significa apenas falha real de alguma fonte
   - a descoberta diaria nativa agora existe no proprio Rails via `config/recurring.yml`, com `DiscoverJobsRunJob(window_days: 1, trigger_source: "cron")` agendado para `08:30 BRT`
+  - a administracao de fontes deixou de ser read-only; como varios adapters dependem de `JobSource.settings`, editar `board_urls`, `company_labels`, `company_slugs`, `search_queries` e `max_pages` pela UI agora fecha um gap operacional real do desenho
 - Risco residual real:
   - o slice Rails ainda nao cobre todo o catalogo, apesar de agora incluir `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `Teamtailor`, `ProgramaThor`, `Remotar` e `Workable`
   - `Recrutei` ja consegue revalidar e redescobrir a partir de URLs publicas conhecidas, mas o board `/<label>/vacancies` nao expõe uma listagem SSR confiavel hoje; por isso a cobertura nativa dessa fonte ainda depende de URLs ja vistas ou `settings.company_labels`/`settings.vacancy_urls`
@@ -85,7 +89,7 @@ S: Simplificar/Otimizar
   - `Teamtailor` hoje cobre boards `*.teamtailor.com`, mas nao consegue redescobrir boards servidos por dominios customizados sem o sufixo `teamtailor.com`
   - `ProgramaThor` nao expõe recencia forte nas paginas usadas; o adapter ainda depende de ordem do board e limite de paginas como fallback
   - `Lever` hoje gera muito rejeitado estrutural porque a heuristica de pre-filtro aceita muitos titulos senior genericos antes da checagem final de stack; isso infla logs e counters sem aumentar cobertura util
-  - enquanto a automacao Codex externa continuar ativa ao mesmo tempo que o scheduler Rails, o sistema tera dois caminhos diarios de entrada; o dedupe segura o inbox, mas o historico de runs fica mais ruidoso ate a automacao antiga ser desligada
+  - o endpoint de ingestao Codex continua existente e util para importacao complementar, mas como nao ha mais automacao agendada nele, essa trilha pode ficar sem uso por longos periodos ate ser exercitada manualmente
 
 A: Acelerar ciclo de feedback
 - O ciclo local esta curto e suficiente:
@@ -101,10 +105,9 @@ A: Automatizar por ultimo
 - Agora:
   - o Rails ja consegue fazer backfill deterministico manual com `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `Teamtailor`, `ProgramaThor`, `Remotar` e `Workable`
   - Railway roda `web` e `worker`, com tarefas recorrentes internas do Solid Queue para limpeza/expiracao e descoberta diaria de `24h` as `08:30 BRT`
-  - a automacao Codex diaria ainda pode publicar e ingerir via `POST /api/v1/job_ingestions`, mas agora virou caminho complementar, nao mais o unico motor do diario
+  - a automacao Codex agendada foi removida; `POST /api/v1/job_ingestions` ficou como caminho complementar/manual
 - Adiado com intencao:
   - cobrir o resto do catalogo com adapters nativos
-  - desligar a automacao Codex antiga depois da transicao operacional
   - candidatura automatica
   - notificacoes externas adicionais
 
