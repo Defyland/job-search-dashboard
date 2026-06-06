@@ -56,13 +56,9 @@ module JobDiscovery
 
         def board_urls(source_scan)
           configured_urls = Array(source_scan.job_source.settings["board_urls"])
-          discovered_urls = Job.where(job_source: source_scan.job_source).pluck(:canonical_url, :source_url, :apply_url).flatten.compact.filter_map do |url|
-            next if url.blank?
-
-            host = URI.parse(url).host
-            "https://#{host}/" if host.present? && host.end_with?("gupy.io")
-          rescue URI::InvalidURIError
-            nil
+          discovered_urls = known_hosted_urls(host_suffixes: [ "gupy.io" ]).filter_map do |url|
+            host = normalized_host(url)
+            "https://#{host}/" if host.present?
           end
 
           (configured_urls + discovered_urls).map { |url| url.to_s.strip }.reject(&:blank?).uniq

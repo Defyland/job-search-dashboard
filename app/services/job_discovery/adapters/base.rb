@@ -30,6 +30,18 @@ module JobDiscovery
           {}
         end
 
+        def parse_window_app_data(document)
+          script = document.css("script").find { |node| node.text.include?("window.__appData =") }
+          return {} unless script
+
+          payload = script.text[/window\.__appData\s*=\s*(\{.*\})\s*;\s*(?:fetch\(|\z)/m, 1]
+          return {} if payload.blank?
+
+          JSON.parse(CGI.unescapeHTML(payload))
+        rescue JSON::ParserError
+          {}
+        end
+
         def extract_apply_url(document, page_url)
           link = document.css("a[href]").find { |node| node.text.to_s.match?(/candidat|inscrev|apply/i) }
           href = link&.[]("href")
@@ -79,6 +91,53 @@ module JobDiscovery
             stack_tags: decision.stack_tags,
             payload:
           }
+        end
+
+        def known_job_rows
+          @known_job_rows ||= Job.active.pluck(:company_name, :canonical_url, :source_url, :apply_url)
+        end
+
+        def known_urls
+          @known_urls ||= known_job_rows.flat_map { |row| row.last(3) }
+                                       .compact
+                                       .map { |url| canonical_url_string(url) }
+                                       .reject(&:blank?)
+                                       .uniq
+        end
+
+        def known_company_name_map
+          @known_company_name_map ||= known_job_rows.each_with_object({}) do |row, result|
+            company_name = row.first.to_s.squish
+            next if company_name.blank?
+
+            row.last(3).compact.each do |url|
+              normalized_url = canonical_url_string(url)
+              next if normalized_url.blank?
+
+              result[normalized_url] ||= company_name
+            end
+          end
+        end
+
+        def known_hosted_urls(host_suffixes:)
+          known_urls.select do |url|
+            host = normalized_host(url)
+            host.present? && host_suffixes.any? { |suffix| host == suffix || host.end_with?(".#{suffix}") }
+          end
+        end
+
+        def company_name_for_url(url)
+          known_company_name_map[canonical_url_string(url)]
+        end
+
+        def normalized_host(url)
+          URI.parse(url.to_s).host.to_s.downcase.sub(/\Awww\./, "")
+        rescue URI::InvalidURIError
+          ""
+        end
+
+        def canonical_url_string(url)
+          url.to_s.strip.delete_suffix("/")
         end
     end
   end

@@ -1,7 +1,10 @@
 module JobDiscovery
   class Registry
     ADAPTERS = {
+      "ashby_job_board" => JobDiscovery::Adapters::AshbyJobBoardAdapter,
       "gupy_company_boards" => JobDiscovery::Adapters::GupyCompanyBoardsAdapter,
+      "greenhouse_boards_api" => JobDiscovery::Adapters::GreenhouseBoardsApiAdapter,
+      "lever_company_boards" => JobDiscovery::Adapters::LeverCompanyBoardsAdapter,
       "programathor_remote_senior" => JobDiscovery::Adapters::ProgramathorRemoteSeniorAdapter,
       "remotar_jobs_api" => JobDiscovery::Adapters::RemotarJobsApiAdapter,
       "workable_global_api" => JobDiscovery::Adapters::WorkableGlobalApiAdapter
