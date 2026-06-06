@@ -55,6 +55,7 @@ The rest of the catalog is still present for normalization/filtering, but not ye
 - source catalog for ATSs and platforms
 - source catalog with latest scan status and coverage counters
 - editable source administration, including validated JSON `settings` for adapters that need seeded boards/slugs/queries
+- validated native backfill contract: a source can only participate in recurring/manual Rails discovery when its `adapter_key` is supported by the registry
 - secure ingestion endpoint with shared bearer token
 - deterministic backfill trigger from the Runs screen
 - source-scoped backfill triggers from the Runs and Sources screens
@@ -170,6 +171,8 @@ The pre-deploy command runs through `bin/predeploy`, which retries `db:prepare` 
 ```bash
 ./bin/predeploy
 ```
+
+Operational note: if a legacy or manually edited `JobSource` somehow ends up with `supports_backfill=true` and an unsupported `adapter_key`, the source is no longer skipped silently. The next Rails discovery run records a failed `SourceScan` with an explicit adapter error, and the source edit form now rejects that configuration on save.
 
 Required service variables:
 

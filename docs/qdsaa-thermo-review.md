@@ -92,6 +92,7 @@ S: Simplificar/Otimizar
   - `Teamtailor` saiu do gap principal; o adapter usa boards `*.teamtailor.com/jobs`, paginação por `show_more` e validacao da propria pagina da vaga antes de aceitar a candidatura na URL canonica
   - `SmartRecruiters` saiu do backlog de ATS principais; o adapter usa a Posting API oficial por `company_identifier`, pagina em `limit/offset` e evita depender das paginas publicas com challenge JS
   - `Trampos` saiu de `manual_only`; o adapter usa a API publica `api/v2/opportunities`, pagina cronologicamente ate a janela expirar e, quando a candidatura é interna (`apply_url` vazio), usa a propria URL canonica da vaga como link aplicavel
+  - o contrato entre catalogo e discovery nativa ficou mais forte: `JobSource` nao aceita mais `supports_backfill=true` com `adapter_key` fora do registry, e o `Orchestrator` deixou de pular silenciosamente fontes backfillable quebradas; agora ele cria `SourceScan failed` explicito para qualquer registro legado ou manual que escape dessa validacao
   - o deploy Railway deixou de falhar por `ActiveRecord::ConcurrentMigrationError` quando `web` e `worker` sobem juntos; `bin/predeploy` agora faz retry de `db:prepare`
   - o status final de `SearchRun` na descoberta Rails nao trata mais rejeicoes normais como `partial`; agora `partial` significa apenas falha real de alguma fonte
   - a descoberta diaria nativa agora existe no proprio Rails via `config/recurring.yml`, com `DiscoverJobsRunJob(window_days: 1, trigger_source: "cron")` agendado para `08:30 BRT`
@@ -108,6 +109,7 @@ S: Simplificar/Otimizar
   - `SmartRecruiters` depende de `company_identifiers` seedados via URL conhecida ou tela de fontes; sem isso, a API oficial nao oferece um indice global publico por empresa
   - `SmartRecruiters` nao valida a pagina HTML publica porque ela esta protegida por challenge JS; a confianca operacional fica ancorada no `active` + `applyUrl` retornados pela API oficial
   - `Trampos` hoje nao oferece busca por stack confiavel na API publica; a cobertura depende do scan cronologico global e da filtragem backend por titulo/descricao
+  - a UI ainda permite editar `adapter_key` como texto livre; o risco operacional principal foi reduzido pela nova validacao + erro explicito no `SourceScan`, mas nao existe autocomplete/enum para impedir erro humano antes da submissao
   - `ProgramaThor` nao expõe recencia forte nas paginas usadas; o adapter ainda depende de ordem do board e limite de paginas como fallback
   - `Lever` hoje gera muito rejeitado estrutural porque a heuristica de pre-filtro aceita muitos titulos senior genericos antes da checagem final de stack; isso infla logs e counters sem aumentar cobertura util
   - o endpoint de ingestao Codex continua existente e util para importacao complementar, mas como nao ha mais automacao agendada nele, essa trilha pode ficar sem uso por longos periodos ate ser exercitada manualmente
