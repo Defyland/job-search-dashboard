@@ -1,0 +1,30 @@
+<% content_for :title, "Entrar" %>
+
+<div class="mx-auto grid min-h-[70vh] w-full max-w-5xl items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+  <section class="space-y-5">
+    <p class="inline-flex rounded-full border border-sky-300/20 bg-sky-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-sky-100">Painel privado</p>
+    <h1 class="max-w-xl text-5xl font-extrabold tracking-tight text-white">Acompanhe vagas sem depender da thread.</h1>
+    <p class="max-w-xl text-lg leading-8 text-slate-300">
+      O Codex continua encontrando vagas. O Rails guarda, deduplica, pagina e organiza o que realmente importa para candidatura.
+    </p>
+  </section>
+
+  <section class="rounded-[2rem] border border-white/10 bg-slate-950/70 p-8 shadow-2xl shadow-slate-950/30">
+    <h2 class="text-2xl font-bold text-white">Entrar</h2>
+    <p class="mt-2 text-sm text-slate-400">Acesso restrito ao dashboard publicado.</p>
+
+    <%= form_with url: session_url, class: "mt-8 space-y-5" do |form| %>
+      <div>
+        <%= form.label :email_address, "Email", class: "text-sm font-semibold text-slate-200" %>
+        <%= form.email_field :email_address, required: true, autofocus: true, autocomplete: "username", placeholder: "voce@dominio.com", value: params[:email_address], class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-sky-300/50 focus:bg-white/10" %>
+      </div>
+
+      <div>
+        <%= form.label :password, "Senha", class: "text-sm font-semibold text-slate-200" %>
+        <%= form.password_field :password, required: true, autocomplete: "current-password", placeholder: "Sua senha", maxlength: 72, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-sky-300/50 focus:bg-white/10" %>
+      </div>
+
+      <%= form.submit "Acessar painel", class: "inline-flex w-full items-center justify-center rounded-2xl bg-sky-400 px-5 py-3 text-sm font-extrabold uppercase tracking-[0.18em] text-slate-950 transition hover:bg-sky-300" %>
+    <% end %>
+  </section>
+</div>
