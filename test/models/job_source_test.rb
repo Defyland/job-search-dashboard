@@ -74,4 +74,25 @@ class JobSourceTest < ActiveSupport::TestCase
     assert_not source.supports_backfill?
     assert_equal 9, source.scan_window_days
   end
+
+  test "seed_defaults bootstraps curated adapter settings for blank existing sources" do
+    source = JobSource.create!(
+      name: "Lever",
+      slug: "lever",
+      source_kind: :ats,
+      base_url: "https://jobs.lever.co",
+      host: "jobs.lever.co",
+      priority: 20,
+      enabled: true,
+      adapter_key: "lever_company_boards",
+      supports_backfill: true,
+      scan_window_days: 20,
+      settings: {}
+    )
+
+    JobSource.seed_defaults!
+    source.reload
+
+    assert_equal %w[ciandt jobgether decilegroup toptal], source.settings["company_slugs"]
+  end
 end

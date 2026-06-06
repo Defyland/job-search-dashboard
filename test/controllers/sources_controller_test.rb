@@ -26,7 +26,7 @@ class SourcesControllerTest < ActionDispatch::IntegrationTest
         scan_window_days: 14,
         enabled: "1",
         supports_backfill: "1",
-        settings_json: JSON.dump({ "company_slugs" => [ "clicksign", "fcamara" ], "max_pages" => 3 })
+        settings_json: JSON.dump({ "board_urls" => [ "https://clicksign.gupy.io/", "https://memed.gupy.io/" ], "max_pages" => 3 })
       }
     }
 
@@ -35,7 +35,7 @@ class SourcesControllerTest < ActionDispatch::IntegrationTest
     job_sources(:gupy).reload
     assert_equal 15, job_sources(:gupy).priority
     assert_equal 14, job_sources(:gupy).scan_window_days
-    assert_equal [ "clicksign", "fcamara" ], job_sources(:gupy).settings["company_slugs"]
+    assert_equal [ "https://clicksign.gupy.io/", "https://memed.gupy.io/" ], job_sources(:gupy).settings["board_urls"]
     assert_equal 3, job_sources(:gupy).settings["max_pages"]
   end
 
