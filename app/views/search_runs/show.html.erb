@@ -35,6 +35,48 @@
 
   <section class="rounded-[2rem] border border-white/10 bg-slate-950/65 shadow-2xl shadow-slate-950/25">
     <div class="border-b border-white/10 px-6 py-5">
+      <h2 class="text-2xl font-bold text-white">Cobertura por fonte</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-white/10 text-sm">
+        <thead class="bg-white/5 text-left text-xs uppercase tracking-[0.2em] text-slate-400">
+          <tr>
+            <th class="px-6 py-4">Fonte</th>
+            <th class="px-6 py-4">Status</th>
+            <th class="px-6 py-4">Paginas</th>
+            <th class="px-6 py-4">Candidatos</th>
+            <th class="px-6 py-4">Aceitas</th>
+            <th class="px-6 py-4">Rejeitadas</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+          <% if @source_scans.any? %>
+            <% @source_scans.each do |source_scan| %>
+              <tr>
+                <td class="px-6 py-5 text-white"><%= source_scan.job_source.name %></td>
+                <td class="px-6 py-5">
+                  <span class="rounded-full px-3 py-1 text-xs font-semibold ring-1 <%= tone_class(source_scan.status == "failed" ? :expired : :active) %>"><%= source_scan.status.humanize %></span>
+                </td>
+                <td class="px-6 py-5 text-slate-300"><%= source_scan.pages_scanned %></td>
+                <td class="px-6 py-5 text-slate-300"><%= source_scan.candidates_seen %></td>
+                <td class="px-6 py-5 text-slate-300"><%= source_scan.accepted_count + source_scan.borderline_count %></td>
+                <td class="px-6 py-5 text-slate-300"><%= source_scan.rejected_count %></td>
+              </tr>
+            <% end %>
+          <% else %>
+            <tr>
+              <td colspan="6" class="px-6 py-12 text-center">
+                <p class="text-base font-semibold text-white">Sem scans por fonte neste run.</p>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="rounded-[2rem] border border-white/10 bg-slate-950/65 shadow-2xl shadow-slate-950/25">
+    <div class="border-b border-white/10 px-6 py-5">
       <h2 class="text-2xl font-bold text-white">Itens processados</h2>
     </div>
     <div class="overflow-x-auto">

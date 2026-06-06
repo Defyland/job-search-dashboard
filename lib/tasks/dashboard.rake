@@ -16,4 +16,16 @@ namespace :dashboard do
     JobSource.seed_defaults!
     puts "Fontes sincronizadas: #{JobSource.count}"
   end
+
+  desc "Run the deterministic Rails discovery backfill"
+  task :discover, [ :window_days ] => :environment do |_task, args|
+    window_days = (args[:window_days].presence&.to_i || 20).clamp(1, 30)
+    result = JobDiscovery::Orchestrator.new(window_days:, trigger_source: :manual).call
+
+    if result.success?
+      puts "Run ##{result.search_run.id} concluido: #{result.summary.inspect}"
+    else
+      abort("Falha no backfill: #{result.errors.join(', ')}")
+    end
+  end
 end
