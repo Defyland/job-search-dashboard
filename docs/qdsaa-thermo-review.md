@@ -27,7 +27,7 @@ Verificacao executada:
 - smoke local dos novos adapters ATS:
   - `Recrutei` com URL publica real `maxxi/145107`: `1` strong em `20d`, extraido do HTML atual com link direto em `talent.recrutei.com.br`; o mesmo board `maxxi/vacancies` retornou `0` resultados por SSR, o que confirmou a necessidade do fallback por URLs ja conhecidas
   - `Inhire` com career pages `yandeh`, `deal`, `mb`, `lighthouseit`, `matera`, `dotgroup`, `inco` e `casacred`: `2` strong e `7` rejected em `20d`; os matches fortes vieram da `Lighthouse`
-  - `Lever` com boards `ciandt`, `jobgether`, `decilegroup` e `toptal`: `33` strong, `1` borderline e `261` rejected em `20d`
+  - `Lever` com boards `ciandt`, `jobgether`, `decilegroup` e `toptal`: depois do prefilter por politica completa no payload do board, o smoke atual caiu para `33` strong, `1` borderline e `0` rejected materializados em `20d`; antes disso o mesmo recorte gerava `261` rejeicoes estruturais sem ganho de cobertura
   - `Greenhouse` com boards `rdsourcing` e `fueledcareers`: `2` strong, `2` borderline e `1` rejected em `20d`
   - `Ashby` com boards `ruby-labs` e `Skydropx`: `0` matches fortes na janela e `3` rejected
 - revisao estatica dos adapters `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `Teamtailor`, `SmartRecruiters`, `ProgramaThor`, `Remotar`, `Workable`, do `JobDiscovery::Orchestrator` e da extracao reutilizavel `JobIngestions::Recorder`
@@ -97,6 +97,7 @@ S: Simplificar/Otimizar
   - `SmartRecruiters` saiu do backlog de ATS principais; o adapter usa a Posting API oficial por `company_identifier`, pagina em `limit/offset` e evita depender das paginas publicas com challenge JS
   - `Trampos` saiu de `manual_only`; o adapter usa a API publica `api/v2/opportunities`, pagina cronologicamente ate a janela expirar e, quando a candidatura é interna (`apply_url` vazio), usa a propria URL canonica da vaga como link aplicavel
   - `Coodesh` saiu de `manual_only`; o adapter usa o sitemap publico de jobs e extrai o payload SSR de cada detalhe, com fallback do link canônico quando a candidatura é interna a `coodesh.com`
+  - `Lever` deixou de materializar rejeicoes estruturais obvias; o adapter agora aplica a politica completa ainda no payload do board e so materializa matches aceitos, reduzindo drasticamente ruido operacional sem perder os matches fortes observados no smoke
   - o contrato entre catalogo e discovery nativa ficou mais forte: `JobSource` nao aceita mais `supports_backfill=true` com `adapter_key` fora do registry, e o `Orchestrator` deixou de pular silenciosamente fontes backfillable quebradas; agora ele cria `SourceScan failed` explicito para qualquer registro legado ou manual que escape dessa validacao
   - o deploy Railway deixou de falhar por `ActiveRecord::ConcurrentMigrationError` quando `web` e `worker` sobem juntos; `bin/predeploy` agora faz retry de `db:prepare`
   - o status final de `SearchRun` na descoberta Rails nao trata mais rejeicoes normais como `partial`; agora `partial` significa apenas falha real de alguma fonte
@@ -117,7 +118,8 @@ S: Simplificar/Otimizar
   - `Trampos` hoje nao oferece busca por stack confiavel na API publica; a cobertura depende do scan cronologico global e da filtragem backend por titulo/descricao
   - `Coodesh` hoje depende do payload SSR `self.__next_f.push(...)` embutido na pagina da vaga; o sitemap publico é estavel, mas qualquer mudanca forte na serializacao React Server Components exigira ajuste do parser
   - `ProgramaThor` nao expõe recencia forte nas paginas usadas; o adapter ainda depende de ordem do board e limite de paginas como fallback
-  - `Lever` hoje gera muito rejeitado estrutural porque a heuristica de pre-filtro aceita muitos titulos senior genericos antes da checagem final de stack; isso infla logs e counters sem aumentar cobertura util
+  - `APInfo` expõe busca publica por formulario, mas o endpoint respondeu com `Erro : 178.076-H - Seu limite de consultas esta temporariamente esgotado` no ambiente de desenvolvimento durante a investigacao; sem um caminho mais estavel, ela continua fora do slice nativo por enquanto
+  - `RubyOnRemote` respondeu `403` com challenge Cloudflare para `Net::HTTP`, `urllib` e user-agents de navegador nos endpoints principais e no sitemap; enquanto esse bloqueio existir para o mesmo perfil de cliente do worker, um adapter nativo seria ilusorio
   - o endpoint de ingestao Codex continua existente e util para importacao complementar, mas como nao ha mais automacao agendada nele, essa trilha pode ficar sem uso por longos periodos ate ser exercitada manualmente
 
 A: Acelerar ciclo de feedback
