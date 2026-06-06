@@ -8,7 +8,9 @@ Verificacao executada:
 - `bin/rails test`: 28 testes, 84 assertions, sem falhas
 - `bin/rubocop`: 84 arquivos inspecionados, sem offenses
 - `bin/brakeman -q -w2`: 0 warnings
-- revisao estatica dos novos adapters `Gupy` e `ProgramaThor`, do `JobDiscovery::Orchestrator` e da extracao reutilizavel `JobIngestions::Recorder`
+- smoke local do adapter `Remotar`: `18` candidatos aderentes nas primeiras `4` paginas, com links diretos para `Gupy` e `Inhire`
+- smoke local do adapter `Workable`: `0` matches fortes nas primeiras `10` paginas recentes, o que sugere baixo volume atual para o nicho monitorado
+- revisao estatica dos adapters `Gupy`, `ProgramaThor`, `Remotar`, `Workable`, do `JobDiscovery::Orchestrator` e da extracao reutilizavel `JobIngestions::Recorder`
 
 Assumptions:
 - o app continua pessoal e privado; login unico/pequena administracao continuam suficientes
@@ -48,10 +50,12 @@ S: Simplificar/Otimizar
   - a politica de exclusao e match saiu da prompt e entrou no backend (`JobDiscovery::Policy`)
   - `Gupy` agora respeita a janela temporal quando a fonte expõe `datePosted`
   - cada scan por fonte agora roda com transacao propria para evitar contador agregado adiantado em rollback
+  - `Remotar` passou a funcionar como discovery hub para ATSs externos porque a API publica entrega `externalLink`
+  - `Workable` entrou por API publica global, mas o valor real no nicho atual parece menor que o de `Remotar`
 - Risco residual real:
-  - o slice Rails ainda cobre pouco do catalogo: `Gupy` por boards ja conhecidos e `ProgramaThor` por listagem central
+  - o slice Rails ainda cobre pouco do catalogo frente ao objetivo final, apesar de agora incluir `Gupy`, `ProgramaThor`, `Remotar` e `Workable`
   - `ProgramaThor` nao expõe recencia forte nas paginas usadas; o adapter ainda depende de ordem do board e limite de paginas como fallback
-  - fontes como `Inhire`, `Sólides`, `Lever`, `Greenhouse`, `Ashby` e `Workable` ainda nao migraram para adapters nativos
+  - fontes como `Inhire`, `Sólides`, `Lever`, `Greenhouse` e `Ashby` ainda nao migraram para adapters nativos
 
 A: Acelerar ciclo de feedback
 - O ciclo local esta curto e suficiente:

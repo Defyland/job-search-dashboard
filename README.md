@@ -30,6 +30,8 @@ What Rails currently discovers by itself:
 
 - `Gupy` company boards already known to the dashboard
 - `ProgramaThor` remote senior listing pages
+- `Remotar` via public jobs API, incluindo links externos para ATSs como `Gupy` e `Inhire`
+- `Workable` via public global jobs API
 
 The rest of the catalog is still present for normalization/filtering, but not yet scanned by native Rails adapters.
 
@@ -172,7 +174,7 @@ Useful optional variables:
 
 Solid Queue tables live in the main Rails schema because this app uses a single PostgreSQL database in Railway. Recurring tasks are configured in [config/recurring.yml](config/recurring.yml). The main daily search is intentionally not run by Rails; it is driven by the Codex automation and ingested here.
 
-The deterministic Rails backfill can already be run manually from the dashboard or via `dashboard:discover`. Migrating the full daily discovery away from Codex still depends on implementing additional adapters beyond the first Gupy and ProgramaThor slice.
+The deterministic Rails backfill can already be run manually from the dashboard or via `dashboard:discover`. Migrating the full daily discovery away from Codex still depends on implementing additional adapters beyond the current `Gupy`, `ProgramaThor`, `Remotar`, and `Workable` slice.
 
 ## Review Notes
 
