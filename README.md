@@ -38,11 +38,12 @@ What Rails currently discovers by itself:
 - `Greenhouse` boards discovered from persisted `job-boards.greenhouse.io/<board>/jobs/<id>` URLs
 - `Ashby` job boards discovered from persisted `jobs.ashbyhq.com/<board>/<posting>` URLs
 - `Teamtailor` company boards discovered from persisted `*.teamtailor.com/jobs/<id>` URLs or explicit `board_urls`
+- `SmartRecruiters` companies discovered from persisted `jobs.smartrecruiters.com/<company>/<posting>` URLs or explicit `company_identifiers`
 - `ProgramaThor` remote senior listing pages
 - `Remotar` via public jobs API, incluindo links externos para ATSs como `Gupy` e `Inhire`
 - `Workable` via public global jobs API
 
-The rest of the catalog is still present for normalization/filtering, but not yet scanned by native Rails adapters. `Recrutei` deserves one operational note: the public `/<label>/vacancies` page does not reliably SSR active links, so the adapter uses direct vacancy URLs already persisted by the dashboard and can optionally be bootstrapped with `company_labels` or `vacancy_urls` in the source settings. `Sólides` also deserves one: the public `/vagas` search page is a client-side shell, so the adapter goes straight to the public `apigw.solides.com.br/jobs/v3/portal-vacancies-new/` endpoint and only accepts vacancies whose public detail page is still receiving resumes. `Teamtailor` currently covers `*.teamtailor.com` boards discovered from existing job URLs or manually seeded `board_urls`; custom domains fronted by Teamtailor but without the suffix are still outside this adapter.
+The rest of the catalog is still present for normalization/filtering, but not yet scanned by native Rails adapters. `Recrutei` deserves one operational note: the public `/<label>/vacancies` page does not reliably SSR active links, so the adapter uses direct vacancy URLs already persisted by the dashboard and can optionally be bootstrapped with `company_labels` or `vacancy_urls` in the source settings. `Sólides` also deserves one: the public `/vagas` search page is a client-side shell, so the adapter goes straight to the public `apigw.solides.com.br/jobs/v3/portal-vacancies-new/` endpoint and only accepts vacancies whose public detail page is still receiving resumes. `Teamtailor` currently covers `*.teamtailor.com` boards discovered from existing job URLs or manually seeded `board_urls`; custom domains fronted by Teamtailor but without the suffix are still outside this adapter. `SmartRecruiters` goes through the official Posting API because the public job pages are protected by a JS challenge; it trusts `active`, `releasedDate`, and `applyUrl` from the API and is seeded via `company_identifiers`.
 
 ## Main Features
 
@@ -184,7 +185,7 @@ Useful optional variables:
 
 Solid Queue tables live in the main Rails schema because this app uses a single PostgreSQL database in Railway. Recurring tasks are configured in [config/recurring.yml](config/recurring.yml). Rails now enqueues its own daily `24h` discovery run at `11:30 UTC`, which corresponds to `08:30 BRT`. The old Codex heartbeat automation was retired after this cutover, so Rails is the only scheduled daily engine.
 
-The deterministic Rails backfill can already be run manually from the dashboard or via `dashboard:discover`. The Sources screen is now the operational place to seed adapter-specific `settings` such as `board_urls`, `company_labels`, `company_slugs`, `search_queries`, and `max_pages`. Codex ingestion remains available as a complementary API path, but there is no longer a scheduled Codex automation feeding the app.
+The deterministic Rails backfill can already be run manually from the dashboard or via `dashboard:discover`. The Sources screen is now the operational place to seed adapter-specific `settings` such as `board_urls`, `company_labels`, `company_slugs`, `company_identifiers`, `search_queries`, and `max_pages`. Codex ingestion remains available as a complementary API path, but there is no longer a scheduled Codex automation feeding the app.
 
 Run status semantics for native Rails discovery are:
 
