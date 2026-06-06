@@ -37,6 +37,17 @@ module JobDiscovery
             job["openingPlain"],
             job["additionalPlain"]
           ].compact_blank.join(" ")
+          posted_text = published_at ? "publicada em #{I18n.l(published_at.to_date)}" : "sem data publica"
+          decision = policy.classify(
+            title:,
+            remote_text:,
+            location_text:,
+            description:,
+            source_slug: "lever",
+            posted_text:,
+            published_at:
+          )
+          return unless decision.accepted?
 
           build_candidate(
             source_scan:,
@@ -51,7 +62,7 @@ module JobDiscovery
             remote_text:,
             location_text:,
             description:,
-            posted_text: published_at ? "publicada em #{I18n.l(published_at.to_date)}" : "sem data publica",
+            posted_text:,
             published_at:,
             external_job_id: job["id"].to_s,
             payload: {
@@ -59,7 +70,8 @@ module JobDiscovery
               categories: job["categories"],
               workplace_type: job["workplaceType"],
               country: job["country"]
-            }
+            },
+            decision:
           )
         end
 

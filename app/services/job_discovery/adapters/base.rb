@@ -50,8 +50,8 @@ module JobDiscovery
           absolute_url(page_url, href)
         end
 
-        def build_candidate(source_scan:, source_name:, source_kind:, source_slug:, title:, company_name:, apply_url:, canonical_url:, source_url:, remote_text:, location_text:, description:, posted_text:, published_at:, external_job_id:, payload:)
-          decision = policy.classify(
+        def build_candidate(source_scan:, source_name:, source_kind:, source_slug:, title:, company_name:, apply_url:, canonical_url:, source_url:, remote_text:, location_text:, description:, posted_text:, published_at:, external_job_id:, payload:, decision: nil)
+          decision ||= policy.classify(
             title:,
             remote_text:,
             location_text:,
