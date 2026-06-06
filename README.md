@@ -1,27 +1,37 @@
 # Job Search Dashboard
 
-Rails 8 dashboard for senior Ruby, Ruby on Rails, React, and React Native job discovery. Codex keeps doing the broad search and validation work; this app becomes the durable inbox with login, dedupe, filters, pagination, run history, and direct application links.
+Rails 8 dashboard for senior Ruby, Ruby on Rails, React, and React Native job discovery. The app still accepts curated Codex ingestion, but it now also owns a first deterministic discovery slice for Rails-driven backfills and recurring scans.
 
 ## Architecture
 
-The production flow is:
+The production flows are:
 
-`Codex automation -> POST /api/v1/job_ingestions -> Rails persistence and dedupe -> private dashboard`
+- `Codex automation -> POST /api/v1/job_ingestions -> Rails persistence and dedupe -> private dashboard`
+- `Rails backfill job -> source adapters -> discovered candidates -> Rails persistence and dedupe -> private dashboard`
 
 What Rails owns:
 
 - private authenticated UI
-- canonical `Job`, `JobSource`, `SearchRun`, and `SearchRunItem` records
+- canonical `Job`, `JobSource`, `SearchRun`, `SearchRunItem`, `SourceScan`, and `DiscoveredJob` records
 - dedupe by canonical URL and fingerprint
 - user workflow state: `new_match`, `seen`, `applied`, `ignored`
 - job lifecycle state: `active`, `expired`
 - run history and raw payload traceability
+- deterministic source coverage for the adapters already implemented
+- policy enforcement for women-only exclusion, title-first seniority matching, and remote compatibility
 
 What Codex owns:
 
 - Google-style discovery across ATSs, remote platforms, and company pages
 - validation that the job is still active and directly apply-able
 - recency judgment and stack/title matching
+
+What Rails currently discovers by itself:
+
+- `Gupy` company boards already known to the dashboard
+- `ProgramaThor` remote senior listing pages
+
+The rest of the catalog is still present for normalization/filtering, but not yet scanned by native Rails adapters.
 
 ## Main Features
 
@@ -31,15 +41,19 @@ What Codex owns:
 - strong vs borderline match classification
 - source catalog for ATSs and platforms
 - secure ingestion endpoint with shared bearer token
+- deterministic backfill trigger from the Runs screen
+- persisted source-level coverage counters and discovered candidate trace
 - Solid Queue worker for async work and recurring cleanup on the primary PostgreSQL database
 - Railway-ready Dockerfile and shared `railway.json`
 
 ## Core Models
 
 - `Job`: normalized job record with stack tags, score, recency signal, apply URL, raw payload, and user lifecycle state
-- `JobSource`: ATS/platform/company catalog used for filters and normalization
-- `SearchRun`: one Codex ingestion execution window
+- `JobSource`: ATS/platform/company catalog used for filters, normalization, and backfill configuration
+- `SearchRun`: one Codex ingestion or Rails discovery execution window
 - `SearchRunItem`: per-job outcome within a run, including rejections and expirations
+- `SourceScan`: one source-level scan inside a `SearchRun`, with coverage counters
+- `DiscoveredJob`: one normalized candidate seen during a source scan before final inbox persistence
 - `User` / `Session`: operator access to the private dashboard
 
 ## Local Setup
@@ -71,6 +85,12 @@ password: change-me-now
 bin/rails test
 bin/rubocop
 bin/brakeman -q -w2
+```
+
+Manual deterministic backfill:
+
+```bash
+bin/rails "dashboard:discover[20]"
 ```
 
 ## Ingestion API
@@ -151,6 +171,8 @@ Useful optional variables:
 - `JOB_STALE_AFTER_DAYS=21`
 
 Solid Queue tables live in the main Rails schema because this app uses a single PostgreSQL database in Railway. Recurring tasks are configured in [config/recurring.yml](config/recurring.yml). The main daily search is intentionally not run by Rails; it is driven by the Codex automation and ingested here.
+
+The deterministic Rails backfill can already be run manually from the dashboard or via `dashboard:discover`. Migrating the full daily discovery away from Codex still depends on implementing additional adapters beyond the first Gupy and ProgramaThor slice.
 
 ## Review Notes
 
