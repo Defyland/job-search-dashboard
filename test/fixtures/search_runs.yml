@@ -1,0 +1,25 @@
+recent:
+  trigger_source: codex_automation
+  window_label: 24h
+  status: succeeded
+  started_at: <%= 3.hours.ago %>
+  finished_at: <%= 2.hours.ago %>
+  imported_count: 1
+  updated_count: 1
+  expired_count: 0
+  rejected_count: 0
+  summary:
+    automation_id: daily-senior-ruby-react-job-search
+
+older:
+  trigger_source: manual
+  window_label: 14d
+  status: partial
+  started_at: <%= 5.days.ago %>
+  finished_at: <%= 5.days.ago + 5.minutes %>
+  imported_count: 2
+  updated_count: 1
+  expired_count: 1
+  rejected_count: 1
+  summary:
+    trigger: backfill

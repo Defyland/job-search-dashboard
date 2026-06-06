@@ -1,0 +1,23 @@
+created_item:
+  search_run: recent
+  job: react_role
+  outcome: created
+  reason: match forte importado
+  payload:
+    source_name: Gupy
+  title: Frontend Engineer Senior
+  company_name: Memed
+  apply_url: https://memed.gupy.io/jobs/10970184
+  canonical_url: https://memed.gupy.io/jobs/10970184
+
+updated_item:
+  search_run: older
+  job: ruby_role
+  outcome: updated
+  reason: ultima validacao atualizada
+  payload:
+    source_name: Workable
+  title: Senior Ruby on Rails Developer
+  company_name: Sur
+  apply_url: https://jobs.workable.com/view/vFiUCegceZETVwRh5nAx32
+  canonical_url: https://jobs.workable.com/view/vFiUCegceZETVwRh5nAx32

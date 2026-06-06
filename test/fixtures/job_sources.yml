@@ -1,0 +1,21 @@
+gupy:
+  name: Gupy
+  slug: gupy
+  source_kind: ats
+  base_url: https://gupy.io
+  host: gupy.io
+  priority: 10
+  enabled: true
+  settings:
+    region: br
+
+workable:
+  name: Workable
+  slug: workable
+  source_kind: ats
+  base_url: https://jobs.workable.com
+  host: jobs.workable.com
+  priority: 20
+  enabled: true
+  settings:
+    region: global
