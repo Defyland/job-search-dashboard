@@ -5,7 +5,7 @@ Escopo analisado:
 
 Verificacao executada:
 - `bin/rails db:migrate`: schema atualizado com `SourceScan` e `DiscoveredJob`
-- `bin/rails test`: 48 testes, 164 assertions, sem falhas
+- `bin/rails test`: 57 testes, 206 assertions, sem falhas
 - `bin/rubocop`: 103 arquivos inspecionados, sem offenses
 - `bin/brakeman -q -w2`: 0 warnings
 - `bundle exec ruby -rfugit -e 'Fugit.parse("every day at 11:30 UTC").next_time'`: parse valido, proxima execucao em `08:30 -03:00`
@@ -86,6 +86,7 @@ S: Simplificar/Otimizar
   - a descoberta diaria nativa agora existe no proprio Rails via `config/recurring.yml`, com `DiscoverJobsRunJob(window_days: 1, trigger_source: "cron")` agendado para `08:30 BRT`
   - a administracao de fontes deixou de ser read-only; como varios adapters dependem de `JobSource.settings`, editar `board_urls`, `company_labels`, `company_slugs`, `search_queries` e `max_pages` pela UI agora fecha um gap operacional real do desenho
   - o disparo manual tambem deixou de ser tudo-ou-nada; `source_slug` agora permite rodar discovery de uma unica fonte, o que reduz feedback loop e custo operacional quando se ajusta um adapter
+  - `dashboard:seed_sources` deixou de sobrescrever configuracao manual existente; o seed agora so cria fontes novas e preenche lacunas de catalogo, preservando overrides operacionais feitos pela UI para `adapter_key`, `priority`, `enabled`, `supports_backfill`, `scan_window_days`, `host`, `base_url` e `settings`
 - Risco residual real:
   - o slice Rails ainda nao cobre todo o catalogo, apesar de agora incluir `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `Teamtailor`, `SmartRecruiters`, `ProgramaThor`, `Remotar` e `Workable`
   - `Recrutei` ja consegue revalidar e redescobrir a partir de URLs publicas conhecidas, mas o board `/<label>/vacancies` nao expõe uma listagem SSR confiavel hoje; por isso a cobertura nativa dessa fonte ainda depende de URLs ja vistas ou `settings.company_labels`/`settings.vacancy_urls`
