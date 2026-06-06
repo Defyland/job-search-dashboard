@@ -37,7 +37,11 @@ class JobSource < ApplicationRecord
   def self.seed_defaults!
     DEFAULT_CATALOG.each do |attributes|
       source = find_or_initialize_by(slug: attributes.fetch(:slug))
-      source.assign_attributes(attributes)
+      if source.new_record?
+        source.assign_attributes(attributes)
+      else
+        apply_catalog_defaults!(source, attributes)
+      end
       source.save!
     end
   end
@@ -55,6 +59,21 @@ class JobSource < ApplicationRecord
   end
 
   private
+    def self.apply_catalog_defaults!(source, attributes)
+      attributes.each do |key, value|
+        if key.to_sym == :settings
+          source.settings = default_settings(value).deep_merge(source.settings || {})
+          next
+        end
+
+        source.public_send("#{key}=", value) if source.public_send(key).nil?
+      end
+    end
+
+    def self.default_settings(value)
+      value.to_h.deep_stringify_keys
+    end
+
     def self.normalize_lookup_key(value)
       value.to_s.downcase.gsub(/[^a-z0-9]/, "")
     end
