@@ -29,6 +29,9 @@ What Codex owns:
 What Rails currently discovers by itself:
 
 - `Gupy` company boards already known to the dashboard
+- `Lever` company boards discovered from persisted `jobs.lever.co/<company>/<posting>` URLs
+- `Greenhouse` boards discovered from persisted `job-boards.greenhouse.io/<board>/jobs/<id>` URLs
+- `Ashby` job boards discovered from persisted `jobs.ashbyhq.com/<board>/<posting>` URLs
 - `ProgramaThor` remote senior listing pages
 - `Remotar` via public jobs API, incluindo links externos para ATSs como `Gupy` e `Inhire`
 - `Workable` via public global jobs API
@@ -45,6 +48,7 @@ The rest of the catalog is still present for normalization/filtering, but not ye
 - secure ingestion endpoint with shared bearer token
 - deterministic backfill trigger from the Runs screen
 - persisted source-level coverage counters and discovered candidate trace
+- persisted ATS memory: known board slugs and tokens can be rediscovered from already-ingested job URLs
 - Solid Queue worker for async work and recurring cleanup on the primary PostgreSQL database
 - Railway-ready Dockerfile and shared `railway.json`
 
@@ -172,7 +176,7 @@ Useful optional variables:
 
 Solid Queue tables live in the main Rails schema because this app uses a single PostgreSQL database in Railway. Recurring tasks are configured in [config/recurring.yml](config/recurring.yml). The main daily search is intentionally not run by Rails; it is driven by the Codex automation and ingested here.
 
-The deterministic Rails backfill can already be run manually from the dashboard or via `dashboard:discover`. Migrating the full daily discovery away from Codex still depends on implementing additional adapters beyond the current `Gupy`, `ProgramaThor`, `Remotar`, and `Workable` slice.
+The deterministic Rails backfill can already be run manually from the dashboard or via `dashboard:discover`. Migrating the full daily discovery away from Codex still depends on implementing additional adapters beyond the current `Gupy`, `Lever`, `Greenhouse`, `Ashby`, `ProgramaThor`, `Remotar`, and `Workable` slice.
 
 Run status semantics for native Rails discovery are:
 
