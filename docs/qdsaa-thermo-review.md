@@ -5,8 +5,8 @@ Escopo analisado:
 
 Verificacao executada:
 - `bin/rails db:migrate`: schema atualizado com `SourceScan` e `DiscoveredJob`
-- `bin/rails test`: 57 testes, 206 assertions, sem falhas
-- `bin/rubocop`: 103 arquivos inspecionados, sem offenses
+- `bin/rails test`: 58 testes, 207 assertions, sem falhas
+- `bin/rubocop`: 105 arquivos inspecionados, sem offenses
 - `bin/brakeman -q -w2`: 0 warnings
 - `bundle exec ruby -rfugit -e 'Fugit.parse("every day at 11:30 UTC").next_time'`: parse valido, proxima execucao em `08:30 -03:00`
 - automacao `daily-senior-ruby-react-job-search` removida do app; o heartbeat legado nao esta mais presente em `/Users/allanflavio/.codex/automations`
@@ -30,6 +30,8 @@ Verificacao executada:
   - `Run #7` confirmou scans nativos bem-sucedidos de `Gupy`, `Lever`, `Greenhouse`, `Ashby`, `ProgramaThor`, `Remotar` e `Workable`
   - `Run #7` mostrou impacto real no inbox: `Lever` com `295` candidatos vistos e `34` aceitos; `Greenhouse` com `5` candidatos vistos e `4` aceitos
   - logs do `worker` apos o deploy mostram o `Scheduler` carregando `["clear_solid_queue_finished_jobs", "daily_discovery_run", "expire_stale_jobs"]`
+  - `dashboard:seed_sources` em producao agora materializa `settings` curados para fontes antes vazias; isso ficou visivel nas telas de edicao de `Gupy`, `Lever`, `Greenhouse`, `Ashby` e `Inhire`
+  - `Run #10` validou efeito operacional dos seeds em producao: backfill source-scoped de `Inhire` terminou `Concluida`, com `10` paginas, `22` candidatos vistos, `7` aceitas e `15` rejeitadas; a fonte deixou de ficar zerada no catalogo
 - validacao operacional de admin:
   - tela de fontes agora permite editar `settings` JSON, prioridade, janela e flags de participacao, sem cirurgia manual no banco
   - o dashboard agora consegue disparar backfill por fonte especifica, entao editar `settings` e validar um adapter deixou de exigir um run global do catalogo inteiro
@@ -87,6 +89,7 @@ S: Simplificar/Otimizar
   - a administracao de fontes deixou de ser read-only; como varios adapters dependem de `JobSource.settings`, editar `board_urls`, `company_labels`, `company_slugs`, `search_queries` e `max_pages` pela UI agora fecha um gap operacional real do desenho
   - o disparo manual tambem deixou de ser tudo-ou-nada; `source_slug` agora permite rodar discovery de uma unica fonte, o que reduz feedback loop e custo operacional quando se ajusta um adapter
   - `dashboard:seed_sources` deixou de sobrescrever configuracao manual existente; o seed agora so cria fontes novas e preenche lacunas de catalogo, preservando overrides operacionais feitos pela UI para `adapter_key`, `priority`, `enabled`, `supports_backfill`, `scan_window_days`, `host`, `base_url` e `settings`
+  - o catalogo default agora tambem carrega seeds curados para fontes que antes dependiam de memoria previa ou cirurgia manual em `settings`; no estado atual isso bootstrapa `Gupy`, `Lever`, `Greenhouse`, `Ashby` e `Inhire` sem sobrescrever customizacao do operador
 - Risco residual real:
   - o slice Rails ainda nao cobre todo o catalogo, apesar de agora incluir `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `Teamtailor`, `SmartRecruiters`, `ProgramaThor`, `Remotar` e `Workable`
   - `Recrutei` ja consegue revalidar e redescobrir a partir de URLs publicas conhecidas, mas o board `/<label>/vacancies` nao expõe uma listagem SSR confiavel hoje; por isso a cobertura nativa dessa fonte ainda depende de URLs ja vistas ou `settings.company_labels`/`settings.vacancy_urls`
