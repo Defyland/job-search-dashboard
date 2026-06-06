@@ -10,6 +10,31 @@ class SourcesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "index renders latest scan coverage for each source" do
+    source_scan = SourceScan.create!(
+      search_run: search_runs(:recent),
+      job_source: job_sources(:gupy),
+      status: :succeeded,
+      pages_scanned: 4,
+      candidates_seen: 12,
+      accepted_count: 3,
+      borderline_count: 1,
+      rejected_count: 8,
+      expired_count: 0,
+      started_at: 2.hours.ago,
+      finished_at: 2.hours.ago + 3.minutes
+    )
+
+    get sources_path
+
+    assert_response :success
+    assert_match("Run ##{source_scan.search_run_id}", response.body)
+    assert_match("Paginas:", response.body)
+    assert_match("Paginas:</span> 4", response.body)
+    assert_match("Candidatos:", response.body)
+    assert_match("Candidatos:</span> 12", response.body)
+  end
+
   test "should get edit" do
     get edit_source_path(job_sources(:gupy))
     assert_response :success

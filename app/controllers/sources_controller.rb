@@ -2,10 +2,9 @@ class SourcesController < ApplicationController
   before_action :set_source, only: %i[edit update]
 
   def index
-    @sources = JobSource.left_outer_joins(:jobs)
-                        .select("job_sources.*, COUNT(jobs.id) AS jobs_count")
-                        .group("job_sources.id")
-                        .order(priority: :asc, name: :asc)
+    @sources = JobSource.order(priority: :asc, name: :asc)
+    @jobs_count_by_source_id = Job.group(:job_source_id).count
+    @latest_scan_by_source_id = latest_scans.index_by(&:job_source_id)
   end
 
   def edit
@@ -63,5 +62,12 @@ class SourcesController < ApplicationController
 
     def pretty_settings(settings)
       JSON.pretty_generate(settings.presence || {})
+    end
+
+    def latest_scans
+      latest_scan_ids = SourceScan.select("DISTINCT ON (job_source_id) id")
+                                  .order(:job_source_id, created_at: :desc, id: :desc)
+
+      SourceScan.includes(:search_run).where(id: latest_scan_ids)
     end
 end

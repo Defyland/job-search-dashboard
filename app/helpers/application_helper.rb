@@ -70,4 +70,26 @@ module ApplicationHelper
     else source.source_kind.humanize
     end
   end
+
+  def source_scan_status_label(source_scan)
+    case source_scan.status
+    when "succeeded" then "Concluida"
+    when "failed" then "Falhou"
+    when "partial" then "Parcial"
+    when "running" then "Rodando"
+    when "exhausted" then "Esgotada"
+    else source_scan.status.humanize
+    end
+  end
+
+  def source_scan_tone(source_scan)
+    case source_scan.status
+    when "failed"
+      :expired
+    when "partial"
+      :borderline
+    else
+      :active
+    end
+  end
 end

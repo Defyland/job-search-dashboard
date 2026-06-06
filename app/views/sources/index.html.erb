@@ -15,12 +15,15 @@
           <th class="px-6 py-4">Adapter</th>
           <th class="px-6 py-4">Host</th>
           <th class="px-6 py-4">Prioridade</th>
+          <th class="px-6 py-4">Ultimo scan</th>
+          <th class="px-6 py-4">Cobertura</th>
           <th class="px-6 py-4">Vagas</th>
           <th class="px-6 py-4">Acoes</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-white/5">
         <% @sources.each do |source| %>
+          <% latest_scan = @latest_scan_by_source_id[source.id] %>
           <tr>
             <td class="px-6 py-5">
               <p class="font-semibold text-white"><%= source.name %></p>
@@ -34,7 +37,31 @@
             <td class="px-6 py-5 text-slate-300"><code class="text-xs"><%= source.adapter_key %></code></td>
             <td class="px-6 py-5 text-slate-300"><%= source.host %></td>
             <td class="px-6 py-5 text-slate-300"><%= source.priority %></td>
-            <td class="px-6 py-5 text-slate-300"><%= source.attributes["jobs_count"] %></td>
+            <td class="px-6 py-5">
+              <% if latest_scan %>
+                <span class="rounded-full px-3 py-1 text-xs font-semibold ring-1 <%= tone_class(source_scan_tone(latest_scan)) %>"><%= source_scan_status_label(latest_scan) %></span>
+                <p class="mt-2 text-xs text-slate-400">
+                  <%= link_to "Run ##{latest_scan.search_run_id}", search_run_path(latest_scan.search_run), class: "font-semibold text-slate-200 hover:text-sky-200" %>
+                </p>
+                <p class="text-xs text-slate-500"><%= latest_scan.finished_at ? I18n.l(latest_scan.finished_at, format: :short) : "Sem termino" %></p>
+              <% elsif source.last_full_scan_at.present? %>
+                <span class="rounded-full px-3 py-1 text-xs font-semibold ring-1 <%= tone_class(:active) %>">Sem detalhe</span>
+                <p class="mt-2 text-xs text-slate-500"><%= I18n.l(source.last_full_scan_at, format: :short) %></p>
+              <% else %>
+                <p class="text-slate-500">Nunca rodou</p>
+              <% end %>
+            </td>
+            <td class="px-6 py-5 text-slate-300">
+              <% if latest_scan %>
+                <p><span class="text-slate-500">Paginas:</span> <%= latest_scan.pages_scanned %></p>
+                <p><span class="text-slate-500">Candidatos:</span> <%= latest_scan.candidates_seen %></p>
+                <p><span class="text-slate-500">Aceitas:</span> <%= latest_scan.accepted_count + latest_scan.borderline_count %></p>
+                <p><span class="text-slate-500">Rejeitadas:</span> <%= latest_scan.rejected_count %></p>
+              <% else %>
+                <p class="text-slate-500">Sem historico</p>
+              <% end %>
+            </td>
+            <td class="px-6 py-5 text-slate-300"><%= @jobs_count_by_source_id.fetch(source.id, 0) %></td>
             <td class="px-6 py-5">
               <div class="flex flex-wrap gap-2">
                 <%= link_to "Editar", edit_source_path(source), class: "inline-flex rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/5" %>
