@@ -2,7 +2,7 @@ class JobSource < ApplicationRecord
   DEFAULT_CATALOG = [
     { name: "Gupy", slug: "gupy", source_kind: :ats, base_url: "https://gupy.io", host: "gupy.io", priority: 10, adapter_key: "gupy_company_boards", supports_backfill: true, scan_window_days: 20 },
     { name: "Sólides", slug: "solides", source_kind: :ats, base_url: "https://vagas.solides.com.br", host: "vagas.solides.com.br", priority: 20, adapter_key: "manual_only", supports_backfill: false, scan_window_days: 20 },
-    { name: "Recrutei", slug: "recrutei", source_kind: :ats, base_url: "https://jobs.recrutei.com.br", host: "jobs.recrutei.com.br", priority: 20, adapter_key: "manual_only", supports_backfill: false, scan_window_days: 20 },
+    { name: "Recrutei", slug: "recrutei", source_kind: :ats, base_url: "https://jobs.recrutei.com.br", host: "jobs.recrutei.com.br", priority: 20, adapter_key: "recrutei_company_boards", supports_backfill: true, scan_window_days: 20 },
     { name: "Inhire", slug: "inhire", source_kind: :ats, base_url: "https://inhire.app", host: "inhire.app", priority: 20, adapter_key: "inhire_career_pages", supports_backfill: true, scan_window_days: 20 },
     { name: "Lever", slug: "lever", source_kind: :ats, base_url: "https://jobs.lever.co", host: "jobs.lever.co", priority: 20, adapter_key: "lever_company_boards", supports_backfill: true, scan_window_days: 20 },
     { name: "Greenhouse", slug: "greenhouse", source_kind: :ats, base_url: "https://job-boards.greenhouse.io", host: "job-boards.greenhouse.io", priority: 20, adapter_key: "greenhouse_boards_api", supports_backfill: true, scan_window_days: 20 },
