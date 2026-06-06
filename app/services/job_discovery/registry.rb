@@ -2,7 +2,9 @@ module JobDiscovery
   class Registry
     ADAPTERS = {
       "gupy_company_boards" => JobDiscovery::Adapters::GupyCompanyBoardsAdapter,
-      "programathor_remote_senior" => JobDiscovery::Adapters::ProgramathorRemoteSeniorAdapter
+      "programathor_remote_senior" => JobDiscovery::Adapters::ProgramathorRemoteSeniorAdapter,
+      "remotar_jobs_api" => JobDiscovery::Adapters::RemotarJobsApiAdapter,
+      "workable_global_api" => JobDiscovery::Adapters::WorkableGlobalApiAdapter
     }.freeze
 
     def fetch(adapter_key)
