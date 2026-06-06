@@ -1,0 +1,36 @@
+<% content_for :title, "Fontes" %>
+
+<section class="rounded-[2rem] border border-white/10 bg-slate-950/65 shadow-2xl shadow-slate-950/25">
+  <div class="border-b border-white/10 px-6 py-5">
+    <h1 class="text-3xl font-extrabold tracking-tight text-white">Catalogo de fontes</h1>
+    <p class="mt-2 text-sm text-slate-400">A automacao envia as vagas e o dashboard organiza por fonte conhecida.</p>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-white/10 text-sm">
+      <thead class="bg-white/5 text-left text-xs uppercase tracking-[0.2em] text-slate-400">
+        <tr>
+          <th class="px-6 py-4">Fonte</th>
+          <th class="px-6 py-4">Tipo</th>
+          <th class="px-6 py-4">Host</th>
+          <th class="px-6 py-4">Prioridade</th>
+          <th class="px-6 py-4">Vagas</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-white/5">
+        <% @sources.each do |source| %>
+          <tr>
+            <td class="px-6 py-5">
+              <p class="font-semibold text-white"><%= source.name %></p>
+              <p class="text-xs text-slate-500"><%= source.base_url %></p>
+            </td>
+            <td class="px-6 py-5 text-slate-300"><%= source_kind_label(source) %></td>
+            <td class="px-6 py-5 text-slate-300"><%= source.host %></td>
+            <td class="px-6 py-5 text-slate-300"><%= source.priority %></td>
+            <td class="px-6 py-5 text-slate-300"><%= source.attributes["jobs_count"] %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</section>

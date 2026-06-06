@@ -1,0 +1,48 @@
+<% content_for :title, "Runs" %>
+
+<section class="rounded-[2rem] border border-white/10 bg-slate-950/65 shadow-2xl shadow-slate-950/25">
+  <div class="border-b border-white/10 px-6 py-5">
+    <h1 class="text-3xl font-extrabold tracking-tight text-white">Historico de ingestao</h1>
+    <p class="mt-2 text-sm text-slate-400">Cada run representa um envio do Codex para o dashboard.</p>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-white/10 text-sm">
+      <thead class="bg-white/5 text-left text-xs uppercase tracking-[0.2em] text-slate-400">
+        <tr>
+          <th class="px-6 py-4">Run</th>
+          <th class="px-6 py-4">Janela</th>
+          <th class="px-6 py-4">Status</th>
+          <th class="px-6 py-4">Contadores</th>
+          <th class="px-6 py-4">Inicio</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-white/5">
+        <% if @search_runs.any? %>
+          <% @search_runs.each do |search_run| %>
+            <tr>
+              <td class="px-6 py-5">
+                <%= link_to "Run ##{search_run.id}", search_run_path(search_run), class: "font-bold text-white hover:text-sky-200" %>
+              </td>
+              <td class="px-6 py-5 text-slate-300"><%= search_run.window_label %></td>
+              <td class="px-6 py-5">
+                <span class="rounded-full px-3 py-1 text-xs font-semibold ring-1 <%= tone_class(search_run.status == "failed" ? :expired : :active) %>"><%= run_status_label(search_run) %></span>
+              </td>
+              <td class="px-6 py-5 text-slate-300">
+                <%= search_run.imported_count %> novas · <%= search_run.updated_count %> atualizadas · <%= search_run.expired_count %> expiradas · <%= search_run.rejected_count %> rejeitadas
+              </td>
+              <td class="px-6 py-5 text-slate-400"><%= l(search_run.started_at, format: :short) %></td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="5" class="px-6 py-12 text-center">
+              <p class="text-base font-semibold text-white">Nenhuma ingestao registrada ainda.</p>
+              <p class="mt-2 text-sm text-slate-400">Os runs vao aparecer aqui quando a automacao do Codex enviar vagas para o dashboard.</p>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</section>

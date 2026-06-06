@@ -1,0 +1,79 @@
+<% content_for :title, "Run ##{@search_run.id}" %>
+
+<section class="space-y-6">
+  <article class="rounded-[2rem] border border-white/10 bg-slate-950/65 p-8 shadow-2xl shadow-slate-950/25">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <p class="text-xs uppercase tracking-[0.28em] text-slate-500">Run #<%= @search_run.id %></p>
+        <h1 class="mt-2 text-4xl font-extrabold tracking-tight text-white"><%= @search_run.window_label %></h1>
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <span class="rounded-full px-3 py-1 text-xs font-semibold ring-1 <%= tone_class(@search_run.status == "failed" ? :expired : :active) %>"><%= run_status_label(@search_run) %></span>
+        <span class="rounded-full border border-white/10 px-3 py-1 text-xs font-semibold text-slate-200"><%= @search_run.trigger_source.humanize %></span>
+      </div>
+    </div>
+
+    <div class="mt-6 grid gap-4 md:grid-cols-4">
+      <div class="rounded-3xl border border-white/10 bg-white/5 p-4">
+        <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Novas</p>
+        <p class="mt-2 text-2xl font-extrabold text-white"><%= @search_run.imported_count %></p>
+      </div>
+      <div class="rounded-3xl border border-white/10 bg-white/5 p-4">
+        <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Atualizadas</p>
+        <p class="mt-2 text-2xl font-extrabold text-white"><%= @search_run.updated_count %></p>
+      </div>
+      <div class="rounded-3xl border border-white/10 bg-white/5 p-4">
+        <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Expiradas</p>
+        <p class="mt-2 text-2xl font-extrabold text-white"><%= @search_run.expired_count %></p>
+      </div>
+      <div class="rounded-3xl border border-white/10 bg-white/5 p-4">
+        <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Rejeitadas</p>
+        <p class="mt-2 text-2xl font-extrabold text-white"><%= @search_run.rejected_count %></p>
+      </div>
+    </div>
+  </article>
+
+  <section class="rounded-[2rem] border border-white/10 bg-slate-950/65 shadow-2xl shadow-slate-950/25">
+    <div class="border-b border-white/10 px-6 py-5">
+      <h2 class="text-2xl font-bold text-white">Itens processados</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-white/10 text-sm">
+        <thead class="bg-white/5 text-left text-xs uppercase tracking-[0.2em] text-slate-400">
+          <tr>
+            <th class="px-6 py-4">Outcome</th>
+            <th class="px-6 py-4">Vaga</th>
+            <th class="px-6 py-4">Empresa</th>
+            <th class="px-6 py-4">Motivo</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+          <% if @items.any? %>
+            <% @items.each do |item| %>
+              <tr>
+                <td class="px-6 py-5">
+                  <span class="rounded-full px-3 py-1 text-xs font-semibold ring-1 <%= tone_class(item.outcome == "rejected" ? :borderline : item.outcome == "expired" ? :expired : :active) %>"><%= item.outcome.humanize %></span>
+                </td>
+                <td class="px-6 py-5 text-white">
+                  <% if item.job %>
+                    <%= link_to item.title.presence || item.job.title, job_path(item.job), class: "font-semibold hover:text-sky-200" %>
+                  <% else %>
+                    <%= item.title.presence || "Sem titulo" %>
+                  <% end %>
+                </td>
+                <td class="px-6 py-5 text-slate-300"><%= item.company_name.presence || item.job&.company_name %></td>
+                <td class="px-6 py-5 text-slate-400"><%= item.reason %></td>
+              </tr>
+            <% end %>
+          <% else %>
+            <tr>
+              <td colspan="4" class="px-6 py-12 text-center">
+                <p class="text-base font-semibold text-white">Este run ainda nao registrou itens processados.</p>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
