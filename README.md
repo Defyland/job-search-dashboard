@@ -7,7 +7,7 @@ Rails 8 dashboard for senior Ruby, Ruby on Rails, React, and React Native job di
 The production flows are:
 
 - `Codex automation -> POST /api/v1/job_ingestions -> Rails persistence and dedupe -> private dashboard`
-- `Rails backfill job -> source adapters -> discovered candidates -> Rails persistence and dedupe -> private dashboard`
+- `Rails recurring/manual discovery -> source adapters -> discovered candidates -> Rails persistence and dedupe -> private dashboard`
 
 What Rails owns:
 
@@ -26,6 +26,7 @@ What Codex owns:
 - Google-style discovery across ATSs, remote platforms, and company pages
 - validation that the job is still active and directly apply-able
 - recency judgment and stack/title matching
+- optional complementary ingestion when you want to compare or enrich Rails-native discovery
 
 What Rails currently discovers by itself:
 
@@ -36,11 +37,12 @@ What Rails currently discovers by itself:
 - `Lever` company boards discovered from persisted `jobs.lever.co/<company>/<posting>` URLs
 - `Greenhouse` boards discovered from persisted `job-boards.greenhouse.io/<board>/jobs/<id>` URLs
 - `Ashby` job boards discovered from persisted `jobs.ashbyhq.com/<board>/<posting>` URLs
+- `Teamtailor` company boards discovered from persisted `*.teamtailor.com/jobs/<id>` URLs or explicit `board_urls`
 - `ProgramaThor` remote senior listing pages
 - `Remotar` via public jobs API, incluindo links externos para ATSs como `Gupy` e `Inhire`
 - `Workable` via public global jobs API
 
-The rest of the catalog is still present for normalization/filtering, but not yet scanned by native Rails adapters. `Recrutei` deserves one operational note: the public `/<label>/vacancies` page does not reliably SSR active links, so the adapter uses direct vacancy URLs already persisted by the dashboard and can optionally be bootstrapped with `company_labels` or `vacancy_urls` in the source settings. `Sólides` also deserves one: the public `/vagas` search page is a client-side shell, so the adapter goes straight to the public `apigw.solides.com.br/jobs/v3/portal-vacancies-new/` endpoint and only accepts vacancies whose public detail page is still receiving resumes.
+The rest of the catalog is still present for normalization/filtering, but not yet scanned by native Rails adapters. `Recrutei` deserves one operational note: the public `/<label>/vacancies` page does not reliably SSR active links, so the adapter uses direct vacancy URLs already persisted by the dashboard and can optionally be bootstrapped with `company_labels` or `vacancy_urls` in the source settings. `Sólides` also deserves one: the public `/vagas` search page is a client-side shell, so the adapter goes straight to the public `apigw.solides.com.br/jobs/v3/portal-vacancies-new/` endpoint and only accepts vacancies whose public detail page is still receiving resumes. `Teamtailor` currently covers `*.teamtailor.com` boards discovered from existing job URLs or manually seeded `board_urls`; custom domains fronted by Teamtailor but without the suffix are still outside this adapter.
 
 ## Main Features
 
@@ -51,6 +53,7 @@ The rest of the catalog is still present for normalization/filtering, but not ye
 - source catalog for ATSs and platforms
 - secure ingestion endpoint with shared bearer token
 - deterministic backfill trigger from the Runs screen
+- native daily discovery scheduled through Solid Queue recurring tasks at `08:30 BRT` (`11:30 UTC`)
 - persisted source-level coverage counters and discovered candidate trace
 - persisted ATS memory: known board slugs, tokens, and public career pages can be rediscovered from already-ingested job URLs
 - Solid Queue worker for async work and recurring cleanup on the primary PostgreSQL database
@@ -178,9 +181,9 @@ Useful optional variables:
 - `JOB_CONCURRENCY=1`
 - `JOB_STALE_AFTER_DAYS=21`
 
-Solid Queue tables live in the main Rails schema because this app uses a single PostgreSQL database in Railway. Recurring tasks are configured in [config/recurring.yml](config/recurring.yml). The main daily search is intentionally not run by Rails; it is driven by the Codex automation and ingested here.
+Solid Queue tables live in the main Rails schema because this app uses a single PostgreSQL database in Railway. Recurring tasks are configured in [config/recurring.yml](config/recurring.yml). Rails now enqueues its own daily `24h` discovery run at `11:30 UTC`, which corresponds to `08:30 BRT`.
 
-The deterministic Rails backfill can already be run manually from the dashboard or via `dashboard:discover`. Migrating the full daily discovery away from Codex still depends on implementing additional adapters beyond the current `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `ProgramaThor`, `Remotar`, and `Workable` slice.
+The deterministic Rails backfill can already be run manually from the dashboard or via `dashboard:discover`. Codex ingestion remains available as a complementary path, but the native daily run now covers the current `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `Teamtailor`, `ProgramaThor`, `Remotar`, and `Workable` slice.
 
 Run status semantics for native Rails discovery are:
 

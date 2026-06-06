@@ -5,19 +5,21 @@ Escopo analisado:
 
 Verificacao executada:
 - `bin/rails db:migrate`: schema atualizado com `SourceScan` e `DiscoveredJob`
-- `bin/rails test`: 41 testes, 139 assertions, sem falhas
-- `bin/rubocop`: 98 arquivos inspecionados, sem offenses
+- `bin/rails test`: 48 testes, 164 assertions, sem falhas
+- `bin/rubocop`: 103 arquivos inspecionados, sem offenses
 - `bin/brakeman -q -w2`: 0 warnings
+- `bundle exec ruby -rfugit -e 'Fugit.parse("every day at 11:30 UTC").next_time'`: parse valido, proxima execucao em `08:30 -03:00`
 - smoke local do adapter `Remotar`: `18` candidatos aderentes nas primeiras `4` paginas, com links diretos para `Gupy` e `Inhire`
 - smoke local do adapter `Workable`: `0` matches fortes nas primeiras `10` paginas recentes, o que sugere baixo volume atual para o nicho monitorado
 - smoke local do adapter `Sólides`: `3` borderline e `0` strong em `20d` com as queries padrao `react`, `react native`, `ruby` e `rails`; a integracao publica esta funcional, mas o indice atual da fonte parece entregar mais titulos senior genericos do que titulos com stack explicita
+- smoke local do adapter `Teamtailor`: `0` candidatos em `20d` no board publico `career.teamtailor.com`; a integracao de paginação/extração ficou funcional, mas o board atual nao expõe titulos aderentes ao recorte monitorado
 - smoke local dos novos adapters ATS:
   - `Recrutei` com URL publica real `maxxi/145107`: `1` strong em `20d`, extraido do HTML atual com link direto em `talent.recrutei.com.br`; o mesmo board `maxxi/vacancies` retornou `0` resultados por SSR, o que confirmou a necessidade do fallback por URLs ja conhecidas
   - `Inhire` com career pages `yandeh`, `deal`, `mb`, `lighthouseit`, `matera`, `dotgroup`, `inco` e `casacred`: `2` strong e `7` rejected em `20d`; os matches fortes vieram da `Lighthouse`
   - `Lever` com boards `ciandt`, `jobgether`, `decilegroup` e `toptal`: `33` strong, `1` borderline e `261` rejected em `20d`
   - `Greenhouse` com boards `rdsourcing` e `fueledcareers`: `2` strong, `2` borderline e `1` rejected em `20d`
   - `Ashby` com boards `ruby-labs` e `Skydropx`: `0` matches fortes na janela e `3` rejected
-- revisao estatica dos adapters `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `ProgramaThor`, `Remotar`, `Workable`, do `JobDiscovery::Orchestrator` e da extracao reutilizavel `JobIngestions::Recorder`
+- revisao estatica dos adapters `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `Teamtailor`, `ProgramaThor`, `Remotar`, `Workable`, do `JobDiscovery::Orchestrator` e da extracao reutilizavel `JobIngestions::Recorder`
 - validacao em producao no Railway:
   - deploy novo do `web` e `worker` com `bin/predeploy`
   - trigger autenticado de `POST /search_runs`
@@ -70,15 +72,18 @@ S: Simplificar/Otimizar
   - cada scan por fonte agora roda com transacao propria para evitar contador agregado adiantado em rollback
   - `Remotar` passou a funcionar como discovery hub para ATSs externos porque a API publica entrega `externalLink`
   - `Workable` entrou por API publica global, mas o valor real no nicho atual parece menor que o de `Remotar`
+  - `Teamtailor` saiu do gap principal; o adapter usa boards `*.teamtailor.com/jobs`, paginação por `show_more` e validacao da propria pagina da vaga antes de aceitar a candidatura na URL canonica
   - o deploy Railway deixou de falhar por `ActiveRecord::ConcurrentMigrationError` quando `web` e `worker` sobem juntos; `bin/predeploy` agora faz retry de `db:prepare`
   - o status final de `SearchRun` na descoberta Rails nao trata mais rejeicoes normais como `partial`; agora `partial` significa apenas falha real de alguma fonte
+  - a descoberta diaria nativa agora existe no proprio Rails via `config/recurring.yml`, com `DiscoverJobsRunJob(window_days: 1, trigger_source: "cron")` agendado para `08:30 BRT`
 - Risco residual real:
-  - o slice Rails ainda nao cobre todo o catalogo, apesar de agora incluir `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `ProgramaThor`, `Remotar` e `Workable`
+  - o slice Rails ainda nao cobre todo o catalogo, apesar de agora incluir `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `Teamtailor`, `ProgramaThor`, `Remotar` e `Workable`
   - `Recrutei` ja consegue revalidar e redescobrir a partir de URLs publicas conhecidas, mas o board `/<label>/vacancies` nao expõe uma listagem SSR confiavel hoje; por isso a cobertura nativa dessa fonte ainda depende de URLs ja vistas ou `settings.company_labels`/`settings.vacancy_urls`
   - `Sólides` usa uma busca publica orientada por termo, nao um board oficial por empresa; a cobertura atual depende da qualidade das queries configuradas e hoje a fonte parece produzir pouco titulo senior com stack explicita, apesar de a integracao estar saudavel
+  - `Teamtailor` hoje cobre boards `*.teamtailor.com`, mas nao consegue redescobrir boards servidos por dominios customizados sem o sufixo `teamtailor.com`
   - `ProgramaThor` nao expõe recencia forte nas paginas usadas; o adapter ainda depende de ordem do board e limite de paginas como fallback
   - `Lever` hoje gera muito rejeitado estrutural porque a heuristica de pre-filtro aceita muitos titulos senior genericos antes da checagem final de stack; isso infla logs e counters sem aumentar cobertura util
-  - `Teamtailor` ainda nao migrou para adapter nativo
+  - enquanto a automacao Codex externa continuar ativa ao mesmo tempo que o scheduler Rails, o sistema tera dois caminhos diarios de entrada; o dedupe segura o inbox, mas o historico de runs fica mais ruidoso ate a automacao antiga ser desligada
 
 A: Acelerar ciclo de feedback
 - O ciclo local esta curto e suficiente:
@@ -92,12 +97,12 @@ A: Acelerar ciclo de feedback
 
 A: Automatizar por ultimo
 - Agora:
-  - automacao Codex diaria continua publicando e ingerindo via `POST /api/v1/job_ingestions`
-  - o Rails ja consegue fazer backfill deterministico manual com `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `ProgramaThor`, `Remotar` e `Workable`
-  - Railway roda `web` e `worker`, com tarefas recorrentes internas do Solid Queue para limpeza/expiracao
+  - o Rails ja consegue fazer backfill deterministico manual com `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `Teamtailor`, `ProgramaThor`, `Remotar` e `Workable`
+  - Railway roda `web` e `worker`, com tarefas recorrentes internas do Solid Queue para limpeza/expiracao e descoberta diaria de `24h` as `08:30 BRT`
+  - a automacao Codex diaria ainda pode publicar e ingerir via `POST /api/v1/job_ingestions`, mas agora virou caminho complementar, nao mais o unico motor do diario
 - Adiado com intencao:
   - cobrir o resto do catalogo com adapters nativos
-  - trocar a busca diaria principal do Codex por cron Rails quando a cobertura native atingir o catalogo minimo
+  - desligar a automacao Codex antiga depois da transicao operacional
   - candidatura automatica
   - notificacoes externas adicionais
 
