@@ -52,6 +52,7 @@ The rest of the catalog is still present for normalization/filtering, but not ye
 - filterable and paginated job radar
 - strong vs borderline match classification
 - source catalog for ATSs and platforms
+- source catalog with latest scan status and coverage counters
 - editable source administration, including validated JSON `settings` for adapters that need seeded boards/slugs/queries
 - secure ingestion endpoint with shared bearer token
 - deterministic backfill trigger from the Runs screen
