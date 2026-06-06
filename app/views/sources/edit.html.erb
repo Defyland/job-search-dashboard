@@ -1,0 +1,74 @@
+<% content_for :title, "Editar fonte" %>
+
+<section class="rounded-[2rem] border border-white/10 bg-slate-950/65 p-6 shadow-2xl shadow-slate-950/25">
+  <div class="flex flex-col gap-2 border-b border-white/10 pb-5 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 class="text-3xl font-extrabold tracking-tight text-white">Editar fonte</h1>
+      <p class="mt-2 text-sm text-slate-400">Ajuste o adapter e os `settings` sem editar o banco manualmente.</p>
+    </div>
+    <%= link_to "Voltar", sources_path, class: "inline-flex rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-white/5" %>
+  </div>
+
+  <%= form_with model: @source, scope: :job_source, url: source_path(@source), method: :patch, class: "mt-6 grid gap-5 md:grid-cols-2" do |form| %>
+    <div>
+      <%= form.label :name, "Nome", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+      <%= form.text_field :name, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
+    </div>
+
+    <div>
+      <label class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Slug</label>
+      <div class="mt-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300"><%= @source.slug %></div>
+    </div>
+
+    <div>
+      <%= form.label :base_url, "Base URL", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+      <%= form.text_field :base_url, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
+    </div>
+
+    <div>
+      <%= form.label :host, "Host", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+      <%= form.text_field :host, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
+    </div>
+
+    <div>
+      <%= form.label :adapter_key, "Adapter", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+      <%= form.text_field :adapter_key, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
+    </div>
+
+    <div class="grid gap-5 sm:grid-cols-2">
+      <div>
+        <%= form.label :priority, "Prioridade", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+        <%= form.number_field :priority, min: 0, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
+      </div>
+      <div>
+        <%= form.label :scan_window_days, "Janela (dias)", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+        <%= form.number_field :scan_window_days, min: 1, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-3 rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
+      <label class="inline-flex items-center gap-3 text-sm text-slate-200">
+        <%= form.check_box :enabled, class: "h-4 w-4 rounded border-white/20 bg-slate-950/60 text-sky-400" %>
+        Fonte ativa
+      </label>
+      <label class="inline-flex items-center gap-3 text-sm text-slate-200">
+        <%= form.check_box :supports_backfill, class: "h-4 w-4 rounded border-white/20 bg-slate-950/60 text-sky-400" %>
+        Participa do backfill/cron
+      </label>
+    </div>
+
+    <div class="md:col-span-2">
+      <%= form.label :settings_json, "Settings (JSON)", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+      <%= form.text_area :settings_json, value: @settings_json, rows: 18, class: "mt-2 w-full rounded-[1.5rem] border border-white/10 bg-slate-950/80 px-4 py-4 font-mono text-sm text-slate-100" %>
+      <p class="mt-2 text-xs text-slate-500">Use um objeto JSON. Ex.: `{\"board_urls\":[\"https://career.teamtailor.com\"],\"max_pages\":2}`.</p>
+      <% if @source.errors[:settings].any? %>
+        <p class="mt-2 text-sm font-semibold text-rose-300"><%= @source.errors[:settings].to_sentence %></p>
+      <% end %>
+    </div>
+
+    <div class="md:col-span-2 flex flex-wrap gap-3 pt-2">
+      <%= form.submit "Salvar fonte", class: "rounded-2xl bg-sky-400 px-5 py-3 text-sm font-bold text-slate-950 hover:bg-sky-300" %>
+      <%= link_to "Cancelar", sources_path, class: "rounded-2xl border border-white/10 px-5 py-3 text-sm font-semibold text-slate-200 hover:bg-white/5" %>
+    </div>
+  <% end %>
+</section>

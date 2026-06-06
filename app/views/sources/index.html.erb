@@ -3,7 +3,7 @@
 <section class="rounded-[2rem] border border-white/10 bg-slate-950/65 shadow-2xl shadow-slate-950/25">
   <div class="border-b border-white/10 px-6 py-5">
     <h1 class="text-3xl font-extrabold tracking-tight text-white">Catalogo de fontes</h1>
-    <p class="mt-2 text-sm text-slate-400">A automacao envia as vagas e o dashboard organiza por fonte conhecida.</p>
+    <p class="mt-2 text-sm text-slate-400">As fontes nativas do Rails podem ser ajustadas aqui, inclusive `settings` usados pelos adapters.</p>
   </div>
 
   <div class="overflow-x-auto">
@@ -12,9 +12,11 @@
         <tr>
           <th class="px-6 py-4">Fonte</th>
           <th class="px-6 py-4">Tipo</th>
+          <th class="px-6 py-4">Adapter</th>
           <th class="px-6 py-4">Host</th>
           <th class="px-6 py-4">Prioridade</th>
           <th class="px-6 py-4">Vagas</th>
+          <th class="px-6 py-4">Acoes</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-white/5">
@@ -23,11 +25,19 @@
             <td class="px-6 py-5">
               <p class="font-semibold text-white"><%= source.name %></p>
               <p class="text-xs text-slate-500"><%= source.base_url %></p>
+              <div class="mt-2 flex flex-wrap gap-2">
+                <span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-slate-200"><%= source.enabled? ? "Ativa" : "Pausada" %></span>
+                <span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-slate-200"><%= source.supports_backfill? ? "Backfill" : "Manual" %></span>
+              </div>
             </td>
             <td class="px-6 py-5 text-slate-300"><%= source_kind_label(source) %></td>
+            <td class="px-6 py-5 text-slate-300"><code class="text-xs"><%= source.adapter_key %></code></td>
             <td class="px-6 py-5 text-slate-300"><%= source.host %></td>
             <td class="px-6 py-5 text-slate-300"><%= source.priority %></td>
             <td class="px-6 py-5 text-slate-300"><%= source.attributes["jobs_count"] %></td>
+            <td class="px-6 py-5">
+              <%= link_to "Editar", edit_source_path(source), class: "inline-flex rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/5" %>
+            </td>
           </tr>
         <% end %>
       </tbody>
