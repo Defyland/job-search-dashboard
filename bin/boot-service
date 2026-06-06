@@ -1,0 +1,16 @@
+#!/bin/bash -e
+
+role="${APP_SERVICE_ROLE:-web}"
+
+case "$role" in
+  web)
+    exec ./bin/rails server -b 0.0.0.0 -p "${PORT:-3000}"
+    ;;
+  worker)
+    exec ./bin/jobs
+    ;;
+  *)
+    echo "Unknown APP_SERVICE_ROLE: $role" >&2
+    exit 1
+    ;;
+esac
