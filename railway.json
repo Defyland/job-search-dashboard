@@ -5,6 +5,6 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "preDeployCommand": "bundle exec rails db:prepare && bundle exec rails dashboard:seed_sources && bundle exec rails dashboard:bootstrap_admin"
+    "preDeployCommand": "./bin/predeploy"
   }
 }

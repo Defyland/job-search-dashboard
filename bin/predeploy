@@ -1,0 +1,27 @@
+#!/bin/bash
+set -euo pipefail
+
+attempt=1
+max_attempts=6
+
+while true; do
+  if output=$(bundle exec rails db:prepare 2>&1); then
+    printf '%s\n' "$output"
+    break
+  fi
+
+  printf '%s\n' "$output" >&2
+
+  if printf '%s' "$output" | grep -q "ActiveRecord::ConcurrentMigrationError" && [ "$attempt" -lt "$max_attempts" ]; then
+    sleep_seconds=$((attempt * 5))
+    echo "db:prepare concorrente detectado; aguardando ${sleep_seconds}s para tentar novamente..." >&2
+    sleep "$sleep_seconds"
+    attempt=$((attempt + 1))
+    continue
+  fi
+
+  exit 1
+done
+
+bundle exec rails dashboard:seed_sources
+bundle exec rails dashboard:bootstrap_admin
