@@ -109,7 +109,7 @@ class JobSource < ApplicationRecord
     },
     { name: "Remotar", slug: "remotar", source_kind: :platform, base_url: "https://remotar.com.br", host: "remotar.com.br", priority: 30, adapter_key: "remotar_jobs_api", supports_backfill: true, scan_window_days: 20 },
     { name: "ProgramaThor", slug: "programathor", source_kind: :platform, base_url: "https://programathor.com.br", host: "programathor.com.br", priority: 30, adapter_key: "programathor_remote_senior", supports_backfill: true, scan_window_days: 20 },
-    { name: "Coodesh", slug: "coodesh", source_kind: :platform, base_url: "https://coodesh.com", host: "coodesh.com", priority: 30, adapter_key: "manual_only", supports_backfill: false, scan_window_days: 20 },
+    { name: "Coodesh", slug: "coodesh", source_kind: :platform, base_url: "https://coodesh.com", host: "coodesh.com", priority: 30, adapter_key: "coodesh_jobs_sitemap", supports_backfill: true, scan_window_days: 20 },
     { name: "Trampos", slug: "trampos", source_kind: :platform, base_url: "https://trampos.co", host: "trampos.co", priority: 30, adapter_key: "trampos_opportunities_api", supports_backfill: true, scan_window_days: 20 },
     { name: "APInfo", slug: "apinfo", source_kind: :platform, base_url: "https://apinfo.com", host: "apinfo.com", priority: 40, adapter_key: "manual_only", supports_backfill: false, scan_window_days: 20 },
     { name: "RubyOnRemote", slug: "rubyonremote", source_kind: :platform, base_url: "https://rubyonremote.com", host: "rubyonremote.com", priority: 40, adapter_key: "manual_only", supports_backfill: false, scan_window_days: 20 }
