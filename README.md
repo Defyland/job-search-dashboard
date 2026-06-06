@@ -55,6 +55,7 @@ The rest of the catalog is still present for normalization/filtering, but not ye
 - editable source administration, including validated JSON `settings` for adapters that need seeded boards/slugs/queries
 - secure ingestion endpoint with shared bearer token
 - deterministic backfill trigger from the Runs screen
+- source-scoped backfill triggers from the Runs and Sources screens
 - native daily discovery scheduled through Solid Queue recurring tasks at `08:30 BRT` (`11:30 UTC`)
 - persisted source-level coverage counters and discovered candidate trace
 - persisted ATS memory: known board slugs, tokens, and public career pages can be rediscovered from already-ingested job URLs
@@ -185,7 +186,7 @@ Useful optional variables:
 
 Solid Queue tables live in the main Rails schema because this app uses a single PostgreSQL database in Railway. Recurring tasks are configured in [config/recurring.yml](config/recurring.yml). Rails now enqueues its own daily `24h` discovery run at `11:30 UTC`, which corresponds to `08:30 BRT`. The old Codex heartbeat automation was retired after this cutover, so Rails is the only scheduled daily engine.
 
-The deterministic Rails backfill can already be run manually from the dashboard or via `dashboard:discover`. The Sources screen is now the operational place to seed adapter-specific `settings` such as `board_urls`, `company_labels`, `company_slugs`, `company_identifiers`, `search_queries`, and `max_pages`. Codex ingestion remains available as a complementary API path, but there is no longer a scheduled Codex automation feeding the app.
+The deterministic Rails backfill can already be run manually from the dashboard or via `dashboard:discover`. The Runs screen can launch either a full backfill or a source-scoped backfill, and the Sources screen can do the same right after you change adapter settings. The Sources screen is now the operational place to seed adapter-specific `settings` such as `board_urls`, `company_labels`, `company_slugs`, `company_identifiers`, `search_queries`, and `max_pages`. Codex ingestion remains available as a complementary API path, but there is no longer a scheduled Codex automation feeding the app.
 
 Run status semantics for native Rails discovery are:
 

@@ -32,6 +32,7 @@ Verificacao executada:
   - logs do `worker` apos o deploy mostram o `Scheduler` carregando `["clear_solid_queue_finished_jobs", "daily_discovery_run", "expire_stale_jobs"]`
 - validacao operacional de admin:
   - tela de fontes agora permite editar `settings` JSON, prioridade, janela e flags de participacao, sem cirurgia manual no banco
+  - o dashboard agora consegue disparar backfill por fonte especifica, entao editar `settings` e validar um adapter deixou de exigir um run global do catalogo inteiro
 
 Assumptions:
 - o app continua pessoal e privado; login unico/pequena administracao continuam suficientes
@@ -84,6 +85,7 @@ S: Simplificar/Otimizar
   - o status final de `SearchRun` na descoberta Rails nao trata mais rejeicoes normais como `partial`; agora `partial` significa apenas falha real de alguma fonte
   - a descoberta diaria nativa agora existe no proprio Rails via `config/recurring.yml`, com `DiscoverJobsRunJob(window_days: 1, trigger_source: "cron")` agendado para `08:30 BRT`
   - a administracao de fontes deixou de ser read-only; como varios adapters dependem de `JobSource.settings`, editar `board_urls`, `company_labels`, `company_slugs`, `search_queries` e `max_pages` pela UI agora fecha um gap operacional real do desenho
+  - o disparo manual tambem deixou de ser tudo-ou-nada; `source_slug` agora permite rodar discovery de uma unica fonte, o que reduz feedback loop e custo operacional quando se ajusta um adapter
 - Risco residual real:
   - o slice Rails ainda nao cobre todo o catalogo, apesar de agora incluir `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `Teamtailor`, `SmartRecruiters`, `ProgramaThor`, `Remotar` e `Workable`
   - `Recrutei` ja consegue revalidar e redescobrir a partir de URLs publicas conhecidas, mas o board `/<label>/vacancies` nao expõe uma listagem SSR confiavel hoje; por isso a cobertura nativa dessa fonte ainda depende de URLs ja vistas ou `settings.company_labels`/`settings.vacancy_urls`
@@ -102,6 +104,7 @@ A: Acelerar ciclo de feedback
   - `bin/brakeman -q -w2`
 - O novo ciclo de descoberta ganhou um caminho operacional simples:
   - botao manual em `Runs`
+  - botao manual por fonte em `Fontes`
   - `bin/rails "dashboard:discover[20]"`
   - jobs de background via `DiscoverJobsRunJob`
 
