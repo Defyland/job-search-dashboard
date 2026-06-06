@@ -9,6 +9,7 @@ module JobDiscovery
       "programathor_remote_senior" => JobDiscovery::Adapters::ProgramathorRemoteSeniorAdapter,
       "recrutei_company_boards" => JobDiscovery::Adapters::RecruteiCompanyBoardsAdapter,
       "remotar_jobs_api" => JobDiscovery::Adapters::RemotarJobsApiAdapter,
+      "solides_portal_vacancies" => JobDiscovery::Adapters::SolidesPortalVacanciesAdapter,
       "workable_global_api" => JobDiscovery::Adapters::WorkableGlobalApiAdapter
     }.freeze
 
