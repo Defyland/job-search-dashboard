@@ -110,10 +110,10 @@ module JobDiscovery
 
     Criteria = Struct.new(
       :profile,
+      :language_scope,
       :stack_patterns,
       :title_patterns,
       :role_patterns,
-      :excluded_language_patterns,
       :seniority_patterns,
       :location_patterns,
       :negative_patterns,
@@ -168,8 +168,8 @@ module JobDiscovery
 
       @criteria.any? do |criteria|
         !matches_any?(normalized_title, criteria.negative_patterns) &&
-          !matches_any?(normalized_title, criteria.excluded_language_patterns) &&
           seniority?(normalized_title, criteria) &&
+          title_language_match?(normalized_title, criteria) &&
           (title_stack_tags(normalized_title, criteria).any? || role_title?(normalized_title, criteria))
       end
     end
@@ -198,8 +198,8 @@ module JobDiscovery
         end
 
         return reject("titulo fora do escopo", criteria.profile) if normalized_title.blank? || matches_any?(normalized_title, criteria.negative_patterns)
-        return reject("titulo em idioma fora do perfil", criteria.profile) if matches_any?(normalized_title, criteria.excluded_language_patterns)
         return reject("titulo sem senioridade", criteria.profile) unless seniority?(normalized_title, criteria)
+        return reject("titulo sem marcador de idioma do perfil", criteria.profile) unless title_language_match?(normalized_title, criteria)
 
         title_tags = title_stack_tags(normalized_title, criteria)
         body_tags = title_tags.presence || stack_tags(normalized_haystack, criteria)
@@ -286,6 +286,12 @@ module JobDiscovery
         matches_any?(text, criteria.role_patterns) || matches_any?(text, criteria.title_patterns)
       end
 
+      def title_language_match?(text, criteria)
+        return true if criteria.language_scope == "both"
+
+        matches_any?(text, criteria.role_patterns)
+      end
+
       def title_stack_tags(text, criteria)
         stack_tags(text, criteria)
       end
@@ -305,10 +311,10 @@ module JobDiscovery
 
         Criteria.new(
           profile:,
+          language_scope:,
           stack_patterns: build_stack_patterns(profile.target_stacks),
           title_patterns: build_patterns(profile.target_titles),
           role_patterns: build_patterns(role_terms_for(language_scope)),
-          excluded_language_patterns: build_patterns(excluded_role_terms_for(language_scope)),
           seniority_patterns: build_patterns(profile.seniority_terms),
           location_patterns: build_patterns(profile.location_terms),
           negative_patterns: build_patterns(profile.negative_terms)
@@ -327,17 +333,6 @@ module JobDiscovery
           ENGLISH_ROLE_TERMS + NEUTRAL_ROLE_TERMS
         else
           PORTUGUESE_ROLE_TERMS + ENGLISH_ROLE_TERMS + NEUTRAL_ROLE_TERMS
-        end
-      end
-
-      def excluded_role_terms_for(language_scope)
-        case language_scope
-        when "portuguese"
-          ENGLISH_ROLE_TERMS
-        when "english"
-          PORTUGUESE_ROLE_TERMS
-        else
-          []
         end
       end
 
