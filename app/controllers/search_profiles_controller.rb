@@ -1,8 +1,7 @@
 class SearchProfilesController < ApplicationController
   before_action :set_search_profile, only: %i[edit update destroy]
-  before_action :set_search_profile_for_compile, only: :compile
   before_action :build_new_search_profile, only: %i[new create]
-  before_action :set_intent_compiler_availability, only: %i[new edit create update compile]
+  before_action :set_intent_compiler_availability, only: %i[new edit create update]
 
   def index
     @search_profiles = current_user.search_profiles.ordered
@@ -20,10 +19,6 @@ class SearchProfilesController < ApplicationController
 
   def edit
     hydrate_form_state(@search_profile)
-  end
-
-  def compile
-    render_compiled_preview(@search_profile)
   end
 
   def update
@@ -48,15 +43,6 @@ class SearchProfilesController < ApplicationController
 
     def set_search_profile
       @search_profile = current_user.search_profiles.find(params[:id])
-    end
-
-    def set_search_profile_for_compile
-      @search_profile =
-        if params[:id].present?
-          current_user.search_profiles.find(params[:id])
-        else
-          current_user.search_profiles.new(SearchProfile.default_attributes)
-        end
     end
 
     def set_intent_compiler_availability
