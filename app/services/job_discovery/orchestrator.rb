@@ -59,10 +59,19 @@ module JobDiscovery
     private
       def scan_source(search_run:, source:, recorder:, discovery_counts:)
         source_scan = search_run.source_scans.create!(job_source: source, status: :running, started_at: Time.current)
-        SourceScan.transaction do
-          adapter = @registry.fetch(source.adapter_key).new
-          candidates = adapter.scan(source_scan:, window_days: @window_days)
+        adapter = @registry.fetch(source.adapter_key).new
+        candidates = adapter.scan(source_scan:, window_days: @window_days)
 
+        persist_scan_results(search_run:, source_scan:, source:, recorder:, discovery_counts:, candidates:)
+      rescue StandardError => error
+        @errors << "#{source.name}: #{error.message}"
+        raise unless source_scan
+
+        source_scan.update!(status: :failed, finished_at: Time.current, error_message: error.message)
+      end
+
+      def persist_scan_results(search_run:, source_scan:, source:, recorder:, discovery_counts:, candidates:)
+        SourceScan.transaction do
           accepted_jobs = []
           rejected_jobs = []
           counts = { accepted_count: 0, borderline_count: 0, rejected_count: 0, expired_count: 0 }
@@ -104,9 +113,6 @@ module JobDiscovery
             expired_count: counts[:expired_count]
           )
         end
-      rescue StandardError => error
-        @errors << "#{source.name}: #{error.message}"
-        source_scan.update!(status: :failed, finished_at: Time.current, error_message: error.message)
       end
 
       def mark_unsupported_source!(search_run:, source:)

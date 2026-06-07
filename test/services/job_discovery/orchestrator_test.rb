@@ -64,6 +64,15 @@ class JobDiscovery::OrchestratorTest < ActiveSupport::TestCase
     end
   end
 
+  class TransactionProbeAdapter
+    class_attribute :open_transactions_during_scan, default: nil
+
+    def scan(source_scan:, window_days:)
+      self.class.open_transactions_during_scan = ActiveRecord::Base.connection.open_transactions
+      []
+    end
+  end
+
   class MixedRegistry
     def supports?(adapter_key)
       %w[gupy_company_boards lever_company_boards].include?(adapter_key)
@@ -78,6 +87,16 @@ class JobDiscovery::OrchestratorTest < ActiveSupport::TestCase
       else
         raise "unknown adapter #{adapter_key}"
       end
+    end
+  end
+
+  class TransactionProbeRegistry
+    def supports?(adapter_key)
+      adapter_key == "gupy_company_boards"
+    end
+
+    def fetch(_adapter_key)
+      TransactionProbeAdapter
     end
   end
 
@@ -194,5 +213,30 @@ class JobDiscovery::OrchestratorTest < ActiveSupport::TestCase
     assert_equal 1, result.search_run.source_scans.status_failed.count
     assert_equal "adapter unsupported_adapter nao suportado", result.search_run.source_scans.status_failed.first.error_message
     assert_equal [ "Broken Source: adapter unsupported_adapter nao suportado" ], result.errors
+  end
+
+  test "does not hold a database transaction while adapters scan remote sources" do
+    source = JobSource.create!(
+      name: "Probe Source",
+      slug: "probe-source",
+      host: "probe.example.com",
+      base_url: "https://probe.example.com",
+      source_kind: :platform,
+      adapter_key: "gupy_company_boards",
+      supports_backfill: false,
+      scan_window_days: 20
+    )
+    source.update_columns(supports_backfill: true)
+    open_transactions_before_scan = ActiveRecord::Base.connection.open_transactions
+
+    result = JobDiscovery::Orchestrator.new(
+      window_days: 20,
+      source_scope: JobSource.where(id: source.id),
+      registry: TransactionProbeRegistry.new
+    ).call
+
+    assert result.success?
+    assert_equal open_transactions_before_scan, TransactionProbeAdapter.open_transactions_during_scan
+    assert_predicate result.search_run.source_scans.first, :status_exhausted?
   end
 end
