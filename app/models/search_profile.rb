@@ -61,6 +61,16 @@ class SearchProfile < ApplicationRecord
     terms
   end
 
+  %i[target_stacks target_titles seniority_terms location_terms negative_terms].each do |field|
+    define_method("#{field}_text") do
+      public_send(field).join(", ")
+    end
+
+    define_method("#{field}_text=") do |value|
+      public_send("#{field}=", normalize_list(value))
+    end
+  end
+
   private
     def apply_defaults
       self.name = name.presence || self.class.default_attributes.fetch(:name)

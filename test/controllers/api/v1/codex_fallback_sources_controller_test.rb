@@ -18,8 +18,12 @@ class Api::V1::CodexFallbackSourcesControllerTest < ActionDispatch::IntegrationT
     assert_includes slugs, "apinfo"
     assert_includes slugs, "rubyonremote"
     assert_equal "/api/v1/job_ingestions", body.fetch("ingestion_endpoint")
-    assert_includes body.dig("policy", "stack_terms"), "ruby on rails"
-    assert_includes body.dig("policy", "exclude_terms"), "mulheres"
+    default_policy = body.dig("policy", "profiles").find { |profile| profile.fetch("profile_name").include?("Ruby/Rails") }
+    inclusive_policy = body.dig("policy", "profiles").find { |profile| profile.fetch("profile_name").include?("afirmativas") }
+
+    assert_includes default_policy.fetch("stack_terms"), "ruby on rails"
+    assert_includes default_policy.fetch("exclude_terms"), "mulheres"
+    assert_not_includes inclusive_policy.fetch("exclude_terms"), "women only"
   ensure
     ENV["INGEST_SHARED_TOKEN"] = previous_token
   end

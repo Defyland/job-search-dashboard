@@ -18,9 +18,10 @@ class JobsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "marks job as applied" do
-    patch mark_job_path(jobs(:react_role), user_state: :applied)
+    patch mark_job_path(jobs(:react_role), search_profile_id: search_profiles(:default).id, user_state: :applied)
 
-    assert_redirected_to job_path(jobs(:react_role))
-    assert_equal("applied", jobs(:react_role).reload.user_state)
+    assert_redirected_to job_path(jobs(:react_role), search_profile_id: search_profiles(:default).id)
+    assert_equal("applied", job_matches(:react_default).reload.user_state)
+    assert_equal("new_match", jobs(:react_role).reload.user_state)
   end
 end

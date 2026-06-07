@@ -3,6 +3,7 @@ Rails.application.routes.draw do
   resources :jobs, only: %i[index show] do
     patch :mark, on: :member
   end
+  resources :search_profiles, except: :show
   resources :search_runs, only: %i[index show create]
   resources :sources, only: %i[index edit update]
 

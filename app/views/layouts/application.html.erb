@@ -38,6 +38,7 @@
           <% if current_user %>
             <nav class="hidden items-center gap-2 md:flex">
               <%= link_to "Vagas", jobs_path, class: "rounded-full px-4 py-2 text-sm font-medium #{current_page?(jobs_path) ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'}" %>
+              <%= link_to "Perfis", search_profiles_path, class: "rounded-full px-4 py-2 text-sm font-medium #{current_page?(search_profiles_path) ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'}" %>
               <%= link_to "Runs", search_runs_path, class: "rounded-full px-4 py-2 text-sm font-medium #{current_page?(search_runs_path) ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'}" %>
               <%= link_to "Fontes", sources_path, class: "rounded-full px-4 py-2 text-sm font-medium #{current_page?(sources_path) ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'}" %>
             </nav>

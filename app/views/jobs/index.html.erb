@@ -25,17 +25,21 @@
       <h1 class="text-3xl font-extrabold tracking-tight text-white">Radar de vagas</h1>
       <p class="text-sm text-slate-400">Filtros rápidos para navegar muita vaga sem perder o contexto.</p>
     </div>
-    <p class="text-sm text-slate-500"><%= @total_jobs %> resultado(s)</p>
+    <p class="text-sm text-slate-500"><%= @total_matches %> resultado(s)</p>
   </div>
 
   <%= form_with url: jobs_path, method: :get, class: "mt-6 grid gap-4 md:grid-cols-8" do |form| %>
+    <div class="md:col-span-2">
+      <%= form.label :search_profile_id, "Perfil", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+      <%= form.select :search_profile_id, options_for_select(@search_profiles.map { |profile| [profile.name, profile.id] }, @search_profile.id), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
+    </div>
     <div class="md:col-span-2">
       <%= form.label :q, "Busca", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
       <%= form.text_field :q, value: @filters[:q], placeholder: "Titulo, empresa ou motivo", class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-500" %>
     </div>
     <div>
       <%= form.label :stack, "Stack", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
-      <%= form.select :stack, options_for_select([["Todas", ""], ["Ruby", "ruby"], ["Ruby on Rails", "ruby on rails"], ["Rails", "rails"], ["React", "react"], ["React Native", "react native"]], @filters[:stack]), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
+      <%= form.select :stack, options_for_select([["Todas", ""]] + @stack_options.map { |stack| [stack.titleize, stack] }, @filters[:stack]), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
     </div>
     <div>
       <%= form.label :match_strength, "Match", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
@@ -82,26 +86,30 @@
         </tr>
       </thead>
       <tbody class="divide-y divide-white/5">
-        <% if @jobs.any? %>
-          <% @jobs.each do |job| %>
+        <% if @job_matches.any? %>
+          <% @job_matches.each do |job_match| %>
+            <% job = job_match.job %>
             <tr class="align-top">
               <td class="px-6 py-5">
                 <div class="space-y-3">
                   <div>
-                    <%= link_to job.title, job_path(job), class: "text-base font-bold text-white hover:text-sky-200" %>
+                    <%= link_to job.title, job_path(job, search_profile_id: @search_profile.id), class: "text-base font-bold text-white hover:text-sky-200" %>
                     <p class="mt-1 text-sm text-slate-300"><%= job.company_name %></p>
                   </div>
                   <div class="flex flex-wrap gap-2">
-                    <span class="rounded-full px-3 py-1 text-xs font-semibold ring-1 <%= tone_class(job.match_strength.to_sym) %>"><%= match_label(job) %></span>
+                    <span class="rounded-full px-3 py-1 text-xs font-semibold ring-1 <%= tone_class(job_match.match_strength.to_sym) %>"><%= match_label(job_match) %></span>
                     <span class="rounded-full px-3 py-1 text-xs font-semibold ring-1 <%= tone_class(job.lifecycle_state.to_sym) %>"><%= lifecycle_label(job) %></span>
-                    <span class="rounded-full px-3 py-1 text-xs font-semibold ring-1 <%= tone_class(job.user_state == "applied" ? :applied : job.user_state == "ignored" ? :ignored : :active) %>"><%= user_state_label(job) %></span>
+                    <span class="rounded-full px-3 py-1 text-xs font-semibold ring-1 <%= tone_class(job_match.user_state == "applied" ? :applied : job_match.user_state == "ignored" ? :ignored : :active) %>"><%= user_state_label(job_match) %></span>
+                    <% job_match.eligibility_flags.each do |flag| %>
+                      <span class="rounded-full border border-fuchsia-300/20 bg-fuchsia-400/10 px-3 py-1 text-xs font-semibold text-fuchsia-100"><%= flag.humanize %></span>
+                    <% end %>
                   </div>
-                  <p class="max-w-xl text-sm leading-6 text-slate-400"><%= job.reason %></p>
+                  <p class="max-w-xl text-sm leading-6 text-slate-400"><%= job_match.reason %></p>
                 </div>
               </td>
               <td class="px-6 py-5">
                 <div class="flex max-w-xs flex-wrap gap-2">
-                  <% job.stack_tags.each do |tag| %>
+                  <% job_match.stack_tags.each do |tag| %>
                     <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-200"><%= tag %></span>
                   <% end %>
                 </div>
@@ -113,14 +121,14 @@
               </td>
               <td class="px-6 py-5">
                 <p class="font-semibold text-white"><%= job.posted_text.presence || (job.published_at ? time_ago_in_words(job.published_at) + " atras" : "sem data") %></p>
-                <p class="mt-1 text-xs text-slate-500">Score <%= job.score %></p>
+                <p class="mt-1 text-xs text-slate-500">Score <%= job_match.score %></p>
               </td>
               <td class="px-6 py-5">
                 <div class="flex min-w-[220px] flex-wrap gap-2">
                   <%= link_to "Abrir", job.apply_url, target: "_blank", rel: "noreferrer", class: "rounded-full bg-white px-3 py-2 text-xs font-extrabold uppercase tracking-[0.14em] text-slate-950" %>
-                  <%= button_to "Vista", mark_job_path(job, user_state: :seen), method: :patch, class: "rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-slate-200" %>
-                  <%= button_to "Aplicada", mark_job_path(job, user_state: :applied), method: :patch, class: "rounded-full border border-fuchsia-300/20 bg-fuchsia-400/10 px-3 py-2 text-xs font-semibold text-fuchsia-100" %>
-                  <%= button_to "Ignorar", mark_job_path(job, user_state: :ignored), method: :patch, class: "rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-slate-400" %>
+                  <%= button_to "Vista", mark_job_path(job, search_profile_id: @search_profile.id, user_state: :seen), method: :patch, class: "rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-slate-200" %>
+                  <%= button_to "Aplicada", mark_job_path(job, search_profile_id: @search_profile.id, user_state: :applied), method: :patch, class: "rounded-full border border-fuchsia-300/20 bg-fuchsia-400/10 px-3 py-2 text-xs font-semibold text-fuchsia-100" %>
+                  <%= button_to "Ignorar", mark_job_path(job, search_profile_id: @search_profile.id, user_state: :ignored), method: :patch, class: "rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-slate-400" %>
                 </div>
               </td>
             </tr>
@@ -141,7 +149,7 @@
     <p class="text-sm text-slate-400">Pagina <%= @page %> de <%= @total_pages %></p>
     <div class="flex items-center gap-2">
       <% pagination_window(@page, @total_pages).each do |page| %>
-        <% query_params = request.query_parameters.merge(page: page) %>
+        <% query_params = request.query_parameters.merge(page: page, search_profile_id: @search_profile.id) %>
         <%= link_to page, jobs_path(query_params), class: "inline-flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold #{page == @page ? 'bg-sky-400 text-slate-950' : 'border border-white/10 text-slate-200 hover:bg-white/5'}" %>
       <% end %>
     </div>
