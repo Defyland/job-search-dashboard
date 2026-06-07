@@ -30,7 +30,13 @@ class SearchProfilesController < ApplicationController
   def update
     return render_compiled_preview(@search_profile) if preview_compile_requested?
 
-    persist_profile(@search_profile, template: :edit, success_path: ->(_profile) { search_profiles_path }, success_notice: "Perfil atualizado.")
+    persist_profile(
+      @search_profile,
+      template: :edit,
+      success_path: ->(_profile) { search_profiles_path },
+      success_notice: "Perfil atualizado. Busca atualizada.",
+      after_save: ->(profile) { refresh_profile!(profile) }
+    )
   end
 
   def destroy
@@ -239,6 +245,11 @@ class SearchProfilesController < ApplicationController
 
     def bootstrap_profile!(search_profile)
       SearchProfiles::Bootstrapper.new(search_profile:).call
+      DiscoverJobsRunJob.perform_later(window_days: search_profile.scan_window_days, trigger_source: :manual)
+    end
+
+    def refresh_profile!(search_profile)
+      SearchProfiles::Bootstrapper.new(search_profile:, prune_stale: true).call
       DiscoverJobsRunJob.perform_later(window_days: search_profile.scan_window_days, trigger_source: :manual)
     end
 end

@@ -146,27 +146,140 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
       )
     )
 
-    patch search_profile_path(profile), params: {
-      search_profile: {
-        name: profile.name,
-        required_remote: "1",
-        include_women_only: "1",
-        language_scope: "both",
-        technology_intent: "java",
-        seniority_preset: "senior",
-        region_scope: "brazil_latam",
-        target_stacks_text: profile.target_stacks_text,
-        target_titles_text: profile.target_titles_text,
-        seniority_terms_text: profile.seniority_terms_text,
-        location_terms_text: profile.location_terms_text,
-        negative_terms_text: profile.negative_terms_text
+    assert_enqueued_with(
+      job: DiscoverJobsRunJob,
+      args: ->(args) { args == [ { window_days: 20, trigger_source: :manual } ] }
+    ) do
+      patch search_profile_path(profile), params: {
+        search_profile: {
+          name: profile.name,
+          required_remote: "1",
+          include_women_only: "1",
+          language_scope: "both",
+          technology_intent: "java",
+          seniority_preset: "senior",
+          region_scope: "brazil_latam",
+          target_stacks_text: profile.target_stacks_text,
+          target_titles_text: profile.target_titles_text,
+          seniority_terms_text: profile.seniority_terms_text,
+          location_terms_text: profile.location_terms_text,
+          negative_terms_text: profile.negative_terms_text
+        }
       }
-    }
+    end
 
     assert_redirected_to search_profiles_path
     assert profile.reload.include_women_only?
     assert profile.intent_backed?
     assert_includes profile.compiler_stack_aliases["java"], "spring boot"
+  end
+
+  test "updates manual profile and refreshes stored matches" do
+    ruby_job = Job.create!(
+      job_source: job_sources(:workable),
+      title: "Senior Ruby Engineer",
+      company_name: "Legacy",
+      apply_url: "https://jobs.workable.com/view/ruby-controller-2",
+      canonical_url: "https://jobs.workable.com/view/ruby-controller-2",
+      source_url: "https://jobs.workable.com/view/ruby-controller-2",
+      ats_name: "Workable",
+      external_job_id: "ruby-controller-2",
+      remote_text: "Remote Brazil",
+      location_text: "Brasil",
+      seniority: "senior",
+      match_strength: :strong,
+      user_state: :new_match,
+      lifecycle_state: :active,
+      reason: "Titulo senior com stack Ruby e remoto BR.",
+      score: 96,
+      posted_text: "publicada ha 2 dias",
+      published_at: 2.days.ago,
+      first_seen_at: 2.days.ago,
+      last_seen_at: 1.day.ago,
+      last_validated_at: 1.day.ago,
+      fingerprint: "legacy::senior ruby engineer::jobs.workable.com::ruby-controller-2",
+      stack_tags: [ "ruby" ],
+      raw_payload: {
+        title: "Senior Ruby Engineer",
+        company: "Legacy",
+        description: "Ruby, Rails, remote Brazil"
+      }
+    )
+    java_job = Job.create!(
+      job_source: job_sources(:gupy),
+      title: "Senior Java Engineer",
+      company_name: "Nova",
+      apply_url: "https://nova.gupy.io/jobs/java-controller-2",
+      canonical_url: "https://nova.gupy.io/jobs/java-controller-2",
+      source_url: "https://nova.gupy.io/jobs/java-controller-2",
+      ats_name: "Gupy",
+      external_job_id: "java-controller-2",
+      remote_text: "Remoto Brasil",
+      location_text: "Brasil",
+      seniority: "senior",
+      match_strength: :strong,
+      user_state: :new_match,
+      lifecycle_state: :active,
+      reason: "Titulo senior com stack Java e remoto BR.",
+      score: 96,
+      posted_text: "publicada ha 1 dia",
+      published_at: 1.day.ago,
+      first_seen_at: 1.day.ago,
+      last_seen_at: 1.day.ago,
+      last_validated_at: 1.day.ago,
+      fingerprint: "nova::senior java engineer::gupy.io::java-controller-2",
+      stack_tags: [ "java" ],
+      raw_payload: {
+        title: "Senior Java Engineer",
+        company: "Nova",
+        description: "Java, Spring Boot, remote Brazil"
+      }
+    )
+
+    profile = users(:one).search_profiles.create!(
+      name: "Senior Ruby Remote",
+      slug: "senior-ruby-remote-refresh",
+      active: true,
+      required_remote: true,
+      include_women_only: false,
+      language_scope: :both,
+      target_stacks: [ "ruby" ],
+      target_titles: [ "developer", "engineer" ],
+      seniority_terms: [ "senior", "sênior", "sr" ],
+      location_terms: [ "remote", "remoto", "brasil", "brazil" ],
+      negative_terms: SearchProfile::DEFAULT_NEGATIVE_TERMS,
+      scan_window_days: 20
+    )
+
+    SearchProfiles::Bootstrapper.new(search_profile: profile, job_scope: Job.where(id: [ ruby_job.id, java_job.id ]).includes(:job_source)).call
+    assert_equal [ ruby_job.id ], JobMatch.for_profile(profile).pluck(:job_id)
+
+    assert_enqueued_with(
+      job: DiscoverJobsRunJob,
+      args: ->(args) { args == [ { window_days: 20, trigger_source: :manual } ] }
+    ) do
+      patch search_profile_path(profile), params: {
+        search_profile: {
+          name: "Senior Java Remote",
+          active: "1",
+          required_remote: "1",
+          include_women_only: "0",
+          language_scope: "both",
+          technology_intent: "",
+          seniority_preset: "senior",
+          region_scope: "brazil_latam",
+          target_stacks_text: "java",
+          target_titles_text: "developer, engineer",
+          seniority_terms_text: "senior, sênior, sr",
+          location_terms_text: "remote, remoto, brasil, brazil",
+          negative_terms_text: SearchProfile::DEFAULT_NEGATIVE_TERMS.join(", ")
+        }
+      }
+    end
+
+    assert_redirected_to search_profiles_path
+    refute_includes JobMatch.for_profile(profile).pluck(:job_id), ruby_job.id
+    assert_includes JobMatch.for_profile(profile).pluck(:job_id), java_job.id
   end
 
   private
