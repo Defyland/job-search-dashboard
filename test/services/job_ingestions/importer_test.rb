@@ -149,6 +149,55 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
     assert_equal existing_source, recorder.send(:find_or_create_source, attributes, payload)
   end
 
+  test "recovers when a concurrent insert wins the job match uniqueness validation race" do
+    search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "24h", started_at: Time.current)
+    recorder = JobIngestions::Recorder.new(search_run:)
+    job = Job.create!(
+      title: "Senior Ruby Match Race",
+      company_name: "Race Co",
+      apply_url: "https://race.example/jobs/ruby-match/apply",
+      canonical_url: "https://race.example/jobs/ruby-match",
+      fingerprint: "race::senior ruby match::race.example::1",
+      job_source: job_sources(:gupy),
+      reason: "seed",
+      score: 70,
+      first_seen_at: 1.day.ago,
+      last_seen_at: 1.day.ago,
+      last_validated_at: 1.day.ago
+    )
+    job.job_matches.load
+    existing_match = JobMatch.create!(
+      job:,
+      search_profile: search_profiles(:default),
+      match_strength: :strong,
+      score: 70,
+      reason: "registro criado por outra ingestao",
+      seniority: "senior",
+      stack_tags: [ "ruby" ],
+      first_seen_at: 1.day.ago,
+      last_seen_at: 1.day.ago,
+      last_validated_at: 1.day.ago
+    )
+    decision = JobDiscovery::Policy::Result.new(
+      classification: :strong,
+      reason: "match recuperado depois de corrida",
+      stack_tags: [ "ruby" ],
+      score: 96,
+      seniority: "senior",
+      remote_signal: "Remote Brazil",
+      exclusion_reason: nil,
+      search_profile: search_profiles(:default),
+      eligibility_flags: []
+    )
+
+    assert_no_difference("JobMatch.count") do
+      recorder.send(:upsert_job_match, job, decision, Time.current)
+    end
+
+    assert_equal 96, existing_match.reload.score
+    assert_equal "match recuperado depois de corrida", existing_match.reason
+  end
+
   test "imports women only jobs only for profiles that allow them" do
     payload = {
       run: { window_label: "24h", trigger_source: "codex_automation" },

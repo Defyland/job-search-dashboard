@@ -147,9 +147,11 @@ module JobIngestions
           match.save!
         end
       rescue ActiveRecord::RecordNotUnique
-        match = job.job_matches.find_by!(search_profile: decision.search_profile)
-        assign_match_attributes(match, decision, timestamp)
-        match.save!
+        recover_job_match(job, decision, timestamp)
+      rescue ActiveRecord::RecordInvalid => error
+        raise unless unique_job_match_conflict?(error.record)
+
+        recover_job_match(job, decision, timestamp)
       end
 
       def assign_match_attributes(match, decision, timestamp)
@@ -170,6 +172,17 @@ module JobIngestions
         )
         match.first_seen_at ||= timestamp
         match.user_state = :new_match if match.new_record?
+      end
+
+      def recover_job_match(job, decision, timestamp)
+        match = job.job_matches.reset.find_by!(search_profile: decision.search_profile)
+        assign_match_attributes(match, decision, timestamp)
+        match.save!
+      end
+
+      def unique_job_match_conflict?(record)
+        record.is_a?(JobMatch) &&
+          (record.errors.of_kind?(:job_id, :taken) || record.errors.of_kind?(:search_profile_id, :taken))
       end
 
       def build_run_item(job, outcome, reason, payload)
