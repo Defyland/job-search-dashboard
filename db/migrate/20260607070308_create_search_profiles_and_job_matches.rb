@@ -78,7 +78,7 @@ class CreateSearchProfilesAndJobMatches < ActiveRecord::Migration[8.1]
         name: "Senior Ruby/Rails/React Remote BR/LatAm",
         slug: "senior-ruby-rails-react-remote-br-latam",
         active: true,
-        target_stacks: [ "ruby", "ruby on rails", "rails", "react", "react native", "frontend", "fullstack" ],
+        target_stacks: [ "ruby", "ruby on rails", "react", "react native" ],
         target_titles: [ "software engineer", "engenheiro de software", "frontend", "backend", "fullstack", "developer", "desenvolvedor" ],
         seniority_terms: [ "senior", "sênior", "sr", "staff" ],
         location_terms: [ "remoto", "remote", "home office", "brasil", "brazil", "latam" ],

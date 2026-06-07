@@ -172,7 +172,7 @@ module JobDiscovery
       end
 
       def candidate_payload(candidate)
-        candidate[:payload].to_h.merge(description: candidate[:description])
+        candidate[:payload].to_h.merge(description: candidate[:description], eligibility_flags: candidate[:eligibility_flags])
       end
 
       def link_discovered_jobs!(source_scan)

@@ -6,11 +6,8 @@ default:
   target_stacks:
     - ruby
     - ruby on rails
-    - rails
     - react
     - react native
-    - frontend
-    - fullstack
   target_titles:
     - software engineer
     - engenheiro de software
@@ -58,6 +55,7 @@ women_inclusive:
     - software engineer
   seniority_terms:
     - senior
+    - sênior
     - sr
   location_terms:
     - remote

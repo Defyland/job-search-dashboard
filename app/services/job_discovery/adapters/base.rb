@@ -89,6 +89,7 @@ module JobDiscovery
             score: decision.score,
             seniority: decision.seniority,
             stack_tags: decision.stack_tags,
+            eligibility_flags: decision.eligibility_flags,
             payload:
           }
         end

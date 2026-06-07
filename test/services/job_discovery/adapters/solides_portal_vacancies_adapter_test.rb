@@ -88,7 +88,7 @@ class JobDiscovery::Adapters::SolidesPortalVacanciesAdapterTest < ActiveSupport:
     assert_equal 1, fetcher.calls.count(detail_url)
   end
 
-  test "rejects women-only affirmative solides jobs in the backend policy" do
+  test "keeps women-only affirmative solides jobs when an active profile allows them" do
     source = build_source(settings: { "search_queries" => [ "react" ], "max_pages" => 1 })
     source_scan = build_source_scan(source:)
 
@@ -119,8 +119,8 @@ class JobDiscovery::Adapters::SolidesPortalVacanciesAdapterTest < ActiveSupport:
     candidates = JobDiscovery::Adapters::SolidesPortalVacanciesAdapter.new(fetcher:).scan(source_scan:, window_days: 20)
 
     assert_equal 1, candidates.size
-    assert_equal "rejected", candidates.first[:classification]
-    assert_equal "vaga afirmativa para mulheres", candidates.first[:exclusion_reason]
+    assert_equal "strong", candidates.first[:classification]
+    assert_includes candidates.first[:eligibility_flags], "women_only"
   end
 
   test "stops after the first stale solides page outside the requested window" do

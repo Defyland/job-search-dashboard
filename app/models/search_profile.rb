@@ -1,5 +1,5 @@
 class SearchProfile < ApplicationRecord
-  DEFAULT_TARGET_STACKS = [ "ruby", "ruby on rails", "rails", "react", "react native", "frontend", "fullstack" ].freeze
+  DEFAULT_TARGET_STACKS = [ "ruby", "ruby on rails", "react", "react native" ].freeze
   DEFAULT_TARGET_TITLES = [ "software engineer", "engenheiro de software", "frontend", "backend", "fullstack", "developer", "desenvolvedor" ].freeze
   DEFAULT_SENIORITY_TERMS = [ "senior", "sênior", "sr", "staff" ].freeze
   DEFAULT_LOCATION_TERMS = [ "remoto", "remote", "home office", "brasil", "brazil", "latam" ].freeze
