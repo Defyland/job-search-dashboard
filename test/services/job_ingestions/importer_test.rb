@@ -61,6 +61,61 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
     assert_equal 96, jobs(:ruby_role).score
   end
 
+  test "recovers when a concurrent insert wins the job unique index race" do
+    source = job_sources(:gupy)
+    search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "24h", started_at: Time.current)
+    recorder = JobIngestions::Recorder.new(search_run:)
+    existing_job = Job.create!(
+      title: "Senior Ruby Race",
+      company_name: "Race Co",
+      apply_url: "https://race.example/jobs/ruby/apply",
+      canonical_url: "https://race.example/jobs/ruby",
+      fingerprint: "race::senior ruby race::race.example::1",
+      job_source: source,
+      reason: "registro criado por outra ingestao",
+      score: 70,
+      first_seen_at: 1.day.ago,
+      last_seen_at: 1.day.ago,
+      last_validated_at: 1.day.ago
+    )
+    attributes = {
+      title: "Senior Ruby Race",
+      company_name: "Race Co",
+      apply_url: "https://race.example/jobs/ruby/apply",
+      canonical_url: "https://race.example/jobs/ruby",
+      source_url: "https://race.example/jobs/ruby",
+      ats_name: "Race",
+      external_job_id: "1",
+      remote_text: "Remote Brazil",
+      location_text: "Brazil",
+      seniority: "senior",
+      match_strength: Job.match_strengths.fetch("strong"),
+      reason: "registro recuperado depois de corrida",
+      score: 95,
+      fingerprint: "race::senior ruby race::race.example::1",
+      stack_tags: [ "ruby" ],
+      source_host: "race.example",
+      user_state: :new_match
+    }
+    payload = {
+      "title" => attributes.fetch(:title),
+      "company" => attributes.fetch(:company_name),
+      "apply_url" => attributes.fetch(:apply_url),
+      "canonical_url" => attributes.fetch(:canonical_url)
+    }
+
+    assert_no_difference("Job.count") do
+      assert_difference("SearchRunItem.count", 1) do
+        job = recorder.send(:upsert_job, existing_job: nil, source:, attributes:, payload:)
+
+        assert_equal existing_job, job
+      end
+    end
+
+    assert_equal 95, existing_job.reload.score
+    assert_equal "updated", search_run.search_run_items.last.outcome
+  end
+
   test "imports women only jobs only for profiles that allow them" do
     payload = {
       run: { window_label: "24h", trigger_source: "codex_automation" },

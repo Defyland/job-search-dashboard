@@ -81,56 +81,95 @@ module JobIngestions
         ).except(:source_host)
 
         if existing_job
-          existing_job.assign_attributes(job_attributes.except(:user_state, :first_seen_at))
-
-          outcome =
-            if existing_job.changed?
-              existing_job.save!
-              @summary[:updated_count] += 1
-              :updated
-            else
-              :skipped
-            end
-
-          build_run_item(existing_job, outcome, attributes[:reason], payload)
-          existing_job
+          update_existing_job(existing_job, job_attributes, attributes[:reason], payload)
         else
+          create_job_or_recover(job_attributes:, attributes:, payload:, timestamp:)
+        end
+      end
+
+      def update_existing_job(existing_job, job_attributes, reason, payload)
+        existing_job.assign_attributes(job_attributes.except(:user_state, :first_seen_at))
+
+        outcome =
+          if existing_job.changed?
+            existing_job.save!
+            @summary[:updated_count] += 1
+            :updated
+          else
+            :skipped
+          end
+
+        build_run_item(existing_job, outcome, reason, payload)
+        existing_job
+      end
+
+      def create_job_or_recover(job_attributes:, attributes:, payload:, timestamp:)
+        job = nil
+        Job.transaction(requires_new: true) do
           job = Job.create!(
             job_attributes.merge(
               user_state: :new_match,
               first_seen_at: timestamp
             )
           )
-          build_run_item(job, :created, attributes[:reason], payload)
-          @summary[:imported_count] += 1
-          job
         end
+
+        build_run_item(job, :created, attributes[:reason], payload)
+        @summary[:imported_count] += 1
+        job
+      rescue ActiveRecord::RecordNotUnique
+        recovered_job = find_existing_job(attributes)
+        raise unless recovered_job
+
+        update_existing_job(recovered_job, job_attributes, attributes[:reason], payload)
+      rescue ActiveRecord::RecordInvalid => error
+        raise unless unique_job_conflict?(error.record)
+
+        recovered_job = find_existing_job(attributes)
+        raise unless recovered_job
+
+        update_existing_job(recovered_job, job_attributes, attributes[:reason], payload)
       end
 
       def upsert_job_matches(job, decisions)
         timestamp = Time.current
 
         decisions.each do |decision|
-          match = job.job_matches.find_or_initialize_by(search_profile: decision.search_profile)
-          match.assign_attributes(
-            match_strength: JobMatch.match_strengths.fetch(decision.classification.to_s),
-            score: decision.score,
-            reason: decision.reason,
-            seniority: decision.seniority,
-            stack_tags: decision.stack_tags,
-            eligibility_flags: decision.eligibility_flags,
-            raw_decision: {
-              classification: decision.classification,
-              remote_signal: decision.remote_signal,
-              exclusion_reason: decision.exclusion_reason
-            },
-            last_seen_at: timestamp,
-            last_validated_at: timestamp
-          )
-          match.first_seen_at ||= timestamp
-          match.user_state = :new_match if match.new_record?
+          upsert_job_match(job, decision, timestamp)
+        end
+      end
+
+      def upsert_job_match(job, decision, timestamp)
+        match = job.job_matches.find_or_initialize_by(search_profile: decision.search_profile)
+        assign_match_attributes(match, decision, timestamp)
+
+        JobMatch.transaction(requires_new: true) do
           match.save!
         end
+      rescue ActiveRecord::RecordNotUnique
+        match = job.job_matches.find_by!(search_profile: decision.search_profile)
+        assign_match_attributes(match, decision, timestamp)
+        match.save!
+      end
+
+      def assign_match_attributes(match, decision, timestamp)
+        match.assign_attributes(
+          match_strength: JobMatch.match_strengths.fetch(decision.classification.to_s),
+          score: decision.score,
+          reason: decision.reason,
+          seniority: decision.seniority,
+          stack_tags: decision.stack_tags,
+          eligibility_flags: decision.eligibility_flags,
+          raw_decision: {
+            classification: decision.classification,
+            remote_signal: decision.remote_signal,
+            exclusion_reason: decision.exclusion_reason
+          },
+          last_seen_at: timestamp,
+          last_validated_at: timestamp
+        )
+        match.first_seen_at ||= timestamp
+        match.user_state = :new_match if match.new_record?
       end
 
       def build_run_item(job, outcome, reason, payload)
@@ -153,9 +192,15 @@ module JobIngestions
 
         source = JobSource.resolve_for_ingestion(name: source_name, slug: slug, host: host) || JobSource.find_or_initialize_by(slug: slug)
 
+        persist_source(source, attributes, payload, source_name)
+      rescue ActiveRecord::RecordNotUnique
+        JobSource.resolve_for_ingestion(name: source_name, slug: slug, host: host) || JobSource.find_by!(slug: slug)
+      end
+
+      def persist_source(source, attributes, payload, source_name)
         source.tap do |record|
           record.name = source_name if record.name.blank?
-          record.host = host if record.host.blank?
+          record.host = attributes[:source_host] if record.host.blank?
           record.base_url = attributes[:source_url].presence || attributes[:canonical_url] if record.base_url.blank?
           record.source_kind = normalize_source_kind(payload["source_kind"]) if record.new_record?
           record.enabled = true
@@ -173,6 +218,11 @@ module JobIngestions
       def find_existing_job(attributes)
         Job.find_by(fingerprint: attributes[:fingerprint]) ||
           Job.find_by(canonical_url: attributes[:canonical_url])
+      end
+
+      def unique_job_conflict?(record)
+        record.is_a?(Job) &&
+          (record.errors.of_kind?(:fingerprint, :taken) || record.errors.of_kind?(:canonical_url, :taken))
       end
 
       def normalize_job_attributes(item)
