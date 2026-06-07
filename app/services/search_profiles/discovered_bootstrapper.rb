@@ -48,26 +48,7 @@ module SearchProfiles
       end
 
       def payload_for(candidate)
-        {
-          title: candidate.title,
-          company: candidate.company_name,
-          apply_url: candidate.apply_url,
-          canonical_url: candidate.canonical_url,
-          source_url: candidate.source_url,
-          source_name: candidate.job_source.name,
-          source_slug: candidate.job_source.slug,
-          source_kind: candidate.job_source.source_kind,
-          external_job_id: candidate.external_job_id,
-          remote_signal: candidate.remote_text,
-          location: candidate.location_text,
-          seniority: candidate.seniority,
-          reason: candidate.reason,
-          recency_text: candidate.posted_text,
-          published_at: candidate.published_at&.iso8601,
-          stack_tags: candidate.stack_tags,
-          fingerprint: candidate.fingerprint,
-          description: candidate.payload["description"].presence || candidate.payload["body"].presence || candidate.payload["summary"].presence
-        }
+        candidate.ingestion_payload
       end
   end
 end

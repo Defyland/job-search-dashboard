@@ -162,28 +162,7 @@ module JobDiscovery
       end
 
       def ingestion_payload_for(discovered_job, match_strength)
-        {
-          title: discovered_job.title,
-          company: discovered_job.company_name,
-          apply_url: discovered_job.apply_url,
-          canonical_url: discovered_job.canonical_url,
-          source_url: discovered_job.source_url,
-          source_name: discovered_job.job_source.name,
-          source_slug: discovered_job.job_source.slug,
-          source_kind: discovered_job.job_source.source_kind,
-          external_job_id: discovered_job.external_job_id,
-          remote_signal: discovered_job.remote_text,
-          location: discovered_job.location_text,
-          seniority: discovered_job.seniority,
-          match_strength:,
-          reason: discovered_job.reason,
-          score: discovered_job.score,
-          recency_text: discovered_job.posted_text,
-          published_at: discovered_job.published_at&.iso8601,
-          stack_tags: discovered_job.stack_tags,
-          fingerprint: discovered_job.fingerprint,
-          description: discovered_job.payload["description"]
-        }
+        discovered_job.ingestion_payload(match_strength:)
       end
 
       def candidate_payload(candidate)

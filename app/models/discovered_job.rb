@@ -17,11 +17,41 @@ class DiscoveredJob < ApplicationRecord
 
   before_validation :apply_defaults
 
+  def ingestion_payload(match_strength: nil)
+    {
+      title: title,
+      company: company_name,
+      apply_url: apply_url,
+      canonical_url: canonical_url,
+      source_url: source_url,
+      source_name: job_source.name,
+      source_slug: job_source.slug,
+      source_kind: job_source.source_kind,
+      external_job_id: external_job_id,
+      remote_signal: remote_text,
+      location: location_text,
+      seniority: seniority,
+      reason: reason,
+      recency_text: posted_text,
+      published_at: published_at&.iso8601,
+      stack_tags: stack_tags,
+      fingerprint: fingerprint,
+      description: description_text
+    }.tap do |payload|
+      payload[:match_strength] = match_strength if match_strength.present?
+      payload[:score] = score if score.positive?
+    end
+  end
+
   def accepted?
     classification_strong? || classification_borderline?
   end
 
   private
+    def description_text
+      payload["description"].presence || payload["body"].presence || payload["summary"].presence
+    end
+
     def apply_defaults
       self.stack_tags = Array(stack_tags).map { |tag| tag.to_s.downcase.squish }.reject(&:blank?).uniq
       self.payload ||= {}
