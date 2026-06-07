@@ -1,6 +1,6 @@
 Escopo analisado:
 - app Rails 8 `/Users/allanflavio/Documents/projects/PERSONAL/backend-challenges/job-search-dashboard`
-- objetivo auditado: evoluir o dashboard para sair do motor principal em Codex e abrir descoberta deterministica no Rails, mantendo a ingestao Codex como caminho complementar
+- objetivo auditado: evoluir o dashboard para sair do motor principal em Codex e abrir descoberta deterministica no Rails, mantendo Codex como fallback estreito para fontes bloqueadas, rate-limited ou instaveis para worker nativo
 - superficies revisadas: autenticacao, ingestao, dedupe, filtros/paginacao, historico de runs, source scans, discovered jobs, worker Solid Queue e configuracao de deploy
 
 Verificacao executada:
@@ -10,6 +10,7 @@ Verificacao executada:
 - `bin/brakeman -q -w2`: 0 warnings
 - `bundle exec ruby -rfugit -e 'Fugit.parse("every day at 11:30 UTC").next_time'`: parse valido, proxima execucao em `08:30 -03:00`
 - automacao `daily-senior-ruby-react-job-search` removida do app; o heartbeat legado nao esta mais presente em `/Users/allanflavio/.codex/automations`
+- novo contrato de fallback: `JobSource` agora registra `codex_fallback_enabled`, `codex_fallback_reason` e `last_codex_fallback_at`, e a API `GET /api/v1/codex_fallback_sources` expoe apenas as fontes que o Codex deve cobrir de forma assistida
 - smoke local do adapter `Remotar`: `18` candidatos aderentes nas primeiras `4` paginas, com links diretos para `Gupy` e `Inhire`
 - smoke local do adapter `Workable`: `0` matches fortes nas primeiras `10` paginas recentes, o que sugere baixo volume atual para o nicho monitorado
 - smoke local do adapter `Sólides`: `3` borderline e `0` strong em `20d` com as queries padrao `react`, `react native`, `ruby` e `rails`; a integracao publica esta funcional, mas o indice atual da fonte parece entregar mais titulos senior genericos do que titulos com stack explicita
@@ -30,6 +31,9 @@ Verificacao executada:
   - `Lever` com boards `ciandt`, `jobgether`, `decilegroup` e `toptal`: depois do prefilter por politica completa no payload do board, o smoke atual caiu para `33` strong, `1` borderline e `0` rejected materializados em `20d`; antes disso o mesmo recorte gerava `261` rejeicoes estruturais sem ganho de cobertura
   - `Greenhouse` com boards `rdsourcing` e `fueledcareers`: `2` strong, `2` borderline e `1` rejected em `20d`
   - `Ashby` com boards `ruby-labs` e `Skydropx`: `0` matches fortes na janela e `3` rejected
+- investigacao de fontes restantes:
+  - `APInfo` permaneceu fora do worker nativo porque o endpoint publico de busca respondeu com rate-limit temporario; a fonte agora fica marcada como Codex fallback
+  - `RubyOnRemote` permaneceu fora do worker nativo porque as paginas publicas responderam com challenge Cloudflare para o perfil de cliente usado pelo Rails; a fonte agora fica marcada como Codex fallback
 - revisao estatica dos adapters `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `Teamtailor`, `SmartRecruiters`, `ProgramaThor`, `Remotar`, `Workable`, do `JobDiscovery::Orchestrator` e da extracao reutilizavel `JobIngestions::Recorder`
 - validacao em producao no Railway:
   - deploy novo do `web` e `worker` com `bin/predeploy`
@@ -66,6 +70,7 @@ Q: Requisitos questionados
   - backfill deterministico no Rails com rastreabilidade por fonte
 - Alterados:
   - o sistema agora tem dois caminhos validos: `Codex -> ingestao` e `Rails adapters -> source scans -> inbox`
+  - esse desenho foi estreitado: Rails e dono diario/canonico; Codex so atua em fontes marcadas como fallback ou em descoberta complementar pontual
 - Suspeitos/deletados:
   - thread como memoria canonica
   - `jobs.json` como banco
@@ -108,6 +113,8 @@ S: Simplificar/Otimizar
   - o catalogo default agora tambem carrega seeds curados para fontes que antes dependiam de memoria previa ou cirurgia manual em `settings`; no estado atual isso bootstrapa `Gupy`, `Recrutei`, `Lever`, `Greenhouse`, `Ashby`, `Inhire` e `SmartRecruiters` sem sobrescrever customizacao do operador
   - o catalogo de fontes deixou de ser apenas tela de configuracao; agora ele tambem mostra a ultima verdade operacional por fonte, o que encurta o diagnostico de cobertura sem abrir cada `SearchRun`
   - a UI de fontes deixou de aceitar `adapter_key` como texto livre; a edicao agora oferece apenas o registry suportado mais `manual_only`, preservando valores legados invalidos apenas para correcao explicita do operador
+  - fontes bloqueadas deixaram de ficar escondidas em comentario/documentacao; o catalogo agora mostra explicitamente se a fonte participa do fallback Codex, por que participa e quando uma ingestao Codex dela aconteceu pela ultima vez
+  - a automacao Codex deixou de precisar manter uma lista paralela de fontes; ela pode buscar `GET /api/v1/codex_fallback_sources` e postar o resultado validado de volta no endpoint de ingestao existente
 - Risco residual real:
   - o slice Rails ainda nao cobre todo o catalogo, apesar de agora incluir `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `Teamtailor`, `SmartRecruiters`, `ProgramaThor`, `Remotar`, `Workable`, `Trampos` e `Coodesh`
   - `Recrutei` ja consegue revalidar e redescobrir a partir de URLs publicas conhecidas, mas o board `/<label>/vacancies` nao expõe uma listagem SSR confiavel hoje; por isso a cobertura nativa dessa fonte ainda depende de URLs ja vistas ou `settings.company_labels`/`settings.vacancy_urls`
@@ -118,9 +125,9 @@ S: Simplificar/Otimizar
   - `Trampos` hoje nao oferece busca por stack confiavel na API publica; a cobertura depende do scan cronologico global e da filtragem backend por titulo/descricao
   - `Coodesh` hoje depende do payload SSR `self.__next_f.push(...)` embutido na pagina da vaga; o sitemap publico é estavel, mas qualquer mudanca forte na serializacao React Server Components exigira ajuste do parser
   - `ProgramaThor` nao expõe recencia forte nas paginas usadas; o adapter ainda depende de ordem do board e limite de paginas como fallback
-  - `APInfo` expõe busca publica por formulario, mas o endpoint respondeu com `Erro : 178.076-H - Seu limite de consultas esta temporariamente esgotado` no ambiente de desenvolvimento durante a investigacao; sem um caminho mais estavel, ela continua fora do slice nativo por enquanto
-  - `RubyOnRemote` respondeu `403` com challenge Cloudflare para `Net::HTTP`, `urllib` e user-agents de navegador nos endpoints principais e no sitemap; enquanto esse bloqueio existir para o mesmo perfil de cliente do worker, um adapter nativo seria ilusorio
-  - o endpoint de ingestao Codex continua existente e util para importacao complementar, mas como nao ha mais automacao agendada nele, essa trilha pode ficar sem uso por longos periodos ate ser exercitada manualmente
+  - `APInfo` expõe busca publica por formulario, mas o endpoint respondeu com `Erro : 178.076-H - Seu limite de consultas esta temporariamente esgotado` no ambiente de desenvolvimento durante a investigacao; ela agora fica em Codex fallback em vez de ganhar um adapter nativo fragil
+  - `RubyOnRemote` respondeu `403` com challenge Cloudflare para `Net::HTTP`, `urllib` e user-agents de navegador nos endpoints principais e no sitemap; enquanto esse bloqueio existir para o mesmo perfil de cliente do worker, ela fica em Codex fallback
+  - o endpoint de ingestao Codex continua complementar; a diferenca agora e que existe um contrato explicito de fontes fallback e observabilidade de `last_codex_fallback_at`
 
 A: Acelerar ciclo de feedback
 - O ciclo local esta curto e suficiente:
@@ -137,7 +144,7 @@ A: Automatizar por ultimo
 - Agora:
   - o Rails ja consegue fazer backfill deterministico manual com `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `Teamtailor`, `SmartRecruiters`, `ProgramaThor`, `Remotar` e `Workable`
   - Railway roda `web` e `worker`, com tarefas recorrentes internas do Solid Queue para limpeza/expiracao e descoberta diaria de `24h` as `08:30 BRT`
-  - a automacao Codex agendada foi removida; `POST /api/v1/job_ingestions` ficou como caminho complementar/manual
+  - a automacao Codex ampla foi removida; Codex volta apenas como fallback estreito para fontes marcadas pelo Rails e sempre posta em `POST /api/v1/job_ingestions`
 - Adiado com intencao:
   - cobrir o resto do catalogo com adapters nativos
   - candidatura automatica

@@ -6,8 +6,8 @@ Rails 8 dashboard for senior Ruby, Ruby on Rails, React, and React Native job di
 
 The production flows are:
 
-- `Codex automation -> POST /api/v1/job_ingestions -> Rails persistence and dedupe -> private dashboard`
 - `Rails recurring/manual discovery -> source adapters -> discovered candidates -> Rails persistence and dedupe -> private dashboard`
+- `Codex fallback automation -> GET /api/v1/codex_fallback_sources -> assisted discovery for blocked sources -> POST /api/v1/job_ingestions -> Rails persistence and dedupe -> private dashboard`
 
 What Rails owns:
 
@@ -23,10 +23,10 @@ What Rails owns:
 
 What Codex owns:
 
-- Google-style discovery across ATSs, remote platforms, and company pages
-- validation that the job is still active and directly apply-able
-- recency judgment and stack/title matching
-- optional complementary ingestion when you want to compare or enrich Rails-native discovery
+- fallback discovery for sources explicitly marked with `codex_fallback_enabled`
+- assisted search/navigation for sources that are blocked, rate-limited, protected by challenge pages, or too unstable for a native worker adapter
+- validation that the job is still active and directly apply-able before posting it back to Rails
+- optional complementary discovery of new boards that can later become native Rails adapters
 
 What Rails currently discovers by itself:
 
@@ -45,7 +45,7 @@ What Rails currently discovers by itself:
 - `Remotar` via public jobs API, incluindo links externos para ATSs como `Gupy` e `Inhire`
 - `Workable` via public global jobs API
 
-The rest of the catalog is still present for normalization/filtering, but not yet scanned by native Rails adapters. `Recrutei` deserves one operational note: the public `/<label>/vacancies` page does not reliably SSR active links, so the adapter uses direct vacancy URLs already persisted by the dashboard and can optionally be bootstrapped with `company_labels` or `vacancy_urls` in the source settings. `Sólides` also deserves one: the public `/vagas` search page is a client-side shell, so the adapter goes straight to the public `apigw.solides.com.br/jobs/v3/portal-vacancies-new/` endpoint and only accepts vacancies whose public detail page is still receiving resumes. `Teamtailor` currently covers `*.teamtailor.com` boards discovered from existing job URLs or manually seeded `board_urls`; custom domains fronted by Teamtailor but without the suffix are still outside this adapter. `SmartRecruiters` goes through the official Posting API because the public job pages are protected by a JS challenge; it trusts `active`, `releasedDate`, and `applyUrl` from the API and is seeded via `company_identifiers`. `Trampos` is driven by the platform's public `api/v2/opportunities` feed instead of its weak term search; when `apply_url` is empty, the canonical detail page itself becomes the applyable link because the candidacy flow is handled inside `trampos.co`. `Coodesh` is driven by the public `sitemaps/jobs.xml` plus the SSR payload embedded in each vacancy page; if the job has no `external_url`, the canonical vacancy page itself becomes the applyable link because the candidacy flow is internal to `coodesh.com`.
+The rest of the catalog is still present for normalization/filtering. Sources that are not practical for a native Rails adapter can be marked as Codex fallback sources; today that covers `APInfo` because its public search rate-limits automated clients, and `RubyOnRemote` because its public pages return a Cloudflare challenge to the Rails worker client profile. `Recrutei` deserves one operational note: the public `/<label>/vacancies` page does not reliably SSR active links, so the adapter uses direct vacancy URLs already persisted by the dashboard and can optionally be bootstrapped with `company_labels` or `vacancy_urls` in the source settings. `Sólides` also deserves one: the public `/vagas` search page is a client-side shell, so the adapter goes straight to the public `apigw.solides.com.br/jobs/v3/portal-vacancies-new/` endpoint and only accepts vacancies whose public detail page is still receiving resumes. `Teamtailor` currently covers `*.teamtailor.com` boards discovered from existing job URLs or manually seeded `board_urls`; custom domains fronted by Teamtailor but without the suffix are still outside this adapter. `SmartRecruiters` goes through the official Posting API because the public job pages are protected by a JS challenge; it trusts `active`, `releasedDate`, and `applyUrl` from the API and is seeded via `company_identifiers`. `Trampos` is driven by the platform's public `api/v2/opportunities` feed instead of its weak term search; when `apply_url` is empty, the canonical detail page itself becomes the applyable link because the candidacy flow is handled inside `trampos.co`. `Coodesh` is driven by the public `sitemaps/jobs.xml` plus the SSR payload embedded in each vacancy page; if the job has no `external_url`, the canonical vacancy page itself becomes the applyable link because the candidacy flow is internal to `coodesh.com`.
 
 `Lever` also has one important optimization: the adapter now applies the full title/stack/remote policy against the board payload before materializing a candidate. That keeps strong and borderline matches, but stops flooding the run with generic senior Java/Python/backend roles that never fit the Ruby/React radar.
 
@@ -57,11 +57,12 @@ The rest of the catalog is still present for normalization/filtering, but not ye
 - strong vs borderline match classification
 - source catalog for ATSs and platforms
 - source catalog with latest scan status and coverage counters
-- editable source administration, including validated JSON `settings` for adapters that need seeded boards/slugs/queries
+- editable source administration, including validated JSON `settings` for adapters that need seeded boards/slugs/queries and explicit Codex fallback flags
 - validated native backfill contract: a source can only participate in recurring/manual Rails discovery when its `adapter_key` is supported by the registry
 - secure ingestion endpoint with shared bearer token
 - deterministic backfill trigger from the Runs screen
 - source-scoped backfill triggers from the Runs and Sources screens
+- Codex fallback source API for blocked/manual sources that still need assisted discovery
 - native daily discovery scheduled through Solid Queue recurring tasks at `08:30 BRT` (`11:30 UTC`)
 - persisted source-level coverage counters and discovered candidate trace
 - persisted ATS memory: known board slugs, tokens, and public career pages can be rediscovered from already-ingested job URLs
@@ -157,6 +158,17 @@ Accepted payload shape:
 
 Successful responses return the `search_run_id` plus ingestion counters.
 
+## Codex Fallback API
+
+Endpoint:
+
+```text
+GET /api/v1/codex_fallback_sources
+Authorization: Bearer <INGEST_SHARED_TOKEN>
+```
+
+This endpoint returns only enabled sources marked with `codex_fallback_enabled=true`, plus policy hints and the ingestion path. Codex uses this list for a narrow fallback automation: search the blocked sources, validate active senior Ruby/Rails/React/React Native roles, then post the resulting jobs back to `/api/v1/job_ingestions` with `trigger_source=codex_automation`.
+
 ## Railway Deployment
 
 The repo is configured for multiple Railway services from the same codebase:
@@ -192,9 +204,9 @@ Useful optional variables:
 - `JOB_CONCURRENCY=1`
 - `JOB_STALE_AFTER_DAYS=21`
 
-Solid Queue tables live in the main Rails schema because this app uses a single PostgreSQL database in Railway. Recurring tasks are configured in [config/recurring.yml](config/recurring.yml). Rails now enqueues its own daily `24h` discovery run at `11:30 UTC`, which corresponds to `08:30 BRT`. The old Codex heartbeat automation was retired after this cutover, so Rails is the only scheduled daily engine.
+Solid Queue tables live in the main Rails schema because this app uses a single PostgreSQL database in Railway. Recurring tasks are configured in [config/recurring.yml](config/recurring.yml). Rails now enqueues its own daily `24h` discovery run at `11:30 UTC`, which corresponds to `08:30 BRT`. Rails remains the only primary scheduled engine; Codex is a separate fallback path for sources that Rails explicitly marks as blocked or assisted.
 
-The deterministic Rails backfill can already be run manually from the dashboard or via `dashboard:discover`. The Runs screen can launch either a full backfill or a source-scoped backfill, and the Sources screen can do the same right after you change adapter settings. The Sources screen is now the operational place to seed adapter-specific `settings` such as `board_urls`, `company_labels`, `company_slugs`, `company_identifiers`, `search_queries`, and `max_pages`. `dashboard:seed_sources` is now non-destructive for existing records: it bootstraps missing catalog fields but preserves operator overrides for adapter, priority, enablement, scan window, host/base URL edits, and JSON `settings`. The default catalog now also carries curated starter settings for the sources already validated in this project, so blank production records can immediately bootstrap known `Gupy`, `Recrutei`, `Lever`, `Greenhouse`, `Ashby`, `Inhire`, and `SmartRecruiters` boards without manual surgery. If you need to roll out a new default over an existing source, use an explicit migration or task instead of relying on deploy-time seeding. Codex ingestion remains available as a complementary API path, but there is no longer a scheduled Codex automation feeding the app.
+The deterministic Rails backfill can already be run manually from the dashboard or via `dashboard:discover`. The Runs screen can launch either a full backfill or a source-scoped backfill, and the Sources screen can do the same right after you change adapter settings. The Sources screen is now the operational place to seed adapter-specific `settings` such as `board_urls`, `company_labels`, `company_slugs`, `company_identifiers`, `search_queries`, and `max_pages`. It is also where blocked sources are marked for Codex fallback with an operator-visible reason and `last_codex_fallback_at`. `dashboard:seed_sources` is now non-destructive for existing records: it bootstraps missing catalog fields but preserves operator overrides for adapter, priority, enablement, scan window, host/base URL edits, JSON `settings`, and Codex fallback settings. The default catalog now also carries curated starter settings for the sources already validated in this project, so blank production records can immediately bootstrap known `Gupy`, `Recrutei`, `Lever`, `Greenhouse`, `Ashby`, `Inhire`, and `SmartRecruiters` boards without manual surgery. If you need to roll out a new default over an existing source, use an explicit migration or task instead of relying on deploy-time seeding. Codex ingestion remains available as a complementary API path and now has a narrow scheduled fallback role.
 
 Run status semantics for native Rails discovery are:
 
