@@ -3,6 +3,14 @@ Escopo analisado:
 - objetivo auditado: evoluir o dashboard para sair do motor principal em Codex e abrir descoberta deterministica no Rails, mantendo Codex como fallback estreito para fontes bloqueadas, rate-limited ou instaveis para worker nativo
 - superficies revisadas: autenticacao, ingestao, dedupe, filtros/paginacao, historico de runs, source scans, discovered jobs, worker Solid Queue e configuracao de deploy
 
+Atualizacao multi-perfil:
+- QDSAA questionou a premissa de que Ruby/React e exclusao de vagas para mulheres eram regras globais; isso era verdadeiro para o perfil pessoal inicial, mas errado para produto
+- decisao mantida: `Job` vira vaga canonica global, enquanto `SearchProfile` representa a intencao de busca do usuario e `JobMatch` representa score, motivo, stack_tags, eligibility_flags e estado manual por perfil
+- decisao deletada: rejeicao global de vagas afirmativas para mulheres; agora `include_women_only` pertence ao `SearchProfile`
+- decisao simplificada: o usuario informa stack, titulos-alvo, senioridade, localidade e restricoes; o backend compila variacoes/sinonimos como `java`, `spring`, `.net`, `dotnet`, `c#`, `rails`, `react native`
+- decisao de escala: crawlers continuam globais e usam a uniao dos perfis ativos para prefiltrar candidatos; a avaliacao final roda por perfil e grava `JobMatch`
+- decisao de confianca: payload Codex continua sendo input nao confiavel; Rails reclassifica cada vaga contra os perfis ativos antes de criar matches
+
 Verificacao executada:
 - `bin/rails db:migrate`: schema atualizado com `SourceScan` e `DiscoveredJob`
 - `bin/rails test`: 59 testes, 221 assertions, sem falhas

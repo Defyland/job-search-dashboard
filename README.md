@@ -1,6 +1,6 @@
 # Job Search Dashboard
 
-Rails 8 dashboard for senior Ruby, Ruby on Rails, React, and React Native job discovery. The app still accepts curated Codex ingestion, but it now also owns a first deterministic discovery slice for Rails-driven backfills and recurring scans.
+Rails 8 dashboard for configurable developer job discovery profiles. The default seeded profile still targets senior Ruby, Ruby on Rails, React, and React Native remote roles, but the product model now lets each user define stacks, title terms, seniority, location requirements, and eligibility preferences such as whether women-only affirmative roles should be included. The app accepts curated Codex ingestion, but Rails owns deterministic backfills, recurring scans, canonical job persistence, and profile-scoped matching.
 
 ## Architecture
 
@@ -13,12 +13,13 @@ What Rails owns:
 
 - private authenticated UI
 - canonical `Job`, `JobSource`, `SearchRun`, `SearchRunItem`, `SourceScan`, and `DiscoveredJob` records
+- configurable `SearchProfile` records and per-profile `JobMatch` records
 - dedupe by canonical URL and fingerprint
-- user workflow state: `new_match`, `seen`, `applied`, `ignored`
+- user workflow state per profile: `new_match`, `seen`, `applied`, `ignored`
 - job lifecycle state: `active`, `expired`
 - run history and raw payload traceability
 - deterministic source coverage for the adapters already implemented
-- policy enforcement for women-only exclusion, title-first seniority matching, and remote compatibility
+- policy enforcement from each active profile: title-first seniority matching, stack matching, remote compatibility, negative terms, and women-only eligibility
 - backend reclassification of every ingested job, including Codex fallback payloads
 - configurable per-source search queries for public indexes that require term-driven scans, such as `Sólides`
 
@@ -26,7 +27,7 @@ What Codex owns:
 
 - fallback discovery for sources explicitly marked with `codex_fallback_enabled`
 - assisted search/navigation for sources that are blocked, rate-limited, protected by challenge pages, or too unstable for a native worker adapter
-- validation that the job is still active and directly apply-able before posting it back to Rails; the final match decision still belongs to Rails
+- validation that the job is still active and directly apply-able before posting it back to Rails; final match decisions still belong to Rails profile policies
 - optional complementary discovery of new boards that can later become native Rails adapters
 
 What Rails currently discovers by itself:
@@ -48,13 +49,15 @@ What Rails currently discovers by itself:
 
 The rest of the catalog is still present for normalization/filtering. Sources that are not practical for a native Rails adapter can be marked as Codex fallback sources; today that covers `APInfo` because its public search rate-limits automated clients, and `RubyOnRemote` because its public pages return a Cloudflare challenge to the Rails worker client profile. `Recrutei` deserves one operational note: the public `/<label>/vacancies` page does not reliably SSR active links, so the adapter uses direct vacancy URLs already persisted by the dashboard and can optionally be bootstrapped with `company_labels` or `vacancy_urls` in the source settings. `Sólides` also deserves one: the public `/vagas` search page is a client-side shell, so the adapter goes straight to the public `apigw.solides.com.br/jobs/v3/portal-vacancies-new/` endpoint and only accepts vacancies whose public detail page is still receiving resumes. `Teamtailor` currently covers `*.teamtailor.com` boards discovered from existing job URLs or manually seeded `board_urls`; custom domains fronted by Teamtailor but without the suffix are still outside this adapter. `SmartRecruiters` goes through the official Posting API because the public job pages are protected by a JS challenge; it trusts `active`, `releasedDate`, and `applyUrl` from the API and is seeded via `company_identifiers`. `Trampos` is driven by the platform's public `api/v2/opportunities` feed instead of its weak term search; when `apply_url` is empty, the canonical detail page itself becomes the applyable link because the candidacy flow is handled inside `trampos.co`. `Coodesh` is driven by the public `sitemaps/jobs.xml` plus the SSR payload embedded in each vacancy page; if the job has no `external_url`, the canonical vacancy page itself becomes the applyable link because the candidacy flow is internal to `coodesh.com`.
 
-`Lever` also has one important optimization: the adapter now applies the full title/stack/remote policy against the board payload before materializing a candidate. That keeps strong and borderline matches, but stops flooding the run with generic senior Java/Python/backend roles that never fit the Ruby/React radar.
+`Lever` also has one important optimization: the adapter now applies the active profile union policy against the board payload before materializing a candidate. That keeps strong and borderline matches for any configured profile, while avoiding obvious generic roles that do not fit any active radar.
 
 ## Main Features
 
 - Rails 8, PostgreSQL, Turbo, Stimulus, Tailwind
 - session-based private login
+- configurable search profiles for stack, title terms, seniority, locality, remote requirement, and women-only affirmative-role eligibility
 - filterable and paginated job radar
+- profile-scoped job matches and workflow state
 - strong vs borderline match classification
 - source catalog for ATSs and platforms
 - source catalog with latest scan status and coverage counters
@@ -63,7 +66,7 @@ The rest of the catalog is still present for normalization/filtering. Sources th
 - secure ingestion endpoint with shared bearer token
 - deterministic backfill trigger from the Runs screen
 - source-scoped backfill triggers from the Runs and Sources screens
-- Codex fallback source API for blocked/manual sources that still need assisted discovery
+- Codex fallback source API for blocked/manual sources that still need assisted discovery, including active profile policy contracts
 - native daily discovery scheduled through Solid Queue recurring tasks at `08:30 BRT` (`11:30 UTC`)
 - persisted source-level coverage counters and discovered candidate trace
 - persisted ATS memory: known board slugs, tokens, and public career pages can be rediscovered from already-ingested job URLs
@@ -72,7 +75,9 @@ The rest of the catalog is still present for normalization/filtering. Sources th
 
 ## Core Models
 
-- `Job`: normalized job record with stack tags, score, recency signal, apply URL, raw payload, and user lifecycle state
+- `Job`: canonical normalized job record with company, title, URLs, source, recency signal, lifecycle state, and raw payload
+- `SearchProfile`: user-owned search intent with stacks, target titles, seniority terms, location terms, negative terms, remote requirement, and women-only eligibility preference
+- `JobMatch`: profile-specific evaluation of one `Job`, including stack tags, score, reason, eligibility flags, and user workflow state
 - `JobSource`: ATS/platform/company catalog used for filters, normalization, and backfill configuration
 - `SearchRun`: one Codex ingestion or Rails discovery execution window
 - `SearchRunItem`: per-job outcome within a run, including rejections and expirations
@@ -157,7 +162,7 @@ Accepted payload shape:
 }
 ```
 
-Successful responses return the `search_run_id` plus ingestion counters.
+Successful responses return the `search_run_id` plus ingestion counters. Rails stores one canonical `Job` and then creates or updates `JobMatch` rows for every active profile whose policy accepts that job. External `match_strength`, `score`, `stack_tags`, and `reason` are treated as hints; Rails reclassifies the payload before persisting final match state.
 
 ## Codex Fallback API
 
@@ -168,7 +173,7 @@ GET /api/v1/codex_fallback_sources
 Authorization: Bearer <INGEST_SHARED_TOKEN>
 ```
 
-This endpoint returns only enabled sources marked with `codex_fallback_enabled=true`, plus policy hints and the ingestion path. Codex uses this list for a narrow fallback automation: search the blocked sources, validate active senior Ruby/Rails/React/React Native roles, then post the resulting jobs back to `/api/v1/job_ingestions` with `trigger_source=codex_automation`. The ingestion service re-runs `JobDiscovery::Policy` before persisting any job, so `match_strength`, `score`, `stack_tags`, and `reason` from Codex are treated as hints, not trusted final state.
+This endpoint returns only enabled sources marked with `codex_fallback_enabled=true`, plus active profile policy contracts and the ingestion path. Codex uses this list for a narrow fallback automation: search the blocked sources using the configured profile terms, validate active directly apply-able roles, then post the resulting jobs back to `/api/v1/job_ingestions` with `trigger_source=codex_automation`. The ingestion service re-runs `JobDiscovery::Policy` for each active `SearchProfile` before persisting any final match state.
 
 ## Railway Deployment
 
