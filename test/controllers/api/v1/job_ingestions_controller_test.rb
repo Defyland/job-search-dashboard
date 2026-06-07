@@ -6,32 +6,36 @@ class Api::V1::JobIngestionsControllerTest < ActionDispatch::IntegrationTest
     ENV["INGEST_SHARED_TOKEN"] = "secret-token"
 
     assert_difference([ "SearchRun.count", "Job.count" ], 1) do
-      post api_v1_job_ingestions_path,
-           params: {
-             run: { window_label: "24h", trigger_source: "codex_automation" },
-             jobs: [
-               {
-                 title: "Senior React Native Developer",
-                 company: "CI&T",
-                 apply_url: "https://jobs.lever.co/ciandt/ff314e5d-e080-43cf-bb51-a581c2701199",
-                 canonical_url: "https://jobs.lever.co/ciandt/ff314e5d-e080-43cf-bb51-a581c2701199",
-                 source_name: "Lever",
-                 source_kind: "ats",
-                 remote_signal: "Remote Brazil",
-                 location: "Brazil",
-                 reason: "Titulo senior com React Native e remoto BR.",
-                 stack_tags: [ "react native" ],
-                 match_strength: "strong",
-                 score: 91
-               }
-             ]
-           },
-           headers: { "Authorization" => "Bearer secret-token" },
-           as: :json
+      assert_difference("JobMatch.count", 2) do
+        post api_v1_job_ingestions_path,
+             params: {
+               run: { window_label: "24h", trigger_source: "codex_automation" },
+               jobs: [
+                 {
+                   title: "Senior React Native Developer",
+                   company: "CI&T",
+                   apply_url: "https://jobs.lever.co/ciandt/ff314e5d-e080-43cf-bb51-a581c2701199",
+                   canonical_url: "https://jobs.lever.co/ciandt/ff314e5d-e080-43cf-bb51-a581c2701199",
+                   source_name: "Lever",
+                   source_kind: "ats",
+                   remote_signal: "Remote Brazil",
+                   location: "Brazil",
+                   reason: "Titulo senior com React Native e remoto BR.",
+                   stack_tags: [ "react native" ],
+                   match_strength: "strong",
+                   score: 91
+                 }
+               ]
+             },
+             headers: { "Authorization" => "Bearer secret-token" },
+             as: :json
+      end
     end
 
     assert_response :created
-    assert_equal("CI&T", Job.order(:created_at).last.company_name)
+    job = Job.order(:created_at).last
+    assert_equal("CI&T", job.company_name)
+    assert_includes job.job_matches.map(&:search_profile), search_profiles(:default)
   ensure
     ENV["INGEST_SHARED_TOKEN"] = previous_token
   end

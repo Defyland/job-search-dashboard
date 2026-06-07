@@ -6,7 +6,7 @@ module JobIngestions
 
     def initialize(search_run:)
       @search_run = search_run
-      @policy = JobDiscovery::Policy.new
+      @matcher = JobMatching::ProfileMatcher.new
       @summary = {
         imported_count: 0,
         updated_count: 0,
@@ -54,16 +54,19 @@ module JobIngestions
           return
         end
 
-        policy_decision = policy_decision_for(attributes, item, source)
-        unless policy_decision.accepted?
-          build_run_item(nil, :rejected, policy_decision.exclusion_reason.presence || policy_decision.reason, item)
+        profile_decisions = profile_decisions_for(attributes, item, source)
+        accepted_decisions = profile_decisions.select(&:accepted?)
+        if accepted_decisions.blank?
+          build_run_item(nil, :rejected, rejection_reason_for(profile_decisions), item)
           @summary[:rejected_count] += 1
           return
         end
 
-        attributes = apply_policy_decision(attributes, policy_decision)
+        primary_decision = accepted_decisions.max_by(&:score)
+        attributes = apply_policy_decision(attributes, primary_decision)
 
-        upsert_job(existing_job:, source:, attributes:, payload: item)
+        job = upsert_job(existing_job:, source:, attributes:, payload: item)
+        upsert_job_matches(job, accepted_decisions)
         mark_codex_fallback_seen!(source)
       end
 
@@ -90,6 +93,7 @@ module JobIngestions
             end
 
           build_run_item(existing_job, outcome, attributes[:reason], payload)
+          existing_job
         else
           job = Job.create!(
             job_attributes.merge(
@@ -99,6 +103,33 @@ module JobIngestions
           )
           build_run_item(job, :created, attributes[:reason], payload)
           @summary[:imported_count] += 1
+          job
+        end
+      end
+
+      def upsert_job_matches(job, decisions)
+        timestamp = Time.current
+
+        decisions.each do |decision|
+          match = job.job_matches.find_or_initialize_by(search_profile: decision.search_profile)
+          match.assign_attributes(
+            match_strength: JobMatch.match_strengths.fetch(decision.classification.to_s),
+            score: decision.score,
+            reason: decision.reason,
+            seniority: decision.seniority,
+            stack_tags: decision.stack_tags,
+            eligibility_flags: decision.eligibility_flags,
+            raw_decision: {
+              classification: decision.classification,
+              remote_signal: decision.remote_signal,
+              exclusion_reason: decision.exclusion_reason
+            },
+            last_seen_at: timestamp,
+            last_validated_at: timestamp
+          )
+          match.first_seen_at ||= timestamp
+          match.user_state = :new_match if match.new_record?
+          match.save!
         end
       end
 
@@ -174,34 +205,16 @@ module JobIngestions
         }
       end
 
-      def policy_decision_for(attributes, item, source)
-        item = item.deep_stringify_keys
-        @policy.classify(
-          title: attributes[:title],
-          remote_text: attributes[:remote_text],
-          location_text: attributes[:location_text],
-          description: policy_description(item, attributes),
-          source_slug: source.slug,
-          posted_text: attributes[:posted_text],
-          published_at: attributes[:published_at]
-        )
+      def profile_decisions_for(attributes, item, source)
+        @matcher.decisions(attributes:, payload: item, source:)
       end
 
-      def policy_description(item, attributes)
-        [
-          item["description"],
-          item["body"],
-          item["requirements"],
-          item["summary"],
-          restrictive_payload_reason(item, attributes)
-        ].flatten.compact.join(" ")
-      end
-
-      def restrictive_payload_reason(item, attributes)
-        text = [ item["reason"], item["match_reason"], attributes[:reason] ].compact.join(" ")
-        return if text.blank?
-
-        text if text.match?(/\b(mulher(?:es)?|women|female|closed|expired|unavailable|expirad[ao]|encerrad[ao]|indispon[ií]vel|presencial|h[ií]brido|hybrid|on[-\s]?site)\b/i)
+      def rejection_reason_for(decisions)
+        decisions.map { |decision| decision.exclusion_reason.presence || decision.reason }
+                 .compact_blank
+                 .tally
+                 .max_by { |_reason, count| count }
+                 &.first || "nenhum perfil ativo aceitou a vaga"
       end
 
       def apply_policy_decision(attributes, decision)

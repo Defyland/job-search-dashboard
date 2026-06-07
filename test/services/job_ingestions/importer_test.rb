@@ -24,12 +24,16 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
     result = JobIngestions::Importer.new(payload:).call
 
     assert result.success?
-    assert_equal "Example", Job.order(:created_at).last.company_name
+    job = Job.order(:created_at).last
+
+    assert_equal "Example", job.company_name
+    assert_equal [ search_profiles(:default) ], job.job_matches.map(&:search_profile)
     assert_equal "14d", result.search_run.window_label
   end
 
   test "updates an existing job without resetting user state" do
     jobs(:ruby_role).update!(user_state: :applied)
+    job_matches(:ruby_default).update!(user_state: :applied)
 
     payload = {
       run: { window_label: "24h", trigger_source: "codex_automation" },
@@ -53,7 +57,40 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
 
     assert result.success?
     assert_equal "applied", jobs(:ruby_role).reload.user_state
+    assert_equal "applied", job_matches(:ruby_default).reload.user_state
     assert_equal 96, jobs(:ruby_role).score
+  end
+
+  test "imports women only jobs only for profiles that allow them" do
+    payload = {
+      run: { window_label: "24h", trigger_source: "codex_automation" },
+      jobs: [
+        {
+          title: "Frontend Engineer Senior React",
+          company: "Inclusive Co",
+          apply_url: "https://inclusive.example/jobs/react",
+          canonical_url: "https://inclusive.example/jobs/react",
+          source_name: "Inclusive Careers",
+          source_kind: "company",
+          remote_signal: "Remoto Brasil",
+          location: "Brasil",
+          description: "Vaga afirmativa para mulheres na engenharia.",
+          reason: "Titulo senior com React.",
+          stack_tags: [ "react" ],
+          match_strength: "strong"
+        }
+      ]
+    }
+
+    assert_difference([ "Job.count", "JobMatch.count" ], 1) do
+      result = JobIngestions::Importer.new(payload:).call
+
+      assert result.success?
+    end
+
+    job = Job.order(:created_at).last
+    assert_equal [ search_profiles(:women_inclusive) ], job.job_matches.map(&:search_profile)
+    assert_includes job.job_matches.last.eligibility_flags, "women_only"
   end
 
   test "reuses a catalog source instead of duplicating ats names" do
@@ -119,6 +156,8 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
   end
 
   test "rejects codex jobs that do not pass backend policy" do
+    search_profiles(:women_inclusive).update!(active: false)
+
     payload = {
       run: { window_label: "24h", trigger_source: "codex_automation" },
       jobs: [
@@ -205,6 +244,7 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
   end
 
   test "does not mark codex fallback accepted when fallback job is rejected by policy" do
+    search_profiles(:women_inclusive).update!(active: false)
     JobSource.seed_defaults!
     source = JobSource.find_by!(slug: "rubyonremote")
     source.update!(last_codex_checked_at: nil, last_codex_fallback_at: nil)
