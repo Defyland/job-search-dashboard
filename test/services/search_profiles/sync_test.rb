@@ -80,5 +80,22 @@ module SearchProfiles
         }
       ], FakeRunJob.calls
     end
+
+    test "does nothing for inactive profiles" do
+      profile = search_profiles(:default)
+      profile.update!(active: false)
+
+      Sync.new(
+        search_profile: profile,
+        prune_stale: true,
+        bootstrapper_class: FakeBootstrapper,
+        discovered_bootstrapper_class: FakeDiscoveredBootstrapper,
+        run_job_class: FakeRunJob
+      ).call
+
+      assert_empty FakeBootstrapper.calls
+      assert_empty FakeDiscoveredBootstrapper.calls
+      assert_empty FakeRunJob.calls
+    end
   end
 end

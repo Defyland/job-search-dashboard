@@ -15,6 +15,8 @@ module SearchProfiles
     end
 
     def call
+      return unless @search_profile.active?
+
       @bootstrapper_class.new(search_profile: @search_profile, prune_stale: @prune_stale).call
       @discovered_bootstrapper_class.new(search_profile: @search_profile).call
       @run_job_class.perform_later(
