@@ -90,6 +90,38 @@ class JobDiscovery::PolicyTest < ActiveSupport::TestCase
     assert_includes dotnet_result.stack_tags, ".net"
   end
 
+  test "uses compiled aliases to classify stack from immediate context" do
+    profile = users(:one).search_profiles.create!(
+      name: "Senior Salesforce",
+      target_stacks: [ "salesforce" ],
+      target_titles: [ "salesforce developer", "salesforce engineer" ],
+      seniority_terms: [ "senior", "sênior", "sr" ],
+      location_terms: [ "remote", "remoto", "brazil", "brasil", "latam" ],
+      negative_terms: [ "junior", "pleno" ],
+      settings: {
+        "compiler" => {
+          "stack_aliases" => {
+            "salesforce" => [ "apex", "lightning", "service cloud" ]
+          }
+        }
+      }
+    )
+
+    result = JobDiscovery::Policy.new(search_profile: profile).classify(
+      title: "Senior Platform Engineer",
+      remote_text: "Remote Brazil",
+      location_text: "Brazil",
+      description: "Hands-on with Apex and Lightning on Salesforce",
+      source_slug: "lever",
+      posted_text: "today",
+      published_at: nil
+    )
+
+    assert result.accepted?
+    assert_equal :borderline, result.classification
+    assert_includes result.stack_tags, "salesforce"
+  end
+
   test "portuguese salesforce profile accepts portuguese titles and rejects english titles" do
     profile = salesforce_profile(language_scope: :portuguese)
 

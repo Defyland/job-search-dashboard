@@ -300,7 +300,7 @@ module JobDiscovery
         Criteria.new(
           profile:,
           language_scope:,
-          stack_patterns: build_stack_patterns(profile.target_stacks),
+          stack_patterns: build_stack_patterns(profile),
           title_patterns: build_patterns(profile.target_titles),
           role_patterns: build_patterns(role_terms_for(language_scope)),
           seniority_patterns: build_patterns(profile.seniority_terms),
@@ -324,9 +324,14 @@ module JobDiscovery
         end
       end
 
-      def build_stack_patterns(target_stacks)
-        normalize_list(target_stacks).each_with_object({}) do |tag, result|
+      def build_stack_patterns(profile)
+        normalize_list(profile.target_stacks).each_with_object({}) do |tag, result|
           terms = STACK_SYNONYMS.fetch(tag, [ tag ])
+          if profile.respond_to?(:compiler_stack_aliases)
+            terms += Array(profile.compiler_stack_aliases[tag])
+          end
+
+          terms = normalize_list(terms)
           result[tag] = build_patterns(terms)
         end
       end
