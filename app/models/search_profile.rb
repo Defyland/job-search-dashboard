@@ -49,19 +49,7 @@ class SearchProfile < ApplicationRecord
   end
 
   def policy_contract
-    {
-      profile_id: id,
-      profile_name: name,
-      seniority_terms: seniority_terms,
-      stack_terms: target_stacks,
-      title_terms: target_titles,
-      language_scope: language_scope,
-      location_terms: location_terms,
-      required_remote: required_remote?,
-      include_women_only: include_women_only?,
-      exclude_terms: effective_exclude_terms,
-      output: "POST accepted strong/borderline jobs and useful rejections to /api/v1/job_ingestions"
-    }
+    JobDiscovery::PolicyContractSerializer.dump(self)
   end
 
   def effective_exclude_terms
