@@ -4,11 +4,18 @@ class SearchProfile < ApplicationRecord
   DEFAULT_SENIORITY_TERMS = [ "senior", "sênior", "sr", "staff" ].freeze
   DEFAULT_LOCATION_TERMS = [ "remoto", "remote", "home office", "brasil", "brazil", "latam" ].freeze
   DEFAULT_NEGATIVE_TERMS = [ "junior", "júnior", "pleno", "mid-level", "trainee", "intern", "internship", "estágio" ].freeze
+  LANGUAGE_SCOPE_LABELS = {
+    "both" => "Português e Inglês",
+    "portuguese" => "Português",
+    "english" => "Inglês"
+  }.freeze
 
   belongs_to :user
 
   has_many :job_matches, dependent: :destroy
   has_many :jobs, through: :job_matches
+
+  enum :language_scope, { both: 0, portuguese: 1, english: 2 }, prefix: true, validate: true
 
   normalizes :name, with: ->(value) { value.to_s.squish }
 
@@ -33,6 +40,7 @@ class SearchProfile < ApplicationRecord
       seniority_terms: DEFAULT_SENIORITY_TERMS,
       location_terms: DEFAULT_LOCATION_TERMS,
       negative_terms: DEFAULT_NEGATIVE_TERMS,
+      language_scope: :both,
       required_remote: true,
       include_women_only: false,
       scan_window_days: 20,
@@ -47,6 +55,7 @@ class SearchProfile < ApplicationRecord
       seniority_terms: seniority_terms,
       stack_terms: target_stacks,
       title_terms: target_titles,
+      language_scope: language_scope,
       location_terms: location_terms,
       required_remote: required_remote?,
       include_women_only: include_women_only?,
@@ -59,6 +68,10 @@ class SearchProfile < ApplicationRecord
     terms = negative_terms.dup
     terms += [ "mulheres", "women only", "female only" ] unless include_women_only?
     terms
+  end
+
+  def language_scope_label
+    LANGUAGE_SCOPE_LABELS.fetch(language_scope, LANGUAGE_SCOPE_LABELS.fetch("both"))
   end
 
   %i[target_stacks target_titles seniority_terms location_terms negative_terms].each do |field|
@@ -81,6 +94,7 @@ class SearchProfile < ApplicationRecord
       self.seniority_terms = normalize_list(seniority_terms.presence || DEFAULT_SENIORITY_TERMS)
       self.location_terms = normalize_list(location_terms.presence || DEFAULT_LOCATION_TERMS)
       self.negative_terms = normalize_list(negative_terms.presence || DEFAULT_NEGATIVE_TERMS)
+      self.language_scope = language_scope.presence || "both"
       self.scan_window_days ||= 20
       self.settings ||= {}
       self.active = true if active.nil?

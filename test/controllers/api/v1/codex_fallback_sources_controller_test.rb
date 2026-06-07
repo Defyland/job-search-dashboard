@@ -23,6 +23,7 @@ class Api::V1::CodexFallbackSourcesControllerTest < ActionDispatch::IntegrationT
 
     assert_includes default_policy.fetch("stack_terms"), "ruby on rails"
     assert_includes default_policy.fetch("exclude_terms"), "mulheres"
+    assert_equal "both", default_policy.fetch("language_scope")
     assert_not_includes inclusive_policy.fetch("exclude_terms"), "women only"
   ensure
     ENV["INGEST_SHARED_TOKEN"] = previous_token

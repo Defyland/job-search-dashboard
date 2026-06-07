@@ -50,6 +50,7 @@ class SearchProfilesController < ApplicationController
         :active,
         :required_remote,
         :include_women_only,
+        :language_scope,
         :scan_window_days,
         :target_stacks_text,
         :target_titles_text,

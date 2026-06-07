@@ -26,6 +26,7 @@
             <td class="px-6 py-5">
               <p class="font-bold text-white"><%= profile.name %></p>
               <p class="mt-1 text-xs text-slate-500"><%= profile.active? ? "Ativo" : "Pausado" %> · <%= profile.scan_window_days %> dias</p>
+              <p class="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400"><%= profile.language_scope_label %></p>
             </td>
             <td class="px-6 py-5">
               <div class="flex max-w-sm flex-wrap gap-2">

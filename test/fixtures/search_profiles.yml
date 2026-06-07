@@ -39,6 +39,7 @@ default:
     - estágio
   required_remote: true
   include_women_only: false
+  language_scope: both
   scan_window_days: 20
   settings: {}
 
@@ -66,5 +67,6 @@ women_inclusive:
     - pleno
   required_remote: true
   include_women_only: true
+  language_scope: both
   scan_window_days: 20
   settings: {}

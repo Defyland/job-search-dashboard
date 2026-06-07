@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_07_070308) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_07_081500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -139,6 +139,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_07_070308) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.boolean "include_women_only", default: false, null: false
+    t.integer "language_scope", default: 0, null: false
     t.text "location_terms", default: [], null: false, array: true
     t.string "name", null: false
     t.text "negative_terms", default: [], null: false, array: true
@@ -152,6 +153,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_07_070308) do
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["active"], name: "index_search_profiles_on_active"
+    t.index ["language_scope"], name: "index_search_profiles_on_language_scope"
     t.index ["user_id", "slug"], name: "index_search_profiles_on_user_id_and_slug", unique: true
     t.index ["user_id"], name: "index_search_profiles_on_user_id"
   end

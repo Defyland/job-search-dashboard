@@ -27,7 +27,35 @@ module JobDiscovery
       "react native" => [ "react native", "react-native" ]
     }.freeze
     DEFAULT_PROFILE_NAME = "Default senior Ruby/Rails/React".freeze
-    ROLE_PATTERNS = /\b(software engineer|engenheir[oa]\s+de\s+software|frontend|front-end|backend|back-end|full[\s-]?stack|developer|desenvolvedor(?:a)?)\b/i
+    PORTUGUESE_ROLE_TERMS = [
+      "engenheiro de software",
+      "engenheira de software",
+      "engenheiro",
+      "engenheira",
+      "desenvolvedor",
+      "desenvolvedora",
+      "consultor",
+      "consultora",
+      "analista",
+      "arquiteto",
+      "arquiteta"
+    ].freeze
+    ENGLISH_ROLE_TERMS = [
+      "software engineer",
+      "engineer",
+      "developer",
+      "consultant",
+      "architect"
+    ].freeze
+    NEUTRAL_ROLE_TERMS = [
+      "frontend",
+      "front-end",
+      "backend",
+      "back-end",
+      "fullstack",
+      "full-stack",
+      "dev"
+    ].freeze
     ONSITE_PATTERNS = /\b(presencial|on[-\s]?site|h[ií]brido|hybrid)\b/i
     REMOTE_PATTERNS = /\b(remot[oa]?|remote|home[\s-]?office|brasil|brazil|latam)\b/i
     WOMEN_ONLY_PATTERNS = /
@@ -50,6 +78,7 @@ module JobDiscovery
       :seniority_terms,
       :location_terms,
       :negative_terms,
+      :language_scope,
       :required_remote,
       :include_women_only,
       keyword_init: true
@@ -69,6 +98,7 @@ module JobDiscovery
           seniority_terms: seniority_terms,
           stack_terms: target_stacks,
           title_terms: target_titles,
+          language_scope: language_scope,
           location_terms: location_terms,
           required_remote: required_remote?,
           include_women_only: include_women_only?,
@@ -82,6 +112,8 @@ module JobDiscovery
       :profile,
       :stack_patterns,
       :title_patterns,
+      :role_patterns,
+      :excluded_language_patterns,
       :seniority_patterns,
       :location_patterns,
       :negative_patterns,
@@ -111,6 +143,7 @@ module JobDiscovery
         seniority_terms: SearchProfile::DEFAULT_SENIORITY_TERMS,
         location_terms: SearchProfile::DEFAULT_LOCATION_TERMS,
         negative_terms: SearchProfile::DEFAULT_NEGATIVE_TERMS,
+        language_scope: "both",
         required_remote: true,
         include_women_only: false
       )
@@ -135,6 +168,7 @@ module JobDiscovery
 
       @criteria.any? do |criteria|
         !matches_any?(normalized_title, criteria.negative_patterns) &&
+          !matches_any?(normalized_title, criteria.excluded_language_patterns) &&
           seniority?(normalized_title, criteria) &&
           (title_stack_tags(normalized_title, criteria).any? || role_title?(normalized_title, criteria))
       end
@@ -164,6 +198,7 @@ module JobDiscovery
         end
 
         return reject("titulo fora do escopo", criteria.profile) if normalized_title.blank? || matches_any?(normalized_title, criteria.negative_patterns)
+        return reject("titulo em idioma fora do perfil", criteria.profile) if matches_any?(normalized_title, criteria.excluded_language_patterns)
         return reject("titulo sem senioridade", criteria.profile) unless seniority?(normalized_title, criteria)
 
         title_tags = title_stack_tags(normalized_title, criteria)
@@ -248,7 +283,7 @@ module JobDiscovery
       end
 
       def role_title?(text, criteria)
-        text.match?(ROLE_PATTERNS) || matches_any?(text, criteria.title_patterns)
+        matches_any?(text, criteria.role_patterns) || matches_any?(text, criteria.title_patterns)
       end
 
       def title_stack_tags(text, criteria)
@@ -266,14 +301,44 @@ module JobDiscovery
       end
 
       def build_criteria(profile)
+        language_scope = profile_language_scope(profile)
+
         Criteria.new(
           profile:,
           stack_patterns: build_stack_patterns(profile.target_stacks),
           title_patterns: build_patterns(profile.target_titles),
+          role_patterns: build_patterns(role_terms_for(language_scope)),
+          excluded_language_patterns: build_patterns(excluded_role_terms_for(language_scope)),
           seniority_patterns: build_patterns(profile.seniority_terms),
           location_patterns: build_patterns(profile.location_terms),
           negative_patterns: build_patterns(profile.negative_terms)
         )
+      end
+
+      def profile_language_scope(profile)
+        profile.respond_to?(:language_scope) ? profile.language_scope.to_s.presence || "both" : "both"
+      end
+
+      def role_terms_for(language_scope)
+        case language_scope
+        when "portuguese"
+          PORTUGUESE_ROLE_TERMS + NEUTRAL_ROLE_TERMS
+        when "english"
+          ENGLISH_ROLE_TERMS + NEUTRAL_ROLE_TERMS
+        else
+          PORTUGUESE_ROLE_TERMS + ENGLISH_ROLE_TERMS + NEUTRAL_ROLE_TERMS
+        end
+      end
+
+      def excluded_role_terms_for(language_scope)
+        case language_scope
+        when "portuguese"
+          ENGLISH_ROLE_TERMS
+        when "english"
+          PORTUGUESE_ROLE_TERMS
+        else
+          []
+        end
       end
 
       def build_stack_patterns(target_stacks)

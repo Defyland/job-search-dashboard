@@ -13,6 +13,7 @@ class SearchProfileTest < ActiveSupport::TestCase
 
     assert_equal "java-senior", profile.slug
     assert_equal [ "java", "spring", "kotlin" ], profile.target_stacks
+    assert profile.language_scope_both?
   end
 
   test "women only terms are profile scoped" do
@@ -21,5 +22,12 @@ class SearchProfileTest < ActiveSupport::TestCase
 
     assert_includes default_profile.effective_exclude_terms, "women only"
     assert_not_includes inclusive_profile.effective_exclude_terms, "women only"
+  end
+
+  test "policy contract exposes title language scope" do
+    profile = search_profiles(:default)
+
+    assert_equal "both", profile.policy_contract.fetch(:language_scope)
+    assert_equal "Português e Inglês", profile.language_scope_label
   end
 end

@@ -90,11 +90,48 @@ class JobDiscovery::PolicyTest < ActiveSupport::TestCase
     assert_includes dotnet_result.stack_tags, ".net"
   end
 
+  test "portuguese salesforce profile accepts portuguese titles and rejects english titles" do
+    profile = salesforce_profile(language_scope: :portuguese)
+
+    accepted = classify_salesforce(profile, title: "Desenvolvedor Salesforce Sênior", remote_text: "Remoto Brasil", location_text: "Brasil")
+    rejected = classify_salesforce(profile, title: "Senior Salesforce Developer", remote_text: "Remote Brazil", location_text: "Brazil")
+
+    assert accepted.accepted?
+    assert_includes accepted.stack_tags, "salesforce"
+    assert_equal :rejected, rejected.classification
+    assert_match(/idioma/, rejected.reason)
+  end
+
+  test "english salesforce profile accepts english titles and rejects portuguese titles" do
+    profile = salesforce_profile(language_scope: :english)
+
+    accepted = classify_salesforce(profile, title: "Senior Salesforce Developer", remote_text: "Remote Brazil", location_text: "Brazil")
+    rejected = classify_salesforce(profile, title: "Desenvolvedor Salesforce Sênior", remote_text: "Remoto Brasil", location_text: "Brasil")
+
+    assert accepted.accepted?
+    assert_includes accepted.stack_tags, "salesforce"
+    assert_equal :rejected, rejected.classification
+    assert_match(/idioma/, rejected.reason)
+  end
+
+  test "bilingual salesforce profile accepts portuguese and english titles" do
+    profile = salesforce_profile(language_scope: :both)
+
+    portuguese = classify_salesforce(profile, title: "Engenheiro Salesforce Sênior", remote_text: "Remoto Brasil", location_text: "Brasil")
+    english = classify_salesforce(profile, title: "Senior Salesforce Engineer", remote_text: "Remote Brazil", location_text: "Brazil")
+
+    assert portuguese.accepted?
+    assert english.accepted?
+    assert_includes portuguese.stack_tags, "salesforce"
+    assert_includes english.stack_tags, "salesforce"
+  end
+
   test "exposes fallback policy contract from canonical policy" do
     contract = JobDiscovery::Policy.contract(search_profile: search_profiles(:default))
 
     assert_includes contract.fetch(:stack_terms), "ruby on rails"
     assert_includes contract.fetch(:exclude_terms), "mulheres"
+    assert_equal "both", contract.fetch(:language_scope)
     assert_equal "POST accepted strong/borderline jobs and useful rejections to /api/v1/job_ingestions", contract.fetch(:output)
   end
 
@@ -112,4 +149,33 @@ class JobDiscovery::PolicyTest < ActiveSupport::TestCase
     assert_equal :rejected, result.classification
     assert_match(/remoto/i, result.reason)
   end
+
+  private
+    def salesforce_profile(language_scope:)
+      users(:one).search_profiles.create!(
+        name: "Senior Salesforce #{language_scope}",
+        target_stacks_text: "salesforce",
+        target_titles_text: "salesforce, software engineer, developer, consultant, engenheiro, desenvolvedor, consultor",
+        seniority_terms_text: "senior, sênior, sr",
+        location_terms_text: "remote, remoto, brazil, brasil, latam",
+        negative_terms_text: "junior, pleno, internship",
+        required_remote: true,
+        include_women_only: false,
+        language_scope:,
+        scan_window_days: 20,
+        active: true
+      )
+    end
+
+    def classify_salesforce(profile, title:, remote_text:, location_text:)
+      JobDiscovery::Policy.new(search_profile: profile).classify(
+        title:,
+        remote_text:,
+        location_text:,
+        description: "Salesforce Apex Lightning integrations",
+        source_slug: "manual",
+        posted_text: "publicada hoje",
+        published_at: nil
+      )
+    end
 end
