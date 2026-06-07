@@ -1,0 +1,72 @@
+default:
+  user: one
+  name: Senior Ruby/Rails/React Remote BR/LatAm
+  slug: senior-ruby-rails-react-remote-br-latam
+  active: true
+  target_stacks:
+    - ruby
+    - ruby on rails
+    - rails
+    - react
+    - react native
+    - frontend
+    - fullstack
+  target_titles:
+    - software engineer
+    - engenheiro de software
+    - frontend
+    - backend
+    - fullstack
+    - developer
+    - desenvolvedor
+  seniority_terms:
+    - senior
+    - sênior
+    - sr
+    - staff
+  location_terms:
+    - remoto
+    - remote
+    - home office
+    - brasil
+    - brazil
+    - latam
+  negative_terms:
+    - junior
+    - júnior
+    - pleno
+    - mid-level
+    - trainee
+    - intern
+    - internship
+    - estágio
+  required_remote: true
+  include_women_only: false
+  scan_window_days: 20
+  settings: {}
+
+women_inclusive:
+  user: two
+  name: Senior React com afirmativas
+  slug: senior-react-com-afirmativas
+  active: true
+  target_stacks:
+    - react
+    - frontend
+  target_titles:
+    - frontend
+    - software engineer
+  seniority_terms:
+    - senior
+    - sr
+  location_terms:
+    - remote
+    - remoto
+    - brasil
+  negative_terms:
+    - junior
+    - pleno
+  required_remote: true
+  include_women_only: true
+  scan_window_days: 20
+  settings: {}

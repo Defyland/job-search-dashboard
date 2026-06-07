@@ -1,0 +1,35 @@
+react_default:
+  search_profile: default
+  job: react_role
+  match_strength: strong
+  user_state: new_match
+  score: 94
+  reason: Titulo senior com foco em React e remoto BR.
+  seniority: senior
+  stack_tags:
+    - react
+    - typescript
+  eligibility_flags: []
+  raw_decision:
+    fixture: true
+  first_seen_at: <%= 2.days.ago %>
+  last_seen_at: <%= 1.day.ago %>
+  last_validated_at: <%= 1.day.ago %>
+
+ruby_default:
+  search_profile: default
+  job: ruby_role
+  match_strength: borderline
+  user_state: seen
+  score: 82
+  reason: Rails senior com remoto BR e link direto de candidatura.
+  seniority: senior
+  stack_tags:
+    - ruby
+    - ruby on rails
+  eligibility_flags: []
+  raw_decision:
+    fixture: true
+  first_seen_at: <%= 7.days.ago %>
+  last_seen_at: <%= 2.days.ago %>
+  last_validated_at: <%= 2.days.ago %>

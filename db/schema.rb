@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_07_061500) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_07_070308) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -46,6 +46,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_07_061500) do
     t.index ["search_run_id"], name: "index_discovered_jobs_on_search_run_id"
     t.index ["source_scan_id", "fingerprint"], name: "index_discovered_jobs_on_source_scan_id_and_fingerprint", unique: true
     t.index ["source_scan_id"], name: "index_discovered_jobs_on_source_scan_id"
+  end
+
+  create_table "job_matches", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "eligibility_flags", default: [], null: false, array: true
+    t.datetime "first_seen_at", null: false
+    t.bigint "job_id", null: false
+    t.datetime "last_seen_at", null: false
+    t.datetime "last_validated_at", null: false
+    t.integer "match_strength", default: 0, null: false
+    t.jsonb "raw_decision", default: {}, null: false
+    t.text "reason", default: "", null: false
+    t.integer "score", default: 0, null: false
+    t.bigint "search_profile_id", null: false
+    t.string "seniority", default: "senior", null: false
+    t.text "stack_tags", default: [], null: false, array: true
+    t.datetime "updated_at", null: false
+    t.integer "user_state", default: 0, null: false
+    t.index ["job_id"], name: "index_job_matches_on_job_id"
+    t.index ["last_seen_at"], name: "index_job_matches_on_last_seen_at"
+    t.index ["match_strength", "user_state"], name: "index_job_matches_on_match_strength_and_user_state"
+    t.index ["search_profile_id", "job_id"], name: "index_job_matches_on_search_profile_id_and_job_id", unique: true
+    t.index ["search_profile_id"], name: "index_job_matches_on_search_profile_id"
   end
 
   create_table "job_sources", force: :cascade do |t|
@@ -110,6 +133,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_07_061500) do
     t.index ["job_source_id"], name: "index_jobs_on_job_source_id"
     t.index ["last_seen_at"], name: "index_jobs_on_last_seen_at"
     t.index ["lifecycle_state", "user_state", "match_strength"], name: "idx_on_lifecycle_state_user_state_match_strength_e4ed298ede"
+  end
+
+  create_table "search_profiles", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.boolean "include_women_only", default: false, null: false
+    t.text "location_terms", default: [], null: false, array: true
+    t.string "name", null: false
+    t.text "negative_terms", default: [], null: false, array: true
+    t.boolean "required_remote", default: true, null: false
+    t.integer "scan_window_days", default: 20, null: false
+    t.text "seniority_terms", default: [], null: false, array: true
+    t.jsonb "settings", default: {}, null: false
+    t.string "slug", null: false
+    t.text "target_stacks", default: [], null: false, array: true
+    t.text "target_titles", default: [], null: false, array: true
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["active"], name: "index_search_profiles_on_active"
+    t.index ["user_id", "slug"], name: "index_search_profiles_on_user_id_and_slug", unique: true
+    t.index ["user_id"], name: "index_search_profiles_on_user_id"
   end
 
   create_table "search_run_items", force: :cascade do |t|
@@ -312,7 +356,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_07_061500) do
   add_foreign_key "discovered_jobs", "jobs"
   add_foreign_key "discovered_jobs", "search_runs"
   add_foreign_key "discovered_jobs", "source_scans"
+  add_foreign_key "job_matches", "jobs"
+  add_foreign_key "job_matches", "search_profiles"
   add_foreign_key "jobs", "job_sources"
+  add_foreign_key "search_profiles", "users"
   add_foreign_key "search_run_items", "jobs"
   add_foreign_key "search_run_items", "search_runs"
   add_foreign_key "sessions", "users"
