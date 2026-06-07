@@ -194,7 +194,11 @@ module JobIngestions
 
         persist_source(source, attributes, payload, source_name)
       rescue ActiveRecord::RecordNotUnique
-        JobSource.resolve_for_ingestion(name: source_name, slug: slug, host: host) || JobSource.find_by!(slug: slug)
+        recover_source(source_name:, slug:, host:)
+      rescue ActiveRecord::RecordInvalid => error
+        raise unless unique_source_conflict?(error.record)
+
+        recover_source(source_name:, slug:, host:)
       end
 
       def persist_source(source, attributes, payload, source_name)
@@ -206,6 +210,14 @@ module JobIngestions
           record.enabled = true
           record.save!
         end
+      end
+
+      def recover_source(source_name:, slug:, host:)
+        JobSource.resolve_for_ingestion(name: source_name, slug: slug, host: host) || JobSource.find_by!(slug: slug)
+      end
+
+      def unique_source_conflict?(record)
+        record.is_a?(JobSource) && record.errors.of_kind?(:slug, :taken)
       end
 
       def mark_codex_fallback_seen!(source)

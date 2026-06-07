@@ -116,6 +116,39 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
     assert_equal "updated", search_run.search_run_items.last.outcome
   end
 
+  test "recovers when a concurrent insert wins the source uniqueness validation race" do
+    search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "24h", started_at: Time.current)
+    recorder = JobIngestions::Recorder.new(search_run:)
+    existing_source = JobSource.create!(
+      name: "Race Careers",
+      slug: "race-careers",
+      host: "race.example",
+      base_url: "https://race.example",
+      source_kind: :company,
+      adapter_key: "manual_only",
+      supports_backfill: false,
+      scan_window_days: 20
+    )
+    attributes = {
+      source_host: "race.example",
+      source_url: "https://race.example/jobs/ruby",
+      canonical_url: "https://race.example/jobs/ruby",
+      ats_name: "Race Careers"
+    }
+    payload = {
+      "source_name" => "Race Careers",
+      "source_slug" => "race-careers",
+      "source_kind" => "company"
+    }
+    duplicate = JobSource.new(slug: "race-careers")
+    duplicate.errors.add(:slug, :taken)
+    recorder.define_singleton_method(:persist_source) do |_source, _attributes, _payload, _source_name|
+      raise ActiveRecord::RecordInvalid.new(duplicate)
+    end
+
+    assert_equal existing_source, recorder.send(:find_or_create_source, attributes, payload)
+  end
+
   test "imports women only jobs only for profiles that allow them" do
     payload = {
       run: { window_label: "24h", trigger_source: "codex_automation" },
