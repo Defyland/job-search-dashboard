@@ -244,12 +244,10 @@ class SearchProfilesController < ApplicationController
     end
 
     def bootstrap_profile!(search_profile)
-      SearchProfiles::Bootstrapper.new(search_profile:).call
-      DiscoverJobsRunJob.perform_later(window_days: search_profile.scan_window_days, trigger_source: :manual)
+      SearchProfiles::Sync.new(search_profile:).call
     end
 
     def refresh_profile!(search_profile)
-      SearchProfiles::Bootstrapper.new(search_profile:, prune_stale: true).call
-      DiscoverJobsRunJob.perform_later(window_days: search_profile.scan_window_days, trigger_source: :manual)
+      SearchProfiles::Sync.new(search_profile:, prune_stale: true).call
     end
 end

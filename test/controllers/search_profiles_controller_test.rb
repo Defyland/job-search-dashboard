@@ -83,7 +83,14 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     assert_difference("SearchProfile.count", 1) do
       assert_enqueued_with(
         job: DiscoverJobsRunJob,
-        args: ->(args) { args == [ { window_days: 20, trigger_source: :manual } ] }
+        args: lambda { |args|
+          options = args.first&.symbolize_keys
+          options == {
+            window_days: 20,
+            trigger_source: :manual,
+            search_profile_id: options[:search_profile_id]
+          } && options[:search_profile_id].is_a?(Integer)
+        }
       ) do
         post search_profiles_path, params: {
           search_profile: compiled_form_params.merge(
@@ -148,7 +155,7 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
 
     assert_enqueued_with(
       job: DiscoverJobsRunJob,
-      args: ->(args) { args == [ { window_days: 20, trigger_source: :manual } ] }
+      args: ->(args) { args == [ { window_days: 20, trigger_source: :manual, search_profile_id: profile.id } ] }
     ) do
       patch search_profile_path(profile), params: {
         search_profile: {
@@ -256,7 +263,7 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
 
     assert_enqueued_with(
       job: DiscoverJobsRunJob,
-      args: ->(args) { args == [ { window_days: 20, trigger_source: :manual } ] }
+      args: ->(args) { args == [ { window_days: 20, trigger_source: :manual, search_profile_id: profile.id } ] }
     ) do
       patch search_profile_path(profile), params: {
         search_profile: {
