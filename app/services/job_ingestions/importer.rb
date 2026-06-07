@@ -6,8 +6,9 @@ module JobIngestions
       end
     end
 
-    def initialize(payload:)
+    def initialize(payload:, profiles: nil)
       @payload = payload.deep_stringify_keys
+      @profiles = Array(profiles).compact
       @summary = {
         imported_count: 0,
         updated_count: 0,
@@ -28,7 +29,7 @@ module JobIngestions
           summary: run_metadata
         )
 
-        recorder = JobIngestions::Recorder.new(search_run: @search_run)
+        recorder = JobIngestions::Recorder.new(search_run: @search_run, profiles: @profiles.presence)
         recorder.record_jobs(normalized_jobs)
         recorder.record_rejections(normalized_rejections)
         mark_codex_fallback_sources_checked!

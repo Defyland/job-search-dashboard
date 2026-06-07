@@ -1,7 +1,7 @@
 module JobIngestions
   class Recorder
-    def initialize(search_run:)
-      @matcher = JobMatching::ProfileMatcher.new
+    def initialize(search_run:, profiles: nil)
+      @matcher = JobMatching::ProfileMatcher.new(profiles: profiles || SearchProfile.active.ordered)
       @normalizer = PayloadNormalizer.new
       @store = Store.new(search_run:)
     end

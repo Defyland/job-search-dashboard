@@ -11,4 +11,10 @@ class DiscoverJobsRunJobTest < ActiveJob::TestCase
     assert_equal "cron", search_run.trigger_source
     assert_equal "1d", search_run.window_label
   end
+
+  test "skips profile scoped run when the profile no longer exists" do
+    assert_no_difference("SearchRun.count") do
+      DiscoverJobsRunJob.perform_now(window_days: 20, trigger_source: "manual", search_profile_id: -1)
+    end
+  end
 end

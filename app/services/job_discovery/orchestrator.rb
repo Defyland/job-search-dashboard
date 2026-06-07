@@ -6,11 +6,12 @@ module JobDiscovery
       end
     end
 
-    def initialize(window_days:, trigger_source: :manual, source_scope: JobSource.backfillable, registry: JobDiscovery::Registry.new)
+    def initialize(window_days:, trigger_source: :manual, source_scope: JobSource.backfillable, registry: JobDiscovery::Registry.new, search_profiles: nil)
       @window_days = window_days.to_i.positive? ? window_days.to_i : 20
       @trigger_source = trigger_source
       @source_scope = source_scope
       @registry = registry
+      @search_profiles = Array(search_profiles).compact
       @errors = []
     end
 
@@ -20,10 +21,10 @@ module JobDiscovery
         status: :running,
         window_label: "#{@window_days}d",
         started_at: Time.current,
-        summary: { discovery_mode: "rails", window_days: @window_days }
+        summary: run_summary
       )
 
-      recorder = JobIngestions::Recorder.new(search_run:)
+      recorder = JobIngestions::Recorder.new(search_run:, profiles: @search_profiles.presence)
       discovery_counts = { discovered_count: 0, source_scans_count: 0 }
 
       @source_scope.order(priority: :asc, name: :asc).each do |source|
@@ -57,9 +58,17 @@ module JobDiscovery
     end
 
     private
+      def run_summary
+        {
+          discovery_mode: "rails",
+          window_days: @window_days,
+          search_profile_ids: @search_profiles.map(&:id)
+        }.compact
+      end
+
       def scan_source(search_run:, source:, recorder:, discovery_counts:)
         source_scan = search_run.source_scans.create!(job_source: source, status: :running, started_at: Time.current)
-        adapter = @registry.fetch(source.adapter_key).new
+        adapter = @registry.fetch(source.adapter_key).new(policy: scoped_policy)
         candidates = adapter.scan(source_scan:, window_days: @window_days)
 
         persist_scan_results(search_run:, source_scan:, source:, recorder:, discovery_counts:, candidates:)
@@ -193,6 +202,10 @@ module JobDiscovery
         return :partial if search_run.source_scans.status_failed.exists?
 
         :succeeded
+      end
+
+      def scoped_policy
+        @scoped_policy ||= JobDiscovery::Policy.new(search_profiles: @search_profiles.presence)
       end
   end
 end

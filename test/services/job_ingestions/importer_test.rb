@@ -517,4 +517,50 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
     assert source.reload.last_codex_checked_at.present?
     assert_nil source.reload.last_codex_fallback_at
   end
+
+  test "limits imported matches to the provided profile scope" do
+    profile = users(:one).search_profiles.create!(
+      name: "Senior Java Scoped",
+      slug: "senior-java-scoped-importer",
+      active: true,
+      required_remote: true,
+      include_women_only: false,
+      language_scope: :both,
+      target_stacks: [ "java" ],
+      target_titles: [ "developer", "engineer" ],
+      seniority_terms: [ "senior", "sênior", "sr" ],
+      location_terms: [ "remote", "remoto", "brasil", "brazil" ],
+      negative_terms: SearchProfile::DEFAULT_NEGATIVE_TERMS,
+      scan_window_days: 20
+    )
+
+    payload = {
+      run: { window_label: "24h", trigger_source: "manual", search_profile_id: profile.id },
+      jobs: [
+        {
+          title: "Senior Java Developer",
+          company: "Scoped Import Co",
+          apply_url: "https://scoped-import.invalid/jobs/senior-java-developer",
+          canonical_url: "https://scoped-import.invalid/jobs/senior-java-developer",
+          source_name: "Scoped Import Careers",
+          source_slug: "scoped-import-careers",
+          source_kind: "company",
+          remote_signal: "Remote Brazil",
+          location: "Brazil",
+          description: "Java Spring Boot role",
+          reason: "Scoped Java role",
+          match_strength: "strong"
+        }
+      ]
+    }
+
+    assert_difference([ "Job.count", "JobMatch.count" ], 1) do
+      result = JobIngestions::Importer.new(payload:, profiles: [ profile ]).call
+
+      assert result.success?
+    end
+
+    job = Job.find_by!(canonical_url: "https://scoped-import.invalid/jobs/senior-java-developer")
+    assert_equal [ profile ], job.job_matches.map(&:search_profile)
+  end
 end

@@ -2,6 +2,9 @@ require "test_helper"
 
 class JobDiscovery::OrchestratorTest < ActiveSupport::TestCase
   class FakeAdapter
+    def initialize(**)
+    end
+
     def scan(source_scan:, window_days:)
       [
         {
@@ -59,6 +62,9 @@ class JobDiscovery::OrchestratorTest < ActiveSupport::TestCase
   end
 
   class FailingAdapter
+    def initialize(**)
+    end
+
     def scan(source_scan:, window_days:)
       raise "adapter failure for #{source_scan.job_source.name} in #{window_days}d"
     end
@@ -67,9 +73,53 @@ class JobDiscovery::OrchestratorTest < ActiveSupport::TestCase
   class TransactionProbeAdapter
     class_attribute :open_transactions_during_scan, default: nil
 
+    def initialize(**)
+    end
+
     def scan(source_scan:, window_days:)
       self.class.open_transactions_during_scan = ActiveRecord::Base.connection.open_transactions
       []
+    end
+  end
+
+  class ScopedPolicyAdapter
+    def initialize(policy:)
+      @policy = policy
+    end
+
+    def scan(source_scan:, window_days:)
+      decision = @policy.classify(
+        title: "Senior Ruby on Rails Engineer",
+        remote_text: "Remoto Brasil",
+        location_text: "Brasil",
+        description: "Ruby on Rails remoto",
+        source_slug: source_scan.job_source.slug,
+        posted_text: "publicada em 04/06/2026",
+        published_at: Time.zone.parse("2026-06-04")
+      )
+
+      [
+        {
+          classification: decision.classification.to_s,
+          title: "Senior Ruby on Rails Engineer",
+          company_name: "Clicksign",
+          apply_url: "https://clicksign.gupy.io/candidates/jobs/11234166/apply",
+          canonical_url: "https://clicksign.gupy.io/jobs/11234166",
+          source_url: "https://clicksign.gupy.io/jobs/11234166",
+          external_job_id: "11234166",
+          fingerprint: "clicksign::senior ruby on rails engineer::clicksign.gupy.io::11234166",
+          remote_text: "Remoto Brasil",
+          location_text: "Brasil",
+          seniority: decision.seniority,
+          reason: decision.reason,
+          exclusion_reason: decision.exclusion_reason,
+          score: decision.score,
+          published_at: Time.zone.parse("2026-06-04"),
+          posted_text: "publicada em 04/06/2026",
+          stack_tags: decision.stack_tags,
+          payload: { sample: true }
+        }
+      ]
     end
   end
 
@@ -97,6 +147,16 @@ class JobDiscovery::OrchestratorTest < ActiveSupport::TestCase
 
     def fetch(_adapter_key)
       TransactionProbeAdapter
+    end
+  end
+
+  class ScopedPolicyRegistry
+    def supports?(adapter_key)
+      adapter_key == "gupy_company_boards"
+    end
+
+    def fetch(_adapter_key)
+      ScopedPolicyAdapter
     end
   end
 
@@ -238,5 +298,47 @@ class JobDiscovery::OrchestratorTest < ActiveSupport::TestCase
     assert result.success?
     assert_equal open_transactions_before_scan, TransactionProbeAdapter.open_transactions_during_scan
     assert_predicate result.search_run.source_scans.first, :status_exhausted?
+  end
+
+  test "supports profile-scoped discovery runs" do
+    source = JobSource.create!(
+      name: "Scoped Source",
+      slug: "scoped-source",
+      host: "scoped.example.com",
+      base_url: "https://scoped.example.com",
+      source_kind: :platform,
+      adapter_key: "gupy_company_boards",
+      supports_backfill: false,
+      scan_window_days: 20
+    )
+    source.update_columns(supports_backfill: true)
+    profile = users(:one).search_profiles.create!(
+      name: "Senior Java Remote",
+      slug: "senior-java-remote-orchestrator",
+      active: true,
+      required_remote: true,
+      include_women_only: false,
+      language_scope: :both,
+      target_stacks: [ "java" ],
+      target_titles: [ "developer", "engineer" ],
+      seniority_terms: [ "senior", "sênior", "sr" ],
+      location_terms: [ "remote", "remoto", "brasil", "brazil" ],
+      negative_terms: SearchProfile::DEFAULT_NEGATIVE_TERMS,
+      scan_window_days: 20
+    )
+
+    result = JobDiscovery::Orchestrator.new(
+      window_days: 20,
+      source_scope: JobSource.where(id: source.id),
+      registry: ScopedPolicyRegistry.new,
+      search_profiles: [ profile ]
+    ).call
+
+    assert result.success?
+    assert_predicate result.search_run, :status_succeeded?
+    assert_equal [ profile.id ], result.search_run.summary.fetch("search_profile_ids")
+    assert_equal 0, result.search_run.search_run_items.where(outcome: :created).count
+    assert_equal 1, result.search_run.search_run_items.where(outcome: :rejected).count
+    assert_nil Job.find_by(canonical_url: "https://clicksign.gupy.io/jobs/11234166")
   end
 end
