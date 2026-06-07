@@ -2,8 +2,9 @@ module JobIngestions
   class Store
     attr_reader :summary
 
-    def initialize(search_run:)
+    def initialize(search_run:, source_resolver: JobSources::Resolver.new)
       @search_run = search_run
+      @source_resolver = source_resolver
       @summary = {
         imported_count: 0,
         updated_count: 0,
@@ -32,8 +33,10 @@ module JobIngestions
       source_name = payload["source_name"].presence || payload["source"].presence || attributes[:ats_name].presence || host
       slug = payload["source_slug"].presence || source_name.to_s.parameterize.presence || host.to_s.parameterize.presence || "manual"
 
-      source = JobSource.find_by(slug: slug) || JobSource.find_or_initialize_by(slug: slug)
-      persist_source(source, attributes, payload, source_name)
+      source = @source_resolver.resolve(name: source_name, slug:, host:) || JobSource.find_or_initialize_by(slug: slug)
+      persist_source(source, attributes, payload, source_name).tap do |record|
+        @source_resolver.register(record)
+      end
     rescue ActiveRecord::RecordNotUnique
       recover_source(source_name:, slug:, host:)
     rescue ActiveRecord::RecordInvalid => error
@@ -190,7 +193,9 @@ module JobIngestions
       end
 
       def recover_source(source_name:, slug:, host:)
-        JobSource.find_by!(slug: slug)
+        source = @source_resolver.resolve(name: source_name, slug:, host:) || JobSource.find_by!(slug: slug)
+        @source_resolver.register(source)
+        source
       rescue ActiveRecord::RecordNotFound
         JobSource.create!(
           name: source_name,
@@ -198,7 +203,7 @@ module JobIngestions
           host: host,
           base_url: host.present? ? "https://#{host}" : nil,
           source_kind: :ats
-        )
+        ).tap { |source| @source_resolver.register(source) }
       end
 
       def unique_source_conflict?(record)

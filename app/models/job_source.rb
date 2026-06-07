@@ -169,18 +169,6 @@ class JobSource < ApplicationRecord
     end
   end
 
-  def self.resolve_for_ingestion(name:, slug:, host:)
-    normalized_slug = slug.to_s.parameterize
-    normalized_name = normalize_lookup_key(name)
-    normalized_host = host.to_s.downcase.sub(/\Awww\./, "")
-
-    all.sort_by { |source| [ -source.host.to_s.length, source.priority, source.name ] }.find do |source|
-      source.slug == normalized_slug ||
-        (normalized_name.present? && normalize_lookup_key(source.name) == normalized_name) ||
-        host_matches?(normalized_host, source.host)
-    end
-  end
-
   private
     def self.apply_catalog_defaults!(source, attributes)
       attributes.each do |key, value|
@@ -195,18 +183,6 @@ class JobSource < ApplicationRecord
 
     def self.default_settings(value)
       value.to_h.deep_stringify_keys
-    end
-
-    def self.normalize_lookup_key(value)
-      value.to_s.downcase.gsub(/[^a-z0-9]/, "")
-    end
-
-    def self.host_matches?(candidate_host, existing_host)
-      return false if candidate_host.blank? || existing_host.blank?
-
-      candidate_host == existing_host ||
-        candidate_host.end_with?(".#{existing_host}") ||
-        existing_host.end_with?(".#{candidate_host}")
     end
 
     def normalize_fields
