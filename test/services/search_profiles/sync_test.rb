@@ -22,6 +22,8 @@ module SearchProfiles
     end
 
     class FakeDiscoveredBootstrapper
+      Result = Struct.new(:errors, keyword_init: true)
+
       class << self
         attr_reader :calls
 
@@ -36,6 +38,14 @@ module SearchProfiles
 
       def call
         self.class.calls << @search_profile.id
+        Result.new(errors: [])
+      end
+    end
+
+    class ErroringDiscoveredBootstrapper < FakeDiscoveredBootstrapper
+      def call
+        FakeDiscoveredBootstrapper.calls << @search_profile.id
+        Result.new(errors: [ "cache import failed" ])
       end
     end
 
@@ -62,7 +72,7 @@ module SearchProfiles
     test "runs local bootstrap, discovered cache bootstrap, and profile-scoped discovery" do
       profile = search_profiles(:default)
 
-      Sync.new(
+      result = Sync.new(
         search_profile: profile,
         prune_stale: true,
         bootstrapper_class: FakeBootstrapper,
@@ -70,6 +80,8 @@ module SearchProfiles
         run_job_class: FakeRunJob
       ).call
 
+      assert result.success?
+      assert result.external_run_enqueued
       assert_equal [ [ profile.id, true ] ], FakeBootstrapper.calls
       assert_equal [ profile.id ], FakeDiscoveredBootstrapper.calls
       assert_equal [
@@ -85,7 +97,7 @@ module SearchProfiles
       profile = search_profiles(:default)
       profile.update!(active: false)
 
-      Sync.new(
+      result = Sync.new(
         search_profile: profile,
         prune_stale: true,
         bootstrapper_class: FakeBootstrapper,
@@ -93,9 +105,29 @@ module SearchProfiles
         run_job_class: FakeRunJob
       ).call
 
+      assert result.success?
+      refute result.external_run_enqueued
       assert_empty FakeBootstrapper.calls
       assert_empty FakeDiscoveredBootstrapper.calls
       assert_empty FakeRunJob.calls
+    end
+
+    test "reports discovered cache errors while still enqueueing the external run" do
+      profile = search_profiles(:default)
+
+      result = Sync.new(
+        search_profile: profile,
+        prune_stale: false,
+        bootstrapper_class: FakeBootstrapper,
+        discovered_bootstrapper_class: ErroringDiscoveredBootstrapper,
+        run_job_class: FakeRunJob
+      ).call
+
+      refute result.success?
+      assert_equal [ "cache import failed" ], result.errors
+      assert result.external_run_enqueued
+      assert_equal [ profile.id ], FakeDiscoveredBootstrapper.calls
+      assert_equal 1, FakeRunJob.calls.size
     end
   end
 end

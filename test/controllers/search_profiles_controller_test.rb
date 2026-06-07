@@ -27,6 +27,16 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  class FixedSyncResult
+    def initialize(result)
+      @result = result
+    end
+
+    def call
+      @result
+    end
+  end
+
   setup do
     sign_in_as(users(:one))
   end
@@ -127,6 +137,37 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :unprocessable_entity
     assert_match "Gere novamente antes de salvar", response.body
+  end
+
+  test "redirects with alert when the local cache bootstrap fails" do
+    sync_result = SearchProfiles::Sync::Result.new(
+      discovered_bootstrap_result: nil,
+      external_run_enqueued: true,
+      errors: [ "cache import failed" ]
+    )
+
+    with_fake_sync(FixedSyncResult.new(sync_result)) do
+      post search_profiles_path, params: {
+        search_profile: {
+          name: "Senior Java Remote",
+          active: "1",
+          required_remote: "1",
+          include_women_only: "0",
+          language_scope: "both",
+          technology_intent: "",
+          seniority_preset: "senior",
+          region_scope: "brazil_latam",
+          target_stacks_text: "java",
+          target_titles_text: "developer, engineer",
+          seniority_terms_text: "senior, sênior, sr",
+          location_terms_text: "remote, remoto, brasil, brazil",
+          negative_terms_text: SearchProfile::DEFAULT_NEGATIVE_TERMS.join(", ")
+        }
+      }
+    end
+
+    follow_redirect!
+    assert_match "A busca externa foi iniciada, mas o reaproveitamento local falhou: cache import failed.", response.body
   end
 
   test "updates women only preference manually while preserving profile settings" do
@@ -313,6 +354,16 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
       yield
     ensure
       SearchProfiles::IntentCompiler.singleton_class.send(:define_method, :new) do |*args, **kwargs|
+        original_new.call(*args, **kwargs)
+      end
+    end
+
+    def with_fake_sync(fake_sync)
+      original_new = SearchProfiles::Sync.method(:new)
+      SearchProfiles::Sync.singleton_class.send(:define_method, :new) { |_args = nil, **_kwargs| fake_sync }
+      yield
+    ensure
+      SearchProfiles::Sync.singleton_class.send(:define_method, :new) do |*args, **kwargs|
         original_new.call(*args, **kwargs)
       end
     end

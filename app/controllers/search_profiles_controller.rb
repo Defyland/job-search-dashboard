@@ -66,13 +66,17 @@ class SearchProfilesController < ApplicationController
       @intent_compiler ||= SearchProfiles::IntentCompiler.new
     end
 
+    def compiled_payload_token
+      @compiled_payload_token ||= SearchProfiles::CompiledPayloadToken.new
+    end
+
     def persist_profile(search_profile, template:, success_path:, success_notice:, after_save: nil)
       form_attributes = profile_form_params.to_h
       search_profile.assign_attributes(profile_attributes_for_save(search_profile, form_attributes))
 
       if search_profile.save
-        after_save&.call(search_profile)
-        redirect_to success_path.call(search_profile), notice: success_notice
+        sync_result = after_save&.call(search_profile)
+        redirect_to success_path.call(search_profile), notice: success_notice, alert: sync_alert(sync_result)
       else
         restore_compiled_preview(form_attributes["compiled_profile_payload"])
         hydrate_form_state(search_profile, form_attributes)
@@ -90,89 +94,48 @@ class SearchProfilesController < ApplicationController
     end
 
     def profile_attributes_for_save(search_profile, form_attributes)
-      if form_attributes["compiled_profile_payload"].present?
-        compiled_payload = verified_compiled_payload(form_attributes["compiled_profile_payload"])
-        simple_input = simple_input_from(form_attributes)
-        expected_fingerprint = SearchProfiles::ProfileBuilder.intent_fingerprint(simple_input)
+      form_state = SearchProfiles::FormState.new(search_profile:, submitted_attributes: form_attributes)
 
-        if compiled_payload["request_fingerprint"] != expected_fingerprint
-          raise SearchProfiles::IntentCompiler::Error, "As variacoes geradas nao correspondem mais aos filtros atuais. Gere novamente antes de salvar."
-        end
+      if form_attributes["compiled_profile_payload"].present?
+        simple_input = form_state.simple_input
+        compiled_payload = compiled_payload_token.verify_for!(form_attributes["compiled_profile_payload"], simple_input:)
 
         SearchProfiles::ProfileBuilder.from_compiled(
           simple_input:,
           compiled_payload:,
-          manual_overrides: manual_override_params(form_attributes),
-          active: active_default_for(search_profile, form_attributes)
+          manual_overrides: form_state.manual_overrides,
+          active: form_state.active_default
         )
       else
         SearchProfiles::ProfileBuilder.from_manual(
           form_attributes:,
           existing_settings: search_profile.settings,
-          active_default: active_default_for(search_profile, form_attributes)
+          active_default: form_state.active_default
         )
       end
     end
 
     def hydrate_form_state(search_profile, submitted_attributes = {})
-      @simple_profile_input = search_profile.simple_form_state.merge(simple_input_from(submitted_attributes))
-      @compiled_profile_payload ||= submitted_attributes["compiled_profile_payload"]
-      @advanced_open ||= search_profile.errors.any? || @compiled_preview.present? || (search_profile.persisted? && !search_profile.intent_backed?)
+      form_state = SearchProfiles::FormState.new(
+        search_profile:,
+        submitted_attributes:,
+        compiled_preview: @compiled_preview,
+        compiled_profile_payload: @compiled_profile_payload
+      )
+      @simple_profile_input = form_state.hydrated_simple_input
+      @compiled_profile_payload = form_state.compiled_profile_payload
+      @advanced_open ||= form_state.advanced_open?
     end
 
     def restore_compiled_preview(token)
       return if token.blank?
 
-      compiled_payload = verified_compiled_payload(token)
+      compiled_payload = compiled_payload_token.verify(token)
       @compiled_preview = compiled_payload
       @compiled_profile_payload = token
       @advanced_open = true
     rescue ActiveSupport::MessageVerifier::InvalidSignature
       nil
-    end
-
-    def sign_compiled_payload(compiled_payload)
-      profile_compile_verifier.generate(JSON.generate(compiled_payload))
-    end
-
-    def verified_compiled_payload(token)
-      JSON.parse(profile_compile_verifier.verify(token))
-    end
-
-    def profile_compile_verifier
-      @profile_compile_verifier ||= Rails.application.message_verifier("search-profile-compile")
-    end
-
-    def active_default_for(search_profile, form_attributes)
-      if search_profile.persisted?
-        form_attributes.key?("active") ? form_attributes["active"] : search_profile.active
-      else
-        true
-      end
-    end
-
-    def simple_input_from(attributes)
-      attributes = attributes.deep_stringify_keys
-
-      {
-        "name" => attributes["name"].to_s,
-        "technology_intent" => attributes["technology_intent"].to_s,
-        "seniority_preset" => attributes["seniority_preset"].presence || "senior",
-        "language_scope" => attributes["language_scope"].presence || "both",
-        "required_remote" => attributes.key?("required_remote") ? attributes["required_remote"] : true,
-        "region_scope" => attributes["region_scope"].presence || "brazil_latam",
-        "include_women_only" => attributes.key?("include_women_only") ? attributes["include_women_only"] : false
-      }
-    end
-
-    def manual_override_params(attributes)
-      attributes.deep_stringify_keys.slice(
-        "target_stacks_text",
-        "target_titles_text",
-        "seniority_terms_text",
-        "location_terms_text",
-        "negative_terms_text"
-      )
     end
 
     def compiler_input_from(simple_input)
@@ -192,17 +155,18 @@ class SearchProfilesController < ApplicationController
 
     def render_compiled_preview(search_profile)
       form_attributes = profile_form_params.to_h
-      simple_input = simple_input_from(form_attributes)
+      form_state = SearchProfiles::FormState.new(search_profile:, submitted_attributes: form_attributes)
+      simple_input = form_state.simple_input
       compiled_payload = intent_compiler.call(**compiler_input_from(simple_input))
       compiled_payload["request_fingerprint"] = SearchProfiles::ProfileBuilder.intent_fingerprint(simple_input)
 
       @compiled_preview = compiled_payload
-      @compiled_profile_payload = sign_compiled_payload(compiled_payload)
+      @compiled_profile_payload = compiled_payload_token.sign(compiled_payload)
       search_profile.assign_attributes(
         SearchProfiles::ProfileBuilder.from_compiled(
           simple_input: simple_input,
           compiled_payload: compiled_payload,
-          active: active_default_for(search_profile, form_attributes)
+          active: form_state.active_default
         )
       )
 
@@ -214,7 +178,7 @@ class SearchProfilesController < ApplicationController
         SearchProfiles::ProfileBuilder.from_manual(
           form_attributes: form_attributes,
           existing_settings: search_profile.settings,
-          active_default: active_default_for(search_profile, form_attributes)
+          active_default: form_state.active_default
         )
       )
       search_profile.errors.add(:base, error.message)
@@ -249,5 +213,11 @@ class SearchProfilesController < ApplicationController
 
     def refresh_profile!(search_profile)
       SearchProfiles::Sync.new(search_profile:, prune_stale: true).call
+    end
+
+    def sync_alert(sync_result)
+      return if sync_result.blank? || sync_result.success?
+
+      "A busca externa foi iniciada, mas o reaproveitamento local falhou: #{sync_result.errors.to_sentence}."
     end
 end
