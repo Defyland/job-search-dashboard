@@ -2,6 +2,8 @@ require "cgi"
 require "test_helper"
 
 class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
+  include ActiveJob::TestHelper
+
   class FakeIntentCompiler
     def call(technology_intent:, seniority_preset:, language_scope:, required_remote:, region_scope:, include_women_only:)
       raise ArgumentError, "expected salesforce stack" unless technology_intent == "salesforce"
@@ -37,6 +39,37 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "compiles intent preview and saves an intent-backed profile" do
+    Job.create!(
+      job_source: job_sources(:gupy),
+      title: "Senior Salesforce Developer",
+      company_name: "Acme",
+      apply_url: "https://acme.gupy.io/jobs/salesforce-1",
+      canonical_url: "https://acme.gupy.io/jobs/salesforce-1",
+      source_url: "https://acme.gupy.io/jobs/salesforce-1",
+      ats_name: "Gupy",
+      external_job_id: "salesforce-1",
+      remote_text: "Remoto Brasil",
+      location_text: "Brasil",
+      seniority: "senior",
+      match_strength: :strong,
+      user_state: :new_match,
+      lifecycle_state: :active,
+      reason: "Titulo senior com stack Salesforce e remoto BR.",
+      score: 95,
+      posted_text: "publicada ha 1 dia",
+      published_at: 1.day.ago,
+      first_seen_at: 1.day.ago,
+      last_seen_at: 1.day.ago,
+      last_validated_at: 1.day.ago,
+      fingerprint: "acme::senior salesforce developer::gupy.io::salesforce-1",
+      stack_tags: [ "salesforce" ],
+      raw_payload: {
+        title: "Senior Salesforce Developer",
+        company: "Acme",
+        description: "Apex, Lightning, Sales Cloud"
+      }
+    )
+
     with_fake_intent_compiler(FakeIntentCompiler.new) do
       post search_profiles_path, params: { search_profile: compiled_form_params, preview_compile: "1" }
     end
@@ -48,11 +81,16 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     compiled_payload = extract_compiled_payload(response.body)
 
     assert_difference("SearchProfile.count", 1) do
-      post search_profiles_path, params: {
-        search_profile: compiled_form_params.merge(
-          compiled_profile_payload: compiled_payload
-        )
-      }
+      assert_enqueued_with(
+        job: DiscoverJobsRunJob,
+        args: ->(args) { args == [ { window_days: 20, trigger_source: :manual } ] }
+      ) do
+        post search_profiles_path, params: {
+          search_profile: compiled_form_params.merge(
+            compiled_profile_payload: compiled_payload
+          )
+        }
+      end
     end
 
     profile = SearchProfile.order(:created_at).last
@@ -61,6 +99,7 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     assert profile.intent_backed?
     assert_equal "brazil_latam", profile.intent_settings["region_scope"]
     assert_includes profile.compiler_stack_aliases["salesforce"], "apex"
+    assert profile.job_matches.exists?
   end
 
   test "rejects saving with stale compiled payload when the simple intent changes" do

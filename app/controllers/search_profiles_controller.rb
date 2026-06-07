@@ -14,7 +14,13 @@ class SearchProfilesController < ApplicationController
   def create
     return render_compiled_preview(@search_profile) if preview_compile_requested?
 
-    persist_profile(@search_profile, template: :new, success_path: ->(profile) { jobs_path(search_profile_id: profile.id) }, success_notice: "Perfil criado.")
+    persist_profile(
+      @search_profile,
+      template: :new,
+      success_path: ->(profile) { jobs_path(search_profile_id: profile.id) },
+      success_notice: "Perfil criado. Busca inicial iniciada.",
+      after_save: ->(profile) { bootstrap_profile!(profile) }
+    )
   end
 
   def edit
@@ -54,11 +60,12 @@ class SearchProfilesController < ApplicationController
       @intent_compiler ||= SearchProfiles::IntentCompiler.new
     end
 
-    def persist_profile(search_profile, template:, success_path:, success_notice:)
+    def persist_profile(search_profile, template:, success_path:, success_notice:, after_save: nil)
       form_attributes = profile_form_params.to_h
       search_profile.assign_attributes(profile_attributes_for_save(search_profile, form_attributes))
 
       if search_profile.save
+        after_save&.call(search_profile)
         redirect_to success_path.call(search_profile), notice: success_notice
       else
         restore_compiled_preview(form_attributes["compiled_profile_payload"])
@@ -228,5 +235,10 @@ class SearchProfilesController < ApplicationController
         :location_terms_text,
         :negative_terms_text
       )
+    end
+
+    def bootstrap_profile!(search_profile)
+      SearchProfiles::Bootstrapper.new(search_profile:).call
+      DiscoverJobsRunJob.perform_later(window_days: search_profile.scan_window_days, trigger_source: :manual)
     end
 end
