@@ -8,6 +8,8 @@ module JobDiscovery
       :seniority,
       :remote_signal,
       :exclusion_reason,
+      :search_profile,
+      :eligibility_flags,
       keyword_init: true
     ) do
       def accepted?
@@ -15,18 +17,17 @@ module JobDiscovery
       end
     end
 
-    STACK_PATTERNS = {
-      "react native" => /\breact[\s-]*native\b/i,
-      "ruby on rails" => /\bruby\s+on\s+rails\b|\brails\b/i,
-      "react" => /\breact(?:js)?\b/i,
-      "ruby" => /\bruby\b/i
+    STACK_SYNONYMS = {
+      ".net" => [ ".net", "dotnet", "c#", "asp.net" ],
+      "c#" => [ "c#", ".net", "dotnet", "asp.net" ],
+      "java" => [ "java", "spring", "spring boot", "jvm" ],
+      "ruby on rails" => [ "ruby on rails", "rails" ],
+      "rails" => [ "rails", "ruby on rails" ],
+      "react" => [ "react", "reactjs", "react.js" ],
+      "react native" => [ "react native", "react-native" ]
     }.freeze
-    SENIORITY_TERMS = %w[senior sênior sr staff].freeze
-    STACK_TERMS = [ "ruby", "ruby on rails", "rails", "react", "react native", "frontend", "fullstack" ].freeze
-    EXCLUDE_TERMS = [ "junior", "júnior", "pleno", "mid-level", "trainee", "intern", "internship", "estágio", "mulheres", "women only" ].freeze
+    DEFAULT_PROFILE_NAME = "Default senior Ruby/Rails/React".freeze
     ROLE_PATTERNS = /\b(software engineer|engenheir[oa]\s+de\s+software|frontend|front-end|backend|back-end|full[\s-]?stack|developer|desenvolvedor(?:a)?)\b/i
-    SENIORITY_PATTERNS = /\b(senior|sênior|sr\.?|staff)\b/i
-    NEGATIVE_TITLE_PATTERNS = /\b(est[aá]gio|internship|intern|trainee|j[uú]nior|junior|pleno|mid(?:-|\s)?level)\b/i
     ONSITE_PATTERNS = /\b(presencial|on[-\s]?site|h[ií]brido|hybrid)\b/i
     REMOTE_PATTERNS = /\b(remot[oa]?|remote|home[\s-]?office|brasil|brazil|latam)\b/i
     WOMEN_ONLY_PATTERNS = /
@@ -41,71 +42,179 @@ module JobDiscovery
     /ix
     CLOSED_PATTERNS = /\b(expirad[ao]|encerrad[ao]|indispon[ií]vel|closed|expired|unavailable|vencida)\b/i
 
-    def self.contract
-      {
-        seniority_terms: SENIORITY_TERMS,
-        stack_terms: STACK_TERMS,
-        location_priority: "remote compatible with Brazil or LatAm",
-        exclude_terms: EXCLUDE_TERMS,
-        output: "POST accepted strong/borderline jobs and useful rejections to /api/v1/job_ingestions"
-      }
+    DefaultProfile = Struct.new(
+      :id,
+      :name,
+      :target_stacks,
+      :target_titles,
+      :seniority_terms,
+      :location_terms,
+      :negative_terms,
+      :required_remote,
+      :include_women_only,
+      keyword_init: true
+    ) do
+      def required_remote?
+        required_remote
+      end
+
+      def include_women_only?
+        include_women_only
+      end
+
+      def policy_contract
+        {
+          profile_id: id,
+          profile_name: name,
+          seniority_terms: seniority_terms,
+          stack_terms: target_stacks,
+          title_terms: target_titles,
+          location_terms: location_terms,
+          required_remote: required_remote?,
+          include_women_only: include_women_only?,
+          exclude_terms: negative_terms + [ "mulheres", "women only", "female only" ],
+          output: "POST accepted strong/borderline jobs and useful rejections to /api/v1/job_ingestions"
+        }
+      end
+    end
+
+    Criteria = Struct.new(
+      :profile,
+      :stack_patterns,
+      :title_patterns,
+      :seniority_patterns,
+      :location_patterns,
+      :negative_patterns,
+      keyword_init: true
+    )
+
+    def self.contract(search_profile: nil)
+      if search_profile
+        search_profile.policy_contract
+      else
+        profiles = SearchProfile.active.ordered.to_a
+        return default_profile.policy_contract if profiles.blank?
+
+        {
+          profiles: profiles.map(&:policy_contract),
+          output: "POST accepted strong/borderline jobs and useful rejections to /api/v1/job_ingestions"
+        }
+      end
+    end
+
+    def self.default_profile
+      DefaultProfile.new(
+        id: nil,
+        name: DEFAULT_PROFILE_NAME,
+        target_stacks: SearchProfile::DEFAULT_TARGET_STACKS,
+        target_titles: SearchProfile::DEFAULT_TARGET_TITLES,
+        seniority_terms: SearchProfile::DEFAULT_SENIORITY_TERMS,
+        location_terms: SearchProfile::DEFAULT_LOCATION_TERMS,
+        negative_terms: SearchProfile::DEFAULT_NEGATIVE_TERMS,
+        required_remote: true,
+        include_women_only: false
+      )
+    end
+
+    def initialize(search_profile: nil, search_profiles: nil)
+      @profiles =
+        if search_profile
+          [ search_profile ]
+        elsif search_profiles
+          Array(search_profiles)
+        else
+          SearchProfile.active.ordered.to_a
+        end.presence || [ self.class.default_profile ]
+
+      @criteria = @profiles.map { |profile| build_criteria(profile) }
     end
 
     def potential_match?(title)
       normalized_title = normalize(title)
       return false if normalized_title.blank?
-      return false if normalized_title.match?(NEGATIVE_TITLE_PATTERNS)
 
-      seniority?(normalized_title) && (title_stack_tags(normalized_title).any? || normalized_title.match?(ROLE_PATTERNS))
+      @criteria.any? do |criteria|
+        !matches_any?(normalized_title, criteria.negative_patterns) &&
+          seniority?(normalized_title, criteria) &&
+          (title_stack_tags(normalized_title, criteria).any? || role_title?(normalized_title, criteria))
+      end
     end
 
     def classify(title:, remote_text:, location_text:, description:, source_slug:, posted_text:, published_at:)
-      haystack = [ title, remote_text, location_text, description, posted_text ].join(" ")
-      normalized_title = normalize(title)
-      normalized_haystack = normalize(haystack)
+      decisions = @criteria.map do |criteria|
+        classify_for_criteria(criteria:, title:, remote_text:, location_text:, description:, source_slug:, posted_text:, published_at:)
+      end
 
-      return reject("vaga encerrada ou expirada") if normalized_haystack.match?(CLOSED_PATTERNS)
-      return reject("vaga afirmativa para mulheres") if normalized_haystack.match?(WOMEN_ONLY_PATTERNS)
-      return reject("titulo fora do escopo") if normalized_title.blank? || normalized_title.match?(NEGATIVE_TITLE_PATTERNS)
-      return reject("titulo sem senioridade") unless seniority?(normalized_title)
-
-      title_tags = title_stack_tags(normalized_title)
-      body_tags = title_tags.presence || stack_tags(normalized_haystack)
-      return reject("sem stack alvo no titulo ou contexto imediato") if title_tags.blank? && body_tags.blank?
-      return reject("sem foco tecnico compativel no titulo") unless normalized_title.match?(ROLE_PATTERNS) || title_tags.any?
-
-      remote_signal = [ remote_text, location_text ].compact_blank.join(" ").presence || posted_text
-      return reject("localidade sem sinal remoto compativel") if remote_blocked?(remote_signal, normalized_haystack, source_slug)
-
-      classification =
-        if title_tags.any?
-          :strong
-        elsif normalized_title.match?(ROLE_PATTERNS) && body_tags.any?
-          :borderline
-        else
-          :rejected
-        end
-
-      return reject("sem match suficiente") if classification == :rejected
-
-      Result.new(
-        classification:,
-        reason: build_reason(classification, title_tags.presence || body_tags, remote_signal, published_at),
-        stack_tags: title_tags.presence || body_tags,
-        score: build_score(classification, title_tags.present?, published_at),
-        seniority: "senior",
-        remote_signal: remote_signal.presence || "sem data publica",
-        exclusion_reason: nil
-      )
+      decisions.select(&:accepted?).max_by(&:score) || decisions.max_by(&:score) || reject("perfil de busca indisponivel")
     end
 
     private
-      def reject(reason)
-        Result.new(classification: :rejected, reason:, stack_tags: [], score: 0, seniority: "senior", remote_signal: nil, exclusion_reason: reason)
+      def classify_for_criteria(criteria:, title:, remote_text:, location_text:, description:, source_slug:, posted_text:, published_at:)
+        haystack = [ title, remote_text, location_text, description, posted_text ].join(" ")
+        normalized_title = normalize(title)
+        normalized_haystack = normalize(haystack)
+        eligibility_flags = []
+
+        return reject("vaga encerrada ou expirada", criteria.profile) if normalized_haystack.match?(CLOSED_PATTERNS)
+
+        if normalized_haystack.match?(WOMEN_ONLY_PATTERNS)
+          return reject("vaga afirmativa para mulheres", criteria.profile) unless criteria.profile.include_women_only?
+
+          eligibility_flags << "women_only"
+        end
+
+        return reject("titulo fora do escopo", criteria.profile) if normalized_title.blank? || matches_any?(normalized_title, criteria.negative_patterns)
+        return reject("titulo sem senioridade", criteria.profile) unless seniority?(normalized_title, criteria)
+
+        title_tags = title_stack_tags(normalized_title, criteria)
+        body_tags = title_tags.presence || stack_tags(normalized_haystack, criteria)
+        return reject("sem stack alvo no titulo ou contexto imediato", criteria.profile) if title_tags.blank? && body_tags.blank?
+        return reject("sem foco tecnico compativel no titulo", criteria.profile) unless role_title?(normalized_title, criteria) || title_tags.any?
+
+        remote_signal = [ remote_text, location_text ].compact_blank.join(" ").presence || posted_text
+        return reject("localidade sem sinal remoto compativel", criteria.profile) if remote_blocked?(remote_signal, normalized_haystack, source_slug, criteria)
+
+        classification =
+          if title_tags.any?
+            :strong
+          elsif role_title?(normalized_title, criteria) && body_tags.any?
+            :borderline
+          else
+            :rejected
+          end
+
+        return reject("sem match suficiente", criteria.profile) if classification == :rejected
+
+        Result.new(
+          classification:,
+          reason: build_reason(classification, title_tags.presence || body_tags, remote_signal, published_at, criteria.profile),
+          stack_tags: title_tags.presence || body_tags,
+          score: build_score(classification, title_tags.present?, published_at),
+          seniority: criteria.profile.seniority_terms.first.presence || "senior",
+          remote_signal: remote_signal.presence || "sem data publica",
+          exclusion_reason: nil,
+          search_profile: criteria.profile,
+          eligibility_flags:
+        )
       end
 
-      def build_reason(classification, stack_tags, remote_signal, published_at)
+      def reject(reason, profile = nil)
+        Result.new(
+          classification: :rejected,
+          reason:,
+          stack_tags: [],
+          score: 0,
+          seniority: profile&.seniority_terms&.first.presence || "senior",
+          remote_signal: nil,
+          exclusion_reason: reason,
+          search_profile: profile,
+          eligibility_flags: []
+        )
+      end
+
+      def build_reason(classification, stack_tags, remote_signal, published_at, profile)
         [
+          profile.name,
           classification == :strong ? "titulo forte" : "titulo tecnico com stack no contexto",
           stack_tags.join(", "),
           remote_signal.presence || "sem sinal remoto explicito",
@@ -121,26 +230,73 @@ module JobDiscovery
         [ base_score, 99 ].min
       end
 
-      def remote_blocked?(remote_signal, haystack, source_slug)
+      def remote_blocked?(remote_signal, haystack, source_slug, criteria)
+        return false unless criteria.profile.required_remote?
         return false if source_slug == "programathor" && remote_signal.to_s.match?(REMOTE_PATTERNS)
         return true if remote_signal.to_s.match?(ONSITE_PATTERNS)
-        return true if haystack.match?(ONSITE_PATTERNS) && !haystack.match?(REMOTE_PATTERNS)
+        return true if haystack.match?(ONSITE_PATTERNS) && !remote_match?(haystack, criteria)
 
-        !(remote_signal.to_s.match?(REMOTE_PATTERNS) || haystack.match?(REMOTE_PATTERNS))
+        !(remote_match?(remote_signal.to_s, criteria) || remote_match?(haystack, criteria))
       end
 
-      def seniority?(text)
-        text.match?(SENIORITY_PATTERNS)
+      def remote_match?(text, criteria)
+        text.to_s.match?(REMOTE_PATTERNS) || matches_any?(normalize(text), criteria.location_patterns)
       end
 
-      def title_stack_tags(text)
-        stack_tags(text)
+      def seniority?(text, criteria)
+        matches_any?(text, criteria.seniority_patterns)
       end
 
-      def stack_tags(text)
-        STACK_PATTERNS.each_with_object([]) do |(tag, pattern), result|
-          result << tag if text.match?(pattern)
+      def role_title?(text, criteria)
+        text.match?(ROLE_PATTERNS) || matches_any?(text, criteria.title_patterns)
+      end
+
+      def title_stack_tags(text, criteria)
+        stack_tags(text, criteria)
+      end
+
+      def stack_tags(text, criteria)
+        criteria.stack_patterns.each_with_object([]) do |(tag, patterns), result|
+          result << tag if patterns.any? { |pattern| text.match?(pattern) }
         end
+      end
+
+      def matches_any?(text, patterns)
+        patterns.any? { |pattern| text.match?(pattern) }
+      end
+
+      def build_criteria(profile)
+        Criteria.new(
+          profile:,
+          stack_patterns: build_stack_patterns(profile.target_stacks),
+          title_patterns: build_patterns(profile.target_titles),
+          seniority_patterns: build_patterns(profile.seniority_terms),
+          location_patterns: build_patterns(profile.location_terms),
+          negative_patterns: build_patterns(profile.negative_terms)
+        )
+      end
+
+      def build_stack_patterns(target_stacks)
+        normalize_list(target_stacks).each_with_object({}) do |tag, result|
+          terms = STACK_SYNONYMS.fetch(tag, [ tag ])
+          result[tag] = build_patterns(terms)
+        end
+      end
+
+      def build_patterns(terms)
+        normalize_list(terms).map { |term| term_pattern(term) }
+      end
+
+      def term_pattern(term)
+        escaped = Regexp.escape(term).gsub("\\ ", "[\\s-]+")
+        /(?<![[:alnum:]])#{escaped}(?![[:alnum:]])/i
+      end
+
+      def normalize_list(values)
+        Array(values).flat_map { |value| value.to_s.split(",") }
+                     .map { |value| normalize(value) }
+                     .reject(&:blank?)
+                     .uniq
       end
 
       def normalize(value)
