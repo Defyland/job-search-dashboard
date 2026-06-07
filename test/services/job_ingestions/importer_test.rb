@@ -64,7 +64,7 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
   test "recovers when a concurrent insert wins the job unique index race" do
     source = job_sources(:gupy)
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "24h", started_at: Time.current)
-    recorder = JobIngestions::Recorder.new(search_run:)
+    store = JobIngestions::Store.new(search_run:)
     existing_job = Job.create!(
       title: "Senior Ruby Race",
       company_name: "Race Co",
@@ -106,7 +106,7 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
 
     assert_no_difference("Job.count") do
       assert_difference("SearchRunItem.count", 1) do
-        job = recorder.send(:upsert_job, existing_job: nil, source:, attributes:, payload:)
+        job = store.persist_job(existing_job: nil, source:, attributes:, payload:)
 
         assert_equal existing_job, job
       end
@@ -118,7 +118,7 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
 
   test "recovers when a concurrent insert wins the source uniqueness validation race" do
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "24h", started_at: Time.current)
-    recorder = JobIngestions::Recorder.new(search_run:)
+    store = JobIngestions::Store.new(search_run:)
     existing_source = JobSource.create!(
       name: "Race Careers",
       slug: "race-careers",
@@ -142,16 +142,16 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
     }
     duplicate = JobSource.new(slug: "race-careers")
     duplicate.errors.add(:slug, :taken)
-    recorder.define_singleton_method(:persist_source) do |_source, _attributes, _payload, _source_name|
+    store.define_singleton_method(:persist_source) do |_source, _attributes, _payload, _source_name|
       raise ActiveRecord::RecordInvalid.new(duplicate)
     end
 
-    assert_equal existing_source, recorder.send(:find_or_create_source, attributes, payload)
+    assert_equal existing_source, store.resolve_source(attributes:, payload:)
   end
 
   test "recovers when a concurrent insert wins the job match uniqueness validation race" do
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "24h", started_at: Time.current)
-    recorder = JobIngestions::Recorder.new(search_run:)
+    store = JobIngestions::Store.new(search_run:)
     job = Job.create!(
       title: "Senior Ruby Match Race",
       company_name: "Race Co",
@@ -191,7 +191,7 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
     )
 
     assert_no_difference("JobMatch.count") do
-      recorder.send(:upsert_job_match, job, decision, Time.current)
+      store.send(:persist_job_matches, job:, decisions: [ decision ])
     end
 
     assert_equal 96, existing_match.reload.score
