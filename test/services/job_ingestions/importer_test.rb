@@ -362,7 +362,7 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
   end
 
   test "records codex fallback timestamp on fallback source ingestion" do
-    JobSource.seed_defaults!
+    JobSources::Catalog.seed!
     source = JobSource.find_by!(slug: "rubyonremote")
     source.update!(last_codex_checked_at: nil, last_codex_fallback_at: nil)
 
@@ -457,7 +457,7 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
   end
 
   test "marks codex fallback sources checked even when there are no accepted jobs" do
-    JobSource.seed_defaults!
+    JobSources::Catalog.seed!
     source = JobSource.find_by!(slug: "apinfo")
     source.update!(last_codex_checked_at: nil, last_codex_fallback_at: nil)
 
@@ -483,7 +483,7 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
 
   test "does not mark codex fallback accepted when fallback job is rejected by policy" do
     search_profiles(:women_inclusive).update!(active: false)
-    JobSource.seed_defaults!
+    JobSources::Catalog.seed!
     source = JobSource.find_by!(slug: "rubyonremote")
     source.update!(last_codex_checked_at: nil, last_codex_fallback_at: nil)
 

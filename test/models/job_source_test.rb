@@ -2,14 +2,14 @@ require "test_helper"
 
 class JobSourceTest < ActiveSupport::TestCase
   test "seeds the default catalog idempotently" do
-    missing_sources = JobSource::DEFAULT_CATALOG.count - JobSource.count
+    missing_sources = JobSources::Catalog.defaults.count - JobSource.count
 
     assert_difference("JobSource.count", missing_sources) do
-      JobSource.seed_defaults!
+      JobSources::Catalog.seed!
     end
 
     assert_no_difference("JobSource.count") do
-      JobSource.seed_defaults!
+      JobSources::Catalog.seed!
     end
   end
 
@@ -30,7 +30,7 @@ class JobSourceTest < ActiveSupport::TestCase
       }
     )
 
-    JobSource.seed_defaults!
+    JobSources::Catalog.seed!
     source.reload
 
     assert_equal "Gupy Customizada", source.name
@@ -65,7 +65,7 @@ class JobSourceTest < ActiveSupport::TestCase
       settings: {}
     )
 
-    JobSource.seed_defaults!
+    JobSources::Catalog.seed!
     source.reload
 
     assert_equal "https://remotar.com.br", source.base_url
@@ -76,7 +76,7 @@ class JobSourceTest < ActiveSupport::TestCase
   end
 
   test "seed_defaults bootstraps curated adapter settings for blank existing sources" do
-    JobSource.seed_defaults!
+    JobSources::Catalog.seed!
     source = JobSource.find_by!(slug: "lever")
     recrutei = JobSource.find_by!(slug: "recrutei")
     smartrecruiters = JobSource.find_by!(slug: "smartrecruiters")
@@ -85,7 +85,7 @@ class JobSourceTest < ActiveSupport::TestCase
     recrutei.update!(settings: {})
     smartrecruiters.update!(settings: {})
 
-    JobSource.seed_defaults!
+    JobSources::Catalog.seed!
     source.reload
     recrutei.reload
     smartrecruiters.reload
@@ -97,7 +97,7 @@ class JobSourceTest < ActiveSupport::TestCase
   end
 
   test "default catalog marks blocked public sources for codex fallback" do
-    JobSource.seed_defaults!
+    JobSources::Catalog.seed!
 
     apinfo = JobSource.find_by!(slug: "apinfo")
     rubyonremote = JobSource.find_by!(slug: "rubyonremote")

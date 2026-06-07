@@ -13,7 +13,7 @@ namespace :dashboard do
 
   desc "Seed the supported source catalog"
   task seed_sources: :environment do
-    JobSource.seed_defaults!
+    JobSources::Catalog.seed!
     puts "Fontes sincronizadas: #{JobSource.count}"
   end
 

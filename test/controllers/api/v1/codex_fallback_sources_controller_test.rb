@@ -4,7 +4,7 @@ class Api::V1::CodexFallbackSourcesControllerTest < ActionDispatch::IntegrationT
   test "returns enabled codex fallback sources with policy guidance" do
     previous_token = ENV["INGEST_SHARED_TOKEN"]
     ENV["INGEST_SHARED_TOKEN"] = "secret-token"
-    JobSource.seed_defaults!
+    JobSources::Catalog.seed!
 
     get api_v1_codex_fallback_sources_path,
         headers: { "Authorization" => "Bearer secret-token" },
