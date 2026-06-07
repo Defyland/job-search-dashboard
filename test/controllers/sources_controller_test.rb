@@ -40,6 +40,7 @@ class SourcesControllerTest < ActionDispatch::IntegrationTest
     source.update!(
       codex_fallback_enabled: true,
       codex_fallback_reason: "Challenge externo para crawler Rails",
+      last_codex_checked_at: Time.zone.local(2026, 6, 6, 9, 10),
       last_codex_fallback_at: Time.zone.local(2026, 6, 6, 9, 20)
     )
 
@@ -48,6 +49,8 @@ class SourcesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match("Codex fallback", response.body)
     assert_match("Challenge externo para crawler Rails", response.body)
+    assert_match("Checado:", response.body)
+    assert_match("Aceitou vaga:", response.body)
     assert_match("Ativo", response.body)
   end
 

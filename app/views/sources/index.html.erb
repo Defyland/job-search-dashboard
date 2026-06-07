@@ -59,9 +59,8 @@
               <% if source.codex_fallback_enabled? %>
                 <p class="font-semibold text-amber-100">Ativo</p>
                 <p class="mt-1 max-w-xs text-xs text-slate-400"><%= source.codex_fallback_reason.presence || "Sem motivo registrado" %></p>
-                <p class="mt-2 text-xs text-slate-500">
-                  <%= source.last_codex_fallback_at ? I18n.l(source.last_codex_fallback_at, format: :short) : "Nunca ingeriu via Codex" %>
-                </p>
+                <p class="mt-2 text-xs text-slate-500">Checado: <%= source.last_codex_checked_at ? I18n.l(source.last_codex_checked_at, format: :short) : "nunca" %></p>
+                <p class="text-xs text-slate-500">Aceitou vaga: <%= source.last_codex_fallback_at ? I18n.l(source.last_codex_fallback_at, format: :short) : "nunca" %></p>
               <% else %>
                 <p class="text-slate-500">Desativado</p>
               <% end %>

@@ -21,13 +21,35 @@ module JobDiscovery
       "react" => /\breact(?:js)?\b/i,
       "ruby" => /\bruby\b/i
     }.freeze
+    SENIORITY_TERMS = %w[senior sênior sr staff].freeze
+    STACK_TERMS = [ "ruby", "ruby on rails", "rails", "react", "react native", "frontend", "fullstack" ].freeze
+    EXCLUDE_TERMS = [ "junior", "júnior", "pleno", "mid-level", "trainee", "intern", "internship", "estágio", "mulheres", "women only" ].freeze
     ROLE_PATTERNS = /\b(software engineer|engenheir[oa]\s+de\s+software|frontend|front-end|backend|back-end|full[\s-]?stack|developer|desenvolvedor(?:a)?)\b/i
     SENIORITY_PATTERNS = /\b(senior|sênior|sr\.?|staff)\b/i
     NEGATIVE_TITLE_PATTERNS = /\b(est[aá]gio|internship|intern|trainee|j[uú]nior|junior|pleno|mid(?:-|\s)?level)\b/i
     ONSITE_PATTERNS = /\b(presencial|on[-\s]?site|h[ií]brido|hybrid)\b/i
     REMOTE_PATTERNS = /\b(remot[oa]?|remote|home[\s-]?office|brasil|brazil|latam)\b/i
-    WOMEN_ONLY_PATTERNS = /(vaga\s+afirmativa|afirmativa|exclusiva).{0,40}(mulher(?:es)?)/i
+    WOMEN_ONLY_PATTERNS = /
+      (
+        (vaga|oportunidade|banco\s+de\s+talentos).{0,80}(mulher(?:es)?|women)
+        |(afirmativ[ao]s?|exclusiv[ao]s?|preferencial(?:mente)?).{0,60}(mulher(?:es)?|women)
+        |(mulher(?:es)?|women).{0,60}(afirmativ[ao]s?|exclusiv[ao]s?|preferencial(?:mente)?|only)
+        |women[-\s]?only
+        |only\s+women
+        |female[-\s]?only
+      )
+    /ix
     CLOSED_PATTERNS = /\b(expirad[ao]|encerrad[ao]|indispon[ií]vel|closed|expired|unavailable|vencida)\b/i
+
+    def self.contract
+      {
+        seniority_terms: SENIORITY_TERMS,
+        stack_terms: STACK_TERMS,
+        location_priority: "remote compatible with Brazil or LatAm",
+        exclude_terms: EXCLUDE_TERMS,
+        output: "POST accepted strong/borderline jobs and useful rejections to /api/v1/job_ingestions"
+      }
+    end
 
     def potential_match?(title)
       normalized_title = normalize(title)

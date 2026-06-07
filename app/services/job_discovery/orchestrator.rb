@@ -142,7 +142,7 @@ module JobDiscovery
           published_at: candidate[:published_at],
           posted_text: candidate[:posted_text],
           stack_tags: candidate[:stack_tags],
-          payload: candidate[:payload]
+          payload: candidate_payload(candidate)
         )
       end
 
@@ -166,8 +166,13 @@ module JobDiscovery
           recency_text: discovered_job.posted_text,
           published_at: discovered_job.published_at&.iso8601,
           stack_tags: discovered_job.stack_tags,
-          fingerprint: discovered_job.fingerprint
+          fingerprint: discovered_job.fingerprint,
+          description: discovered_job.payload["description"]
         }
+      end
+
+      def candidate_payload(candidate)
+        candidate[:payload].to_h.merge(description: candidate[:description])
       end
 
       def link_discovered_jobs!(source_scan)

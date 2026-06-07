@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_06_224500) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_07_061500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -56,6 +56,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_06_224500) do
     t.datetime "created_at", null: false
     t.boolean "enabled", default: true, null: false
     t.string "host", null: false
+    t.datetime "last_codex_checked_at"
     t.datetime "last_codex_fallback_at"
     t.datetime "last_full_scan_at"
     t.string "name", null: false
@@ -70,6 +71,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_06_224500) do
     t.index ["codex_fallback_enabled"], name: "index_job_sources_on_codex_fallback_enabled"
     t.index ["enabled"], name: "index_job_sources_on_enabled"
     t.index ["host"], name: "index_job_sources_on_host"
+    t.index ["last_codex_checked_at"], name: "index_job_sources_on_last_codex_checked_at"
     t.index ["last_codex_fallback_at"], name: "index_job_sources_on_last_codex_fallback_at"
     t.index ["slug"], name: "index_job_sources_on_slug", unique: true
     t.index ["supports_backfill"], name: "index_job_sources_on_supports_backfill"

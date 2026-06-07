@@ -31,6 +31,7 @@ module JobIngestions
         recorder = JobIngestions::Recorder.new(search_run: @search_run)
         recorder.record_jobs(normalized_jobs)
         recorder.record_rejections(normalized_rejections)
+        mark_codex_fallback_sources_checked!
         @summary = recorder.summary
 
         @search_run.update!(
@@ -89,6 +90,32 @@ module JobIngestions
 
       def normalized_rejections
         Array(@payload["rejections"])
+      end
+
+      def mark_codex_fallback_sources_checked!
+        return unless @search_run.trigger_source_codex_automation?
+
+        slugs = codex_fallback_source_slugs
+        return if slugs.blank?
+
+        JobSource.codex_fallback.where(slug: slugs).update_all(last_codex_checked_at: Time.current)
+      end
+
+      def codex_fallback_source_slugs
+        [
+          run_metadata["source_slug"],
+          Array(run_metadata["source_slugs"]),
+          Array(@payload["source_slugs"]),
+          normalized_jobs,
+          normalized_rejections
+        ].flatten.filter_map do |item|
+          case item
+          when Hash
+            item["source_slug"].presence || item[:source_slug].presence
+          else
+            item.presence
+          end
+        end.map { |value| value.to_s.parameterize }.uniq
       end
 
       def final_status

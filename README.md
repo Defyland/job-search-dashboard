@@ -19,13 +19,14 @@ What Rails owns:
 - run history and raw payload traceability
 - deterministic source coverage for the adapters already implemented
 - policy enforcement for women-only exclusion, title-first seniority matching, and remote compatibility
+- backend reclassification of every ingested job, including Codex fallback payloads
 - configurable per-source search queries for public indexes that require term-driven scans, such as `Sólides`
 
 What Codex owns:
 
 - fallback discovery for sources explicitly marked with `codex_fallback_enabled`
 - assisted search/navigation for sources that are blocked, rate-limited, protected by challenge pages, or too unstable for a native worker adapter
-- validation that the job is still active and directly apply-able before posting it back to Rails
+- validation that the job is still active and directly apply-able before posting it back to Rails; the final match decision still belongs to Rails
 - optional complementary discovery of new boards that can later become native Rails adapters
 
 What Rails currently discovers by itself:
@@ -167,7 +168,7 @@ GET /api/v1/codex_fallback_sources
 Authorization: Bearer <INGEST_SHARED_TOKEN>
 ```
 
-This endpoint returns only enabled sources marked with `codex_fallback_enabled=true`, plus policy hints and the ingestion path. Codex uses this list for a narrow fallback automation: search the blocked sources, validate active senior Ruby/Rails/React/React Native roles, then post the resulting jobs back to `/api/v1/job_ingestions` with `trigger_source=codex_automation`.
+This endpoint returns only enabled sources marked with `codex_fallback_enabled=true`, plus policy hints and the ingestion path. Codex uses this list for a narrow fallback automation: search the blocked sources, validate active senior Ruby/Rails/React/React Native roles, then post the resulting jobs back to `/api/v1/job_ingestions` with `trigger_source=codex_automation`. The ingestion service re-runs `JobDiscovery::Policy` before persisting any job, so `match_strength`, `score`, `stack_tags`, and `reason` from Codex are treated as hints, not trusted final state.
 
 ## Railway Deployment
 
@@ -206,7 +207,7 @@ Useful optional variables:
 
 Solid Queue tables live in the main Rails schema because this app uses a single PostgreSQL database in Railway. Recurring tasks are configured in [config/recurring.yml](config/recurring.yml). Rails now enqueues its own daily `24h` discovery run at `11:30 UTC`, which corresponds to `08:30 BRT`. Rails remains the only primary scheduled engine; Codex is a separate fallback path for sources that Rails explicitly marks as blocked or assisted.
 
-The deterministic Rails backfill can already be run manually from the dashboard or via `dashboard:discover`. The Runs screen can launch either a full backfill or a source-scoped backfill, and the Sources screen can do the same right after you change adapter settings. The Sources screen is now the operational place to seed adapter-specific `settings` such as `board_urls`, `company_labels`, `company_slugs`, `company_identifiers`, `search_queries`, and `max_pages`. It is also where blocked sources are marked for Codex fallback with an operator-visible reason and `last_codex_fallback_at`. `dashboard:seed_sources` is now non-destructive for existing records: it bootstraps missing catalog fields but preserves operator overrides for adapter, priority, enablement, scan window, host/base URL edits, JSON `settings`, and Codex fallback settings. The default catalog now also carries curated starter settings for the sources already validated in this project, so blank production records can immediately bootstrap known `Gupy`, `Recrutei`, `Lever`, `Greenhouse`, `Ashby`, `Inhire`, and `SmartRecruiters` boards without manual surgery. If you need to roll out a new default over an existing source, use an explicit migration or task instead of relying on deploy-time seeding. Codex ingestion remains available as a complementary API path and now has a narrow scheduled fallback role.
+The deterministic Rails backfill can already be run manually from the dashboard or via `dashboard:discover`. The Runs screen can launch either a full backfill or a source-scoped backfill, and the Sources screen can do the same right after you change adapter settings. The Sources screen is now the operational place to seed adapter-specific `settings` such as `board_urls`, `company_labels`, `company_slugs`, `company_identifiers`, `search_queries`, and `max_pages`. It is also where blocked sources are marked for Codex fallback with an operator-visible reason, `last_codex_checked_at`, and `last_codex_fallback_at`. `dashboard:seed_sources` is now non-destructive for existing records: it bootstraps missing catalog fields but preserves operator overrides for adapter, priority, enablement, scan window, host/base URL edits, JSON `settings`, and Codex fallback settings. The default catalog now also carries curated starter settings for the sources already validated in this project, so blank production records can immediately bootstrap known `Gupy`, `Recrutei`, `Lever`, `Greenhouse`, `Ashby`, `Inhire`, and `SmartRecruiters` boards without manual surgery. If you need to roll out a new default over an existing source, use an explicit migration or task instead of relying on deploy-time seeding. Codex ingestion remains available as a complementary API path and now has a narrow scheduled fallback role.
 
 Run status semantics for native Rails discovery are:
 

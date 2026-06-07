@@ -17,6 +17,8 @@ class Api::V1::JobIngestionsControllerTest < ActionDispatch::IntegrationTest
                  canonical_url: "https://jobs.lever.co/ciandt/ff314e5d-e080-43cf-bb51-a581c2701199",
                  source_name: "Lever",
                  source_kind: "ats",
+                 remote_signal: "Remote Brazil",
+                 location: "Brazil",
                  reason: "Titulo senior com React Native e remoto BR.",
                  stack_tags: [ "react native" ],
                  match_strength: "strong",

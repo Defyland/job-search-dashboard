@@ -6,6 +6,7 @@ module JobIngestions
 
     def initialize(search_run:)
       @search_run = search_run
+      @policy = JobDiscovery::Policy.new
       @summary = {
         imported_count: 0,
         updated_count: 0,
@@ -39,7 +40,6 @@ module JobIngestions
         end
 
         source = find_or_create_source(attributes, item)
-        mark_codex_fallback_seen!(source)
         existing_job = find_existing_job(attributes)
 
         if expired_payload?(item)
@@ -54,7 +54,17 @@ module JobIngestions
           return
         end
 
+        policy_decision = policy_decision_for(attributes, item, source)
+        unless policy_decision.accepted?
+          build_run_item(nil, :rejected, policy_decision.exclusion_reason.presence || policy_decision.reason, item)
+          @summary[:rejected_count] += 1
+          return
+        end
+
+        attributes = apply_policy_decision(attributes, policy_decision)
+
         upsert_job(existing_job:, source:, attributes:, payload: item)
+        mark_codex_fallback_seen!(source)
       end
 
       def upsert_job(existing_job:, source:, attributes:, payload:)
@@ -126,7 +136,7 @@ module JobIngestions
         return unless @search_run.trigger_source_codex_automation?
         return unless source.codex_fallback_enabled?
 
-        source.update_column(:last_codex_fallback_at, Time.current)
+        source.update_columns(last_codex_checked_at: Time.current, last_codex_fallback_at: Time.current)
       end
 
       def find_existing_job(attributes)
@@ -162,6 +172,47 @@ module JobIngestions
           source_host: normalize_host(canonical_url || apply_url),
           user_state: :new_match
         }
+      end
+
+      def policy_decision_for(attributes, item, source)
+        item = item.deep_stringify_keys
+        @policy.classify(
+          title: attributes[:title],
+          remote_text: attributes[:remote_text],
+          location_text: attributes[:location_text],
+          description: policy_description(item, attributes),
+          source_slug: source.slug,
+          posted_text: attributes[:posted_text],
+          published_at: attributes[:published_at]
+        )
+      end
+
+      def policy_description(item, attributes)
+        [
+          item["description"],
+          item["body"],
+          item["requirements"],
+          item["summary"],
+          restrictive_payload_reason(item, attributes)
+        ].flatten.compact.join(" ")
+      end
+
+      def restrictive_payload_reason(item, attributes)
+        text = [ item["reason"], item["match_reason"], attributes[:reason] ].compact.join(" ")
+        return if text.blank?
+
+        text if text.match?(/\b(mulher(?:es)?|women|female|closed|expired|unavailable|expirad[ao]|encerrad[ao]|indispon[ií]vel|presencial|h[ií]brido|hybrid|on[-\s]?site)\b/i)
+      end
+
+      def apply_policy_decision(attributes, decision)
+        attributes.merge(
+          match_strength: normalize_match_strength(decision.classification),
+          reason: decision.reason,
+          score: decision.score,
+          seniority: decision.seniority,
+          stack_tags: decision.stack_tags,
+          remote_text: decision.remote_signal.presence || attributes[:remote_text]
+        )
       end
 
       def normalize_stack_tags(item)

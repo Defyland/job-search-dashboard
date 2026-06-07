@@ -11,6 +11,8 @@ Verificacao executada:
 - `bundle exec ruby -rfugit -e 'Fugit.parse("every day at 11:30 UTC").next_time'`: parse valido, proxima execucao em `08:30 -03:00`
 - automacao `daily-senior-ruby-react-job-search` removida do app; o heartbeat legado nao esta mais presente em `/Users/allanflavio/.codex/automations`
 - novo contrato de fallback: `JobSource` agora registra `codex_fallback_enabled`, `codex_fallback_reason` e `last_codex_fallback_at`, e a API `GET /api/v1/codex_fallback_sources` expoe apenas as fontes que o Codex deve cobrir de forma assistida
+- revisao termonuclear posterior encontrou e corrigiu um gap de fronteira: payloads Codex nao podem definir `match_strength`, `score`, `stack_tags` ou `reason` finais; a ingestao agora reexecuta `JobDiscovery::Policy` antes de persistir qualquer vaga
+- a mesma revisao ampliou a exclusao de vagas restritas para mulheres com exemplos PT/EN e separou `last_codex_checked_at` de `last_codex_fallback_at`, permitindo saber quando Codex rodou mesmo sem aceitar vaga
 - smoke local do adapter `Remotar`: `18` candidatos aderentes nas primeiras `4` paginas, com links diretos para `Gupy` e `Inhire`
 - smoke local do adapter `Workable`: `0` matches fortes nas primeiras `10` paginas recentes, o que sugere baixo volume atual para o nicho monitorado
 - smoke local do adapter `Sólides`: `3` borderline e `0` strong em `20d` com as queries padrao `react`, `react native`, `ruby` e `rails`; a integracao publica esta funcional, mas o indice atual da fonte parece entregar mais titulos senior genericos do que titulos com stack explicita
@@ -71,6 +73,7 @@ Q: Requisitos questionados
 - Alterados:
   - o sistema agora tem dois caminhos validos: `Codex -> ingestao` e `Rails adapters -> source scans -> inbox`
   - esse desenho foi estreitado: Rails e dono diario/canonico; Codex so atua em fontes marcadas como fallback ou em descoberta complementar pontual
+  - payload externo virou input nao-confiavel: Codex descobre e envia contexto, mas Rails reclassifica antes de criar/atualizar vaga
 - Suspeitos/deletados:
   - thread como memoria canonica
   - `jobs.json` como banco
@@ -115,6 +118,9 @@ S: Simplificar/Otimizar
   - a UI de fontes deixou de aceitar `adapter_key` como texto livre; a edicao agora oferece apenas o registry suportado mais `manual_only`, preservando valores legados invalidos apenas para correcao explicita do operador
   - fontes bloqueadas deixaram de ficar escondidas em comentario/documentacao; o catalogo agora mostra explicitamente se a fonte participa do fallback Codex, por que participa e quando uma ingestao Codex dela aconteceu pela ultima vez
   - a automacao Codex deixou de precisar manter uma lista paralela de fontes; ela pode buscar `GET /api/v1/codex_fallback_sources` e postar o resultado validado de volta no endpoint de ingestao existente
+  - `JobIngestions::Recorder` virou a fronteira de confianca dos payloads externos: ele normaliza dados, resolve fonte, rejeita payload incompleto, reexecuta a policy e so entao chama o upsert
+  - `JobDiscovery::Policy.contract` eliminou a duplicacao manual entre a regra backend e os hints expostos ao Codex fallback
+  - `last_codex_checked_at` diferencia "Codex rodou e nao aceitou nada" de "Codex nunca rodou", enquanto `last_codex_fallback_at` continua representando a ultima vaga aceita dessa fonte
 - Risco residual real:
   - o slice Rails ainda nao cobre todo o catalogo, apesar de agora incluir `Gupy`, `Sólides`, `Recrutei`, `Inhire`, `Lever`, `Greenhouse`, `Ashby`, `Teamtailor`, `SmartRecruiters`, `ProgramaThor`, `Remotar`, `Workable`, `Trampos` e `Coodesh`
   - `Recrutei` ja consegue revalidar e redescobrir a partir de URLs publicas conhecidas, mas o board `/<label>/vacancies` nao expõe uma listagem SSR confiavel hoje; por isso a cobertura nativa dessa fonte ainda depende de URLs ja vistas ou `settings.company_labels`/`settings.vacancy_urls`
@@ -127,7 +133,7 @@ S: Simplificar/Otimizar
   - `ProgramaThor` nao expõe recencia forte nas paginas usadas; o adapter ainda depende de ordem do board e limite de paginas como fallback
   - `APInfo` expõe busca publica por formulario, mas o endpoint respondeu com `Erro : 178.076-H - Seu limite de consultas esta temporariamente esgotado` no ambiente de desenvolvimento durante a investigacao; ela agora fica em Codex fallback em vez de ganhar um adapter nativo fragil
   - `RubyOnRemote` respondeu `403` com challenge Cloudflare para `Net::HTTP`, `urllib` e user-agents de navegador nos endpoints principais e no sitemap; enquanto esse bloqueio existir para o mesmo perfil de cliente do worker, ela fica em Codex fallback
-  - o endpoint de ingestao Codex continua complementar; a diferenca agora e que existe um contrato explicito de fontes fallback e observabilidade de `last_codex_fallback_at`
+  - o endpoint de ingestao Codex continua complementar; a diferenca agora e que existe um contrato explicito de fontes fallback, reclassificacao backend obrigatoria e observabilidade de checagem/aceite por fonte
 
 A: Acelerar ciclo de feedback
 - O ciclo local esta curto e suficiente:
