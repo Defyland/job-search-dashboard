@@ -4,6 +4,8 @@ require "json"
 module JobDiscovery
   module Adapters
     class Base
+      URL_COLUMNS = %i[canonical_url source_url apply_url].freeze
+
       def initialize(fetcher: JobDiscovery::Fetcher.new, policy: JobDiscovery::Policy.new)
         @fetcher = fetcher
         @policy = policy
@@ -94,41 +96,34 @@ module JobDiscovery
           }
         end
 
-        def known_job_rows
-          @known_job_rows ||= Job.active.pluck(:company_name, :canonical_url, :source_url, :apply_url)
-        end
-
-        def known_urls
-          @known_urls ||= known_job_rows.flat_map { |row| row.last(3) }
-                                       .compact
-                                       .map { |url| canonical_url_string(url) }
-                                       .reject(&:blank?)
-                                       .uniq
-        end
-
-        def known_company_name_map
-          @known_company_name_map ||= known_job_rows.each_with_object({}) do |row, result|
-            company_name = row.first.to_s.squish
-            next if company_name.blank?
-
-            row.last(3).compact.each do |url|
-              normalized_url = canonical_url_string(url)
-              next if normalized_url.blank?
-
-              result[normalized_url] ||= company_name
-            end
-          end
-        end
-
         def known_hosted_urls(host_suffixes:)
-          known_urls.select do |url|
-            host = normalized_host(url)
-            host.present? && host_suffixes.any? { |suffix| host == suffix || host.end_with?(".#{suffix}") }
-          end
+          host_suffixes = normalized_host_suffixes(host_suffixes)
+          return [] if host_suffixes.empty?
+
+          @known_hosted_urls_by_suffix ||= {}
+          @known_hosted_urls_by_suffix[host_suffixes.sort.join("|")] ||= Job.active
+            .where(host_suffix_predicate(host_suffixes))
+            .pluck(*URL_COLUMNS)
+            .flatten
+            .compact
+            .map { |url| canonical_url_string(url) }
+            .select { |url| hosted_url?(url, host_suffixes) }
+            .uniq
         end
 
         def company_name_for_url(url)
-          known_company_name_map[canonical_url_string(url)]
+          normalized_url = canonical_url_string(url)
+          return if normalized_url.blank?
+
+          @company_name_by_url ||= {}
+          return @company_name_by_url[normalized_url] if @company_name_by_url.key?(normalized_url)
+
+          url_variants = [ normalized_url, "#{normalized_url}/" ].uniq
+          @company_name_by_url[normalized_url] = Job.active
+            .where(url_exact_predicate(url_variants))
+            .pick(:company_name)
+            &.squish
+            &.presence
         end
 
         def normalized_host(url)
@@ -139,6 +134,38 @@ module JobDiscovery
 
         def canonical_url_string(url)
           url.to_s.strip.delete_suffix("/")
+        end
+
+        def normalized_host_suffixes(host_suffixes)
+          Array(host_suffixes).filter_map do |suffix|
+            normalized = suffix.to_s.downcase.strip
+            normalized = normalized.delete_prefix("https://").delete_prefix("http://")
+            normalized = normalized.delete_suffix("/").delete_prefix("www.").delete_prefix(".")
+            normalized if normalized.match?(/\A[a-z0-9.-]+\z/)
+          end.uniq
+        end
+
+        def hosted_url?(url, host_suffixes)
+          host = normalized_host(url)
+          host.present? && host_suffixes.any? { |suffix| host == suffix || host.end_with?(".#{suffix}") }
+        end
+
+        def host_suffix_predicate(host_suffixes)
+          table = Job.arel_table
+          predicates = host_suffixes.flat_map do |suffix|
+            [ "%://#{suffix}%", "%://%.#{suffix}%" ].flat_map do |pattern|
+              URL_COLUMNS.map do |column|
+                Arel::Nodes::NamedFunction.new("LOWER", [ table[column] ]).matches(pattern)
+              end
+            end
+          end
+
+          predicates.reduce { |left, right| left.or(right) }
+        end
+
+        def url_exact_predicate(url_variants)
+          table = Job.arel_table
+          URL_COLUMNS.map { |column| table[column].in(url_variants) }.reduce { |left, right| left.or(right) }
         end
     end
   end
