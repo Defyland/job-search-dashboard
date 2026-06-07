@@ -24,7 +24,8 @@ module JobDiscovery
       "ruby on rails" => [ "ruby on rails", "rails" ],
       "rails" => [ "rails", "ruby on rails" ],
       "react" => [ "react", "reactjs", "react.js" ],
-      "react native" => [ "react native", "react-native" ]
+      "react native" => [ "react native", "react-native" ],
+      "nextjs" => [ "nextjs", "next.js", "next js" ]
     }.freeze
     DEFAULT_PROFILE_NAME = "Default senior Ruby/Rails/React".freeze
     PORTUGUESE_ROLE_TERMS = [
@@ -99,7 +100,8 @@ module JobDiscovery
     Criteria = Struct.new(
       :profile,
       :language_scope,
-      :stack_patterns,
+      :title_stack_patterns,
+      :context_stack_patterns,
       :title_patterns,
       :role_patterns,
       :seniority_patterns,
@@ -190,7 +192,7 @@ module JobDiscovery
         return reject("titulo sem marcador de idioma do perfil", criteria.profile) unless title_language_match?(normalized_title, criteria)
 
         title_tags = title_stack_tags(normalized_title, criteria)
-        body_tags = title_tags.presence || stack_tags(normalized_haystack, criteria)
+        body_tags = title_tags.presence || context_stack_tags(normalized_haystack, criteria)
         return reject("sem stack alvo no titulo ou contexto imediato", criteria.profile) if title_tags.blank? && body_tags.blank?
         return reject("sem foco tecnico compativel no titulo", criteria.profile) unless role_title?(normalized_title, criteria) || title_tags.any?
 
@@ -281,11 +283,15 @@ module JobDiscovery
       end
 
       def title_stack_tags(text, criteria)
-        stack_tags(text, criteria)
+        stack_tags(text, criteria.title_stack_patterns)
       end
 
-      def stack_tags(text, criteria)
-        criteria.stack_patterns.each_with_object([]) do |(tag, patterns), result|
+      def context_stack_tags(text, criteria)
+        stack_tags(text, criteria.context_stack_patterns)
+      end
+
+      def stack_tags(text, patterns_by_tag)
+        patterns_by_tag.each_with_object([]) do |(tag, patterns), result|
           result << tag if patterns.any? { |pattern| text.match?(pattern) }
         end
       end
@@ -300,7 +306,8 @@ module JobDiscovery
         Criteria.new(
           profile:,
           language_scope:,
-          stack_patterns: build_stack_patterns(profile),
+          title_stack_patterns: build_stack_patterns(profile, include_compiler_aliases: true),
+          context_stack_patterns: build_stack_patterns(profile, include_compiler_aliases: false),
           title_patterns: build_patterns(profile.target_titles),
           role_patterns: build_patterns(role_terms_for(language_scope)),
           seniority_patterns: build_patterns(profile.seniority_terms),
@@ -324,10 +331,11 @@ module JobDiscovery
         end
       end
 
-      def build_stack_patterns(profile)
+      def build_stack_patterns(profile, include_compiler_aliases:)
         normalize_list(profile.target_stacks).each_with_object({}) do |tag, result|
           terms = STACK_SYNONYMS.fetch(tag, [ tag ])
-          if profile.respond_to?(:compiler_stack_aliases)
+
+          if include_compiler_aliases && profile.respond_to?(:compiler_stack_aliases)
             terms += Array(profile.compiler_stack_aliases[tag])
           end
 

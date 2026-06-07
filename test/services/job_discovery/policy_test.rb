@@ -90,7 +90,7 @@ class JobDiscovery::PolicyTest < ActiveSupport::TestCase
     assert_includes dotnet_result.stack_tags, ".net"
   end
 
-  test "uses compiled aliases to classify stack from immediate context" do
+  test "uses compiled aliases to classify stack from the title" do
     profile = users(:one).search_profiles.create!(
       name: "Senior Salesforce",
       target_stacks: [ "salesforce" ],
@@ -108,18 +108,49 @@ class JobDiscovery::PolicyTest < ActiveSupport::TestCase
     )
 
     result = JobDiscovery::Policy.new(search_profile: profile).classify(
-      title: "Senior Platform Engineer",
+      title: "Senior Apex Engineer",
       remote_text: "Remote Brazil",
       location_text: "Brazil",
-      description: "Hands-on with Apex and Lightning on Salesforce",
+      description: "Hands-on with Lightning on Salesforce",
       source_slug: "lever",
       posted_text: "today",
       published_at: nil
     )
 
     assert result.accepted?
-    assert_equal :borderline, result.classification
+    assert_equal :strong, result.classification
     assert_includes result.stack_tags, "salesforce"
+  end
+
+  test "does not use compiled aliases from generic body context" do
+    profile = users(:one).search_profiles.create!(
+      name: "Senior Next.js",
+      target_stacks: [ "nextjs" ],
+      target_titles: [ "frontend engineer", "software engineer" ],
+      seniority_terms: [ "senior", "sênior", "sr" ],
+      location_terms: [ "remote", "remoto", "brazil", "brasil", "latam" ],
+      negative_terms: [ "junior", "pleno" ],
+      settings: {
+        "compiler" => {
+          "stack_aliases" => {
+            "nextjs" => [ "next" ]
+          }
+        }
+      }
+    )
+
+    result = JobDiscovery::Policy.new(search_profile: profile).classify(
+      title: "Senior Software Engineer",
+      remote_text: "Remote Brazil",
+      location_text: "Brazil",
+      description: "The final decision and next steps are handled by the internal team.",
+      source_slug: "lever",
+      posted_text: "today",
+      published_at: nil
+    )
+
+    assert_equal :rejected, result.classification
+    assert_match(/stack alvo|match suficiente/, result.reason)
   end
 
   test "portuguese salesforce profile accepts portuguese titles and rejects english titles" do
