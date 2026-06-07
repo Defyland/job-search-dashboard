@@ -44,6 +44,8 @@ class SourcesController < ApplicationController
         :adapter_key,
         :enabled,
         :supports_backfill,
+        :codex_fallback_enabled,
+        :codex_fallback_reason,
         :settings_json
       )
     end

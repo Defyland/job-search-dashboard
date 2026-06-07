@@ -35,6 +35,22 @@ class SourcesControllerTest < ActionDispatch::IntegrationTest
     assert_match("Candidatos:</span> 12", response.body)
   end
 
+  test "index renders codex fallback state" do
+    source = job_sources(:workable)
+    source.update!(
+      codex_fallback_enabled: true,
+      codex_fallback_reason: "Challenge externo para crawler Rails",
+      last_codex_fallback_at: Time.zone.local(2026, 6, 6, 9, 20)
+    )
+
+    get sources_path
+
+    assert_response :success
+    assert_match("Codex fallback", response.body)
+    assert_match("Challenge externo para crawler Rails", response.body)
+    assert_match("Ativo", response.body)
+  end
+
   test "should get edit" do
     get edit_source_path(job_sources(:gupy))
     assert_response :success
@@ -64,6 +80,8 @@ class SourcesControllerTest < ActionDispatch::IntegrationTest
         scan_window_days: 14,
         enabled: "1",
         supports_backfill: "1",
+        codex_fallback_enabled: "1",
+        codex_fallback_reason: "Fallback complementar para busca assistida.",
         settings_json: JSON.dump({ "board_urls" => [ "https://clicksign.gupy.io/", "https://memed.gupy.io/" ], "max_pages" => 3 })
       }
     }
@@ -73,6 +91,8 @@ class SourcesControllerTest < ActionDispatch::IntegrationTest
     job_sources(:gupy).reload
     assert_equal 15, job_sources(:gupy).priority
     assert_equal 14, job_sources(:gupy).scan_window_days
+    assert job_sources(:gupy).codex_fallback_enabled?
+    assert_equal "Fallback complementar para busca assistida.", job_sources(:gupy).codex_fallback_reason
     assert_equal [ "https://clicksign.gupy.io/", "https://memed.gupy.io/" ], job_sources(:gupy).settings["board_urls"]
     assert_equal 3, job_sources(:gupy).settings["max_pages"]
   end

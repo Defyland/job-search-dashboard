@@ -39,6 +39,7 @@ module JobIngestions
         end
 
         source = find_or_create_source(attributes, item)
+        mark_codex_fallback_seen!(source)
         existing_job = find_existing_job(attributes)
 
         if expired_payload?(item)
@@ -119,6 +120,13 @@ module JobIngestions
           record.enabled = true
           record.save!
         end
+      end
+
+      def mark_codex_fallback_seen!(source)
+        return unless @search_run.trigger_source_codex_automation?
+        return unless source.codex_fallback_enabled?
+
+        source.update_column(:last_codex_fallback_at, Time.current)
       end
 
       def find_existing_job(attributes)

@@ -17,6 +17,7 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       resources :job_ingestions, only: :create
+      resources :codex_fallback_sources, only: :index
     end
   end
 

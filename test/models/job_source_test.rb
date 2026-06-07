@@ -96,6 +96,18 @@ class JobSourceTest < ActiveSupport::TestCase
     assert_equal [ "smartrecruiters" ], smartrecruiters.settings["company_identifiers"]
   end
 
+  test "default catalog marks blocked public sources for codex fallback" do
+    JobSource.seed_defaults!
+
+    apinfo = JobSource.find_by!(slug: "apinfo")
+    rubyonremote = JobSource.find_by!(slug: "rubyonremote")
+
+    assert apinfo.codex_fallback_enabled?
+    assert_match "rate-limited", apinfo.codex_fallback_reason
+    assert rubyonremote.codex_fallback_enabled?
+    assert_match "Cloudflare", rubyonremote.codex_fallback_reason
+  end
+
   test "backfillable sources require a supported adapter key" do
     source = JobSource.new(
       name: "Broken Source",

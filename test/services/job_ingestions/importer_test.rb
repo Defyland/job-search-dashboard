@@ -78,4 +78,33 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
 
     assert_equal job_sources(:gupy), Job.order(:created_at).last.job_source
   end
+
+  test "records codex fallback timestamp on fallback source ingestion" do
+    JobSource.seed_defaults!
+    source = JobSource.find_by!(slug: "rubyonremote")
+    source.update!(last_codex_fallback_at: nil)
+
+    payload = {
+      run: { window_label: "20d", trigger_source: "codex_automation" },
+      jobs: [
+        {
+          title: "Senior Ruby on Rails Engineer",
+          company: "Remote Ruby Co",
+          apply_url: "https://rubyonremote.com/jobs/senior-ruby-on-rails-engineer",
+          canonical_url: "https://rubyonremote.com/jobs/senior-ruby-on-rails-engineer",
+          source_name: "RubyOnRemote",
+          source_slug: "rubyonremote",
+          source_kind: "platform",
+          reason: "Fonte bloqueada para Rails, validada via Codex fallback.",
+          stack_tags: [ "ruby", "ruby on rails" ],
+          match_strength: "strong"
+        }
+      ]
+    }
+
+    result = JobIngestions::Importer.new(payload:).call
+
+    assert result.success?
+    assert source.reload.last_codex_fallback_at.present?
+  end
 end

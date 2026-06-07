@@ -72,6 +72,15 @@
         <%= form.check_box :supports_backfill, class: "h-4 w-4 rounded border-white/20 bg-slate-950/60 text-sky-400" %>
         Participa do backfill/cron
       </label>
+      <label class="inline-flex items-center gap-3 text-sm text-slate-200">
+        <%= form.check_box :codex_fallback_enabled, class: "h-4 w-4 rounded border-white/20 bg-slate-950/60 text-amber-300" %>
+        Participa do fallback Codex
+      </label>
+    </div>
+
+    <div class="md:col-span-2">
+      <%= form.label :codex_fallback_reason, "Motivo do fallback Codex", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+      <%= form.text_area :codex_fallback_reason, rows: 3, class: "mt-2 w-full rounded-[1.5rem] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
     </div>
 
     <div class="md:col-span-2">

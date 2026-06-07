@@ -16,6 +16,7 @@
           <th class="px-6 py-4">Host</th>
           <th class="px-6 py-4">Prioridade</th>
           <th class="px-6 py-4">Ultimo scan</th>
+          <th class="px-6 py-4">Fallback Codex</th>
           <th class="px-6 py-4">Cobertura</th>
           <th class="px-6 py-4">Vagas</th>
           <th class="px-6 py-4">Acoes</th>
@@ -31,6 +32,9 @@
               <div class="mt-2 flex flex-wrap gap-2">
                 <span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-slate-200"><%= source.enabled? ? "Ativa" : "Pausada" %></span>
                 <span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-slate-200"><%= source.supports_backfill? ? "Backfill" : "Manual" %></span>
+                <% if source.codex_fallback_enabled? %>
+                  <span class="rounded-full border border-amber-300/20 bg-amber-400/10 px-2.5 py-1 text-[11px] font-semibold text-amber-100">Codex fallback</span>
+                <% end %>
               </div>
             </td>
             <td class="px-6 py-5 text-slate-300"><%= source_kind_label(source) %></td>
@@ -49,6 +53,17 @@
                 <p class="mt-2 text-xs text-slate-500"><%= I18n.l(source.last_full_scan_at, format: :short) %></p>
               <% else %>
                 <p class="text-slate-500">Nunca rodou</p>
+              <% end %>
+            </td>
+            <td class="px-6 py-5 text-slate-300">
+              <% if source.codex_fallback_enabled? %>
+                <p class="font-semibold text-amber-100">Ativo</p>
+                <p class="mt-1 max-w-xs text-xs text-slate-400"><%= source.codex_fallback_reason.presence || "Sem motivo registrado" %></p>
+                <p class="mt-2 text-xs text-slate-500">
+                  <%= source.last_codex_fallback_at ? I18n.l(source.last_codex_fallback_at, format: :short) : "Nunca ingeriu via Codex" %>
+                </p>
+              <% else %>
+                <p class="text-slate-500">Desativado</p>
               <% end %>
             </td>
             <td class="px-6 py-5 text-slate-300">
