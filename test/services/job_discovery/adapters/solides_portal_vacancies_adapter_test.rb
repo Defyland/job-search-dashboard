@@ -147,6 +147,29 @@ class JobDiscovery::Adapters::SolidesPortalVacanciesAdapterTest < ActiveSupport:
     assert_equal 1, source_scan.reload.pages_scanned
   end
 
+  test "raises when a matching solides vacancy detail cannot be fetched" do
+    source = build_source(settings: { "search_queries" => [ "react" ], "max_pages" => 1 })
+    source_scan = build_source_scan(source:)
+
+    fetcher = FakeFetcher.new(
+      "https://apigw.solides.com.br/jobs/v3/portal-vacancies-new/?title=react&page=1" => search_response([
+        {
+          "id" => 826827,
+          "title" => "Desenvolvedor React Sênior",
+          "companyName" => "SBM Technology",
+          "description" => "<p>React remoto</p>",
+          "redirectLink" => "https://sbmtechnology.solides.jobs/vacancies/826827?origem=portal",
+          "jobType" => "remoto",
+          "createdAt" => 1.day.ago.to_date.iso8601
+        }
+      ])
+    )
+
+    assert_raises(KeyError) do
+      JobDiscovery::Adapters::SolidesPortalVacanciesAdapter.new(fetcher:).scan(source_scan:, window_days: 20)
+    end
+  end
+
   private
     def build_source(settings:)
       JobSource.create!(

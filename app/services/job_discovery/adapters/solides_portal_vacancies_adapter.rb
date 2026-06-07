@@ -98,8 +98,6 @@ module JobDiscovery
               contract_types: Array(detail["recruitmentContractType"]).map { |item| item["name"] }
             }
           )
-        rescue StandardError
-          nil
         end
 
         def fetch_detail(job)
