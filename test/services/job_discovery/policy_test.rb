@@ -153,6 +153,41 @@ class JobDiscovery::PolicyTest < ActiveSupport::TestCase
     assert_match(/stack alvo|match suficiente/, result.reason)
   end
 
+  test "intent-backed profiles require generated title fit for borderline body-only matches" do
+    profile = users(:one).search_profiles.create!(
+      name: "Senior Java React",
+      target_stacks: [ "java", "react" ],
+      target_titles: [ "software engineer", "developer", "frontend", "backend", "fullstack" ],
+      seniority_terms: [ "senior", "sênior", "sr" ],
+      location_terms: [ "remote", "remoto", "brazil", "brasil", "latam" ],
+      negative_terms: [ "junior", "pleno" ],
+      settings: {
+        "intent" => {
+          "technology_intent" => "Java, React"
+        },
+        "compiler" => {
+          "generated_titles" => {
+            "pt" => [ "desenvolvedor java react sênior", "desenvolvedor full stack java react" ],
+            "en" => [ "senior java react developer", "senior full stack engineer java react" ]
+          }
+        }
+      }
+    )
+
+    result = JobDiscovery::Policy.new(search_profile: profile).classify(
+      title: "Senior Python Developer",
+      remote_text: "Remote Brazil",
+      location_text: "Brazil",
+      description: "React and Java stack in the broader engineering org.",
+      source_slug: "lever",
+      posted_text: "today",
+      published_at: nil
+    )
+
+    assert_equal :rejected, result.classification
+    assert_match(/match suficiente/, result.reason)
+  end
+
   test "portuguese salesforce profile accepts portuguese titles and rejects english titles" do
     profile = salesforce_profile(language_scope: :portuguese)
 

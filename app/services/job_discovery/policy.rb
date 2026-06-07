@@ -102,6 +102,7 @@ module JobDiscovery
       :language_scope,
       :title_stack_patterns,
       :context_stack_patterns,
+      :compiled_title_patterns,
       :title_patterns,
       :role_patterns,
       :seniority_patterns,
@@ -202,7 +203,7 @@ module JobDiscovery
         classification =
           if title_tags.any?
             :strong
-          elsif role_title?(normalized_title, criteria) && body_tags.any?
+          elsif borderline_title_match?(normalized_title, criteria) && body_tags.any?
             :borderline
           else
             :rejected
@@ -276,6 +277,12 @@ module JobDiscovery
         matches_any?(text, criteria.role_patterns) || matches_any?(text, criteria.title_patterns)
       end
 
+      def borderline_title_match?(text, criteria)
+        return role_title?(text, criteria) if criteria.compiled_title_patterns.blank?
+
+        matches_any?(text, criteria.compiled_title_patterns)
+      end
+
       def title_language_match?(text, criteria)
         return true if criteria.language_scope == "both"
 
@@ -308,6 +315,7 @@ module JobDiscovery
           language_scope:,
           title_stack_patterns: build_stack_patterns(profile, include_compiler_aliases: true),
           context_stack_patterns: build_stack_patterns(profile, include_compiler_aliases: false),
+          compiled_title_patterns: build_patterns(compiler_generated_titles(profile, language_scope)),
           title_patterns: build_patterns(profile.target_titles),
           role_patterns: build_patterns(role_terms_for(language_scope)),
           seniority_patterns: build_patterns(profile.seniority_terms),
@@ -341,6 +349,20 @@ module JobDiscovery
 
           terms = normalize_list(terms)
           result[tag] = build_patterns(terms)
+        end
+      end
+
+      def compiler_generated_titles(profile, language_scope)
+        return [] unless profile.respond_to?(:compiler_settings)
+
+        generated_titles = profile.compiler_settings.fetch("generated_titles", {})
+        case language_scope
+        when "portuguese"
+          generated_titles.fetch("pt", [])
+        when "english"
+          generated_titles.fetch("en", [])
+        else
+          Array(generated_titles.fetch("pt", [])) + Array(generated_titles.fetch("en", []))
         end
       end
 
