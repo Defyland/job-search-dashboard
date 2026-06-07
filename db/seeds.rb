@@ -1,4 +1,4 @@
-JobSource.seed_defaults!
+JobSources::Catalog.seed!
 
 if Rails.env.development?
   admin = User.find_or_initialize_by(email_address: ENV.fetch("ADMIN_EMAIL", "admin@example.com"))
