@@ -93,6 +93,56 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
     assert_includes job.job_matches.last.eligibility_flags, "women_only"
   end
 
+  test "imports configurable senior salesforce profile matches" do
+    profile = users(:one).search_profiles.create!(
+      name: "Senior Salesforce Remote",
+      target_stacks_text: "salesforce",
+      target_titles_text: "software engineer, developer, consultant, salesforce",
+      seniority_terms_text: "senior, sênior, sr",
+      location_terms_text: "remote, remoto, brasil",
+      negative_terms_text: "junior, pleno, internship",
+      required_remote: true,
+      include_women_only: false,
+      scan_window_days: 20,
+      active: true
+    )
+
+    payload = {
+      run: { window_label: "24h", trigger_source: "manual" },
+      jobs: [
+        {
+          title: "Senior Salesforce Developer",
+          company: "Salesforce Test Co",
+          apply_url: "https://salesforce-smoke.invalid/jobs/senior-salesforce-developer",
+          canonical_url: "https://salesforce-smoke.invalid/jobs/senior-salesforce-developer",
+          source_name: "Salesforce Smoke Careers",
+          source_slug: "salesforce-smoke-careers",
+          source_kind: "company",
+          remote_signal: "Remote Brazil",
+          location: "Brazil",
+          description: "Salesforce Apex Lightning integrations",
+          reason: "Salesforce senior remote smoke",
+          match_strength: "strong"
+        }
+      ]
+    }
+
+    assert_difference([ "Job.count", "JobMatch.count" ], 1) do
+      result = JobIngestions::Importer.new(payload:).call
+
+      assert result.success?
+      assert_equal 1, result.summary[:imported_count]
+      assert_equal 0, result.summary[:rejected_count]
+    end
+
+    job = Job.find_by!(canonical_url: "https://salesforce-smoke.invalid/jobs/senior-salesforce-developer")
+    match = job.job_matches.find_by!(search_profile: profile)
+
+    assert_equal "strong", match.match_strength
+    assert_equal "new_match", match.user_state
+    assert_equal [ "salesforce" ], match.stack_tags
+  end
+
   test "reuses a catalog source instead of duplicating ats names" do
     payload = {
       run: { window_label: "24h", trigger_source: "codex_automation" },
