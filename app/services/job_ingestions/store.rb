@@ -196,14 +196,6 @@ module JobIngestions
         source = @source_resolver.resolve(name: source_name, slug:, host:) || JobSource.find_by!(slug: slug)
         @source_resolver.register(source)
         source
-      rescue ActiveRecord::RecordNotFound
-        JobSource.create!(
-          name: source_name,
-          slug: slug,
-          host: host,
-          base_url: host.present? ? "https://#{host}" : nil,
-          source_kind: :ats
-        ).tap { |source| @source_resolver.register(source) }
       end
 
       def unique_source_conflict?(record)
