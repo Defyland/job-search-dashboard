@@ -1,0 +1,72 @@
+name: Deploy Railway
+
+on:
+  workflow_run:
+    workflows: [ CI ]
+    branches: [ main ]
+    types: [ completed ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: railway-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy production
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+      RAILWAY_ENVIRONMENT: ${{ vars.RAILWAY_ENVIRONMENT }}
+      RAILWAY_WEB_SERVICE: ${{ vars.RAILWAY_WEB_SERVICE }}
+      RAILWAY_WORKER_SERVICE: ${{ vars.RAILWAY_WORKER_SERVICE }}
+      RAILWAY_HEALTHCHECK_URL: ${{ vars.RAILWAY_HEALTHCHECK_URL }}
+
+    steps:
+      - name: Validate deployment configuration
+        run: |
+          test -n "$RAILWAY_TOKEN" || { echo "::error::Set the RAILWAY_TOKEN repository secret before deploying."; exit 1; }
+          test -n "$RAILWAY_PROJECT_ID" || { echo "::error::Set the RAILWAY_PROJECT_ID repository variable."; exit 1; }
+          test -n "$RAILWAY_ENVIRONMENT" || { echo "::error::Set the RAILWAY_ENVIRONMENT repository variable."; exit 1; }
+          test -n "$RAILWAY_WEB_SERVICE" || { echo "::error::Set the RAILWAY_WEB_SERVICE repository variable."; exit 1; }
+          test -n "$RAILWAY_WORKER_SERVICE" || { echo "::error::Set the RAILWAY_WORKER_SERVICE repository variable."; exit 1; }
+          test -n "$RAILWAY_HEALTHCHECK_URL" || { echo "::error::Set the RAILWAY_HEALTHCHECK_URL repository variable."; exit 1; }
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Link Railway project
+        run: railway link --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT" --service "$RAILWAY_WEB_SERVICE"
+
+      - name: Deploy web
+        run: railway up --service "$RAILWAY_WEB_SERVICE" --environment "$RAILWAY_ENVIRONMENT" --ci
+
+      - name: Deploy worker
+        run: railway up --service "$RAILWAY_WORKER_SERVICE" --environment "$RAILWAY_ENVIRONMENT" --ci
+
+      - name: Smoke production healthcheck
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -fsS "$RAILWAY_HEALTHCHECK_URL" > /dev/null; then
+              exit 0
+            fi
+            sleep 10
+          done
+
+          echo "::error::Production healthcheck did not become healthy."
+          exit 1
