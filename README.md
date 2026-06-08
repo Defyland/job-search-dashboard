@@ -223,3 +223,5 @@ Run status semantics for native Rails discovery are:
 ## Review Notes
 
 The QDSAA + thermo review requested for this project lives in [docs/qdsaa-thermo-review.md](docs/qdsaa-thermo-review.md).
+
+The CI/CD process for GitHub Actions and Railway lives in [docs/ci-cd.md](docs/ci-cd.md).
