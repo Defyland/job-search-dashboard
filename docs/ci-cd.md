@@ -54,12 +54,13 @@ Current production values:
 
 This repository secret is required:
 
-- `RAILWAY_TOKEN`
+- `RAILWAY_API_TOKEN`
 
-Create it from Railway, then add it to GitHub:
+Use an account/workspace-scoped Railway API token because the workflow links the
+project, environment, and service before deploying:
 
 ```bash
-gh secret set RAILWAY_TOKEN --repo Defyland/job-search-dashboard
+gh secret set RAILWAY_API_TOKEN --repo Defyland/job-search-dashboard
 ```
 
 The application runtime secrets stay in Railway. Do not copy app variables such
