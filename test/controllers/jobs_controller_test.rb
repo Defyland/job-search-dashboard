@@ -22,6 +22,5 @@ class JobsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to job_path(jobs(:react_role), search_profile_id: search_profiles(:default).id)
     assert_equal("applied", job_matches(:react_default).reload.user_state)
-    assert_equal("new_match", jobs(:react_role).reload.user_state)
   end
 end

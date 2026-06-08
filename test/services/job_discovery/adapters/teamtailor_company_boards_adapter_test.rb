@@ -31,13 +31,8 @@ class JobDiscovery::Adapters::TeamtailorCompanyBoardsAdapterTest < ActiveSupport
       canonical_url: "https://career.teamtailor.com/jobs/7010130-senior-react-engineer",
       source_url: "https://career.teamtailor.com/jobs/7010130-senior-react-engineer",
       fingerprint: "seed::teamtailor::7010130",
-      reason: "seed",
-      score: 88,
-      match_strength: :strong,
-      seniority: "senior",
       remote_text: "Remote",
-      location_text: "Brazil",
-      stack_tags: [ "react" ]
+      location_text: "Brazil"
     )
 
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "20d", started_at: Time.current)

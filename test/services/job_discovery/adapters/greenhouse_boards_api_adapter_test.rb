@@ -31,13 +31,8 @@ class JobDiscovery::Adapters::GreenhouseBoardsApiAdapterTest < ActiveSupport::Te
       canonical_url: "https://job-boards.greenhouse.io/fueledcareers/jobs/5134378008",
       source_url: "https://job-boards.greenhouse.io/fueledcareers/jobs/5134378008",
       fingerprint: "seed::greenhouse::fueled",
-      reason: "seed",
-      score: 88,
-      match_strength: :strong,
-      seniority: "senior",
       remote_text: "Remote",
-      location_text: "Brazil",
-      stack_tags: [ "react native" ]
+      location_text: "Brazil"
     )
 
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "20d", started_at: Time.current)

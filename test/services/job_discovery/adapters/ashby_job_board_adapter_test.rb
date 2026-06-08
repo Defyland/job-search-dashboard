@@ -31,13 +31,8 @@ class JobDiscovery::Adapters::AshbyJobBoardAdapterTest < ActiveSupport::TestCase
       canonical_url: "https://jobs.ashbyhq.com/ruby-labs/5fc64202-b0a7-4cb7-b7ff-07fc63fd5325",
       source_url: "https://jobs.ashbyhq.com/ruby-labs/5fc64202-b0a7-4cb7-b7ff-07fc63fd5325",
       fingerprint: "seed::ashby::ruby-labs",
-      reason: "seed",
-      score: 88,
-      match_strength: :strong,
-      seniority: "senior",
       remote_text: "Remote",
-      location_text: "Brazil",
-      stack_tags: [ "react native" ]
+      location_text: "Brazil"
     )
 
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "20d", started_at: Time.current)

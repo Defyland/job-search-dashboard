@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_07_081500) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_08_013000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -114,25 +114,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_07_081500) do
     t.datetime "last_validated_at", null: false
     t.integer "lifecycle_state", default: 0, null: false
     t.string "location_text"
-    t.integer "match_strength", default: 0, null: false
     t.string "posted_text"
     t.datetime "published_at"
     t.jsonb "raw_payload", default: {}, null: false
-    t.text "reason", null: false
     t.string "remote_text"
-    t.integer "score", default: 0, null: false
-    t.string "seniority", default: "senior", null: false
     t.string "source_url"
-    t.text "stack_tags", default: [], null: false, array: true
     t.string "title", null: false
     t.datetime "updated_at", null: false
-    t.integer "user_state", default: 0, null: false
     t.index ["canonical_url"], name: "index_jobs_on_canonical_url", unique: true
     t.index ["external_job_id"], name: "index_jobs_on_external_job_id"
     t.index ["fingerprint"], name: "index_jobs_on_fingerprint", unique: true
     t.index ["job_source_id"], name: "index_jobs_on_job_source_id"
     t.index ["last_seen_at"], name: "index_jobs_on_last_seen_at"
-    t.index ["lifecycle_state", "user_state", "match_strength"], name: "idx_on_lifecycle_state_user_state_match_strength_e4ed298ede"
   end
 
   create_table "search_profiles", force: :cascade do |t|

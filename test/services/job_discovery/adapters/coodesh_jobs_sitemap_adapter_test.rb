@@ -94,13 +94,8 @@ class JobDiscovery::Adapters::CoodeshJobsSitemapAdapterTest < ActiveSupport::Tes
       canonical_url: "https://coodesh.com/jobs/senior-react-native-engineer-777",
       source_url: "https://coodesh.com/jobs/senior-react-native-engineer-777",
       fingerprint: "seed::coodesh::777",
-      reason: "seed",
-      score: 90,
-      match_strength: :strong,
-      seniority: "senior",
       remote_text: "Remoto",
-      location_text: "Brasil",
-      stack_tags: [ "react native" ]
+      location_text: "Brasil"
     )
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "20d", started_at: Time.current)
     source_scan = search_run.source_scans.create!(job_source: source, status: :running, started_at: Time.current)

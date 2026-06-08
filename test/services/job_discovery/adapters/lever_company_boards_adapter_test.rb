@@ -31,13 +31,8 @@ class JobDiscovery::Adapters::LeverCompanyBoardsAdapterTest < ActiveSupport::Tes
       canonical_url: "https://jobs.lever.co/ciandt/a1baffc5-29e1-42bd-a34c-d231ae9416d7",
       source_url: "https://jobs.lever.co/ciandt/a1baffc5-29e1-42bd-a34c-d231ae9416d7",
       fingerprint: "seed::lever::ciandt",
-      reason: "seed",
-      score: 88,
-      match_strength: :strong,
-      seniority: "senior",
       remote_text: "Remote",
-      location_text: "Brazil",
-      stack_tags: [ "react" ]
+      location_text: "Brazil"
     )
 
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "20d", started_at: Time.current)

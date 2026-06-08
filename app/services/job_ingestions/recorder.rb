@@ -69,7 +69,7 @@ module JobIngestions
 
       def apply_policy_decision(attributes, decision)
         attributes.merge(
-          match_strength: Job.match_strengths.fetch(decision.classification.to_s),
+          match_strength: JobMatch.match_strengths.fetch(decision.classification.to_s),
           reason: decision.reason,
           score: decision.score,
           seniority: decision.seniority,

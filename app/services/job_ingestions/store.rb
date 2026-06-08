@@ -52,13 +52,13 @@ module JobIngestions
 
     def persist_job(existing_job:, source:, attributes:, payload:)
       timestamp = Time.current
-      job_attributes = attributes.merge(
+      job_attributes = canonical_job_attributes(attributes).merge(
         job_source: source,
         lifecycle_state: :active,
         last_seen_at: timestamp,
         last_validated_at: timestamp,
         raw_payload: payload
-      ).except(:source_host)
+      )
 
       if existing_job
         update_existing_job(existing_job, job_attributes, attributes[:reason], payload)
@@ -84,7 +84,7 @@ module JobIngestions
 
     private
       def update_existing_job(existing_job, job_attributes, reason, payload)
-        existing_job.assign_attributes(job_attributes.except(:user_state, :first_seen_at))
+        existing_job.assign_attributes(job_attributes.except(:first_seen_at))
 
         outcome =
           if existing_job.changed?
@@ -102,12 +102,7 @@ module JobIngestions
       def create_job_or_recover(job_attributes:, attributes:, payload:, timestamp:)
         job = nil
         Job.transaction(requires_new: true) do
-          job = Job.create!(
-            job_attributes.merge(
-              user_state: :new_match,
-              first_seen_at: timestamp
-            )
-          )
+          job = Job.create!(job_attributes.merge(first_seen_at: timestamp))
         end
 
         build_run_item(job, :created, attributes[:reason], payload)
@@ -178,6 +173,18 @@ module JobIngestions
           company_name: payload["company"].presence || payload["company_name"],
           apply_url: payload["apply_url"].presence || payload["link"],
           canonical_url: payload["canonical_url"].presence || payload["source_url"]
+        )
+      end
+
+      def canonical_job_attributes(attributes)
+        attributes.except(
+          :source_host,
+          :seniority,
+          :match_strength,
+          :user_state,
+          :reason,
+          :score,
+          :stack_tags
         )
       end
 

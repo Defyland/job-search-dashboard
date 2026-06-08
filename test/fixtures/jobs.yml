@@ -9,21 +9,13 @@ react_role:
   external_job_id: "10970184"
   remote_text: Trabalho remoto
   location_text: Brasil
-  seniority: senior
-  match_strength: strong
-  user_state: new_match
   lifecycle_state: active
-  reason: Titulo senior com foco em React e remoto BR.
-  score: 94
   posted_text: reindexada ha 3 dias
   published_at: <%= 2.days.ago %>
   first_seen_at: <%= 2.days.ago %>
   last_seen_at: <%= 1.day.ago %>
   last_validated_at: <%= 1.day.ago %>
   fingerprint: memed::frontend engineer senior::gupy.io::10970184
-  stack_tags:
-    - react
-    - typescript
   raw_payload:
     title: Frontend Engineer Senior
     company: Memed
@@ -39,21 +31,13 @@ ruby_role:
   external_job_id: vFiUCegceZETVwRh5nAx32
   remote_text: Brazil remote
   location_text: Sao Paulo
-  seniority: senior
-  match_strength: borderline
-  user_state: seen
   lifecycle_state: active
-  reason: Rails senior com remoto BR e link direto de candidatura.
-  score: 82
   posted_text: publicada ha 7 dias
   published_at: <%= 7.days.ago %>
   first_seen_at: <%= 7.days.ago %>
   last_seen_at: <%= 2.days.ago %>
   last_validated_at: <%= 2.days.ago %>
   fingerprint: sur::senior ruby on rails developer::jobs.workable.com::vFiUCegceZETVwRh5nAx32
-  stack_tags:
-    - ruby
-    - ruby on rails
   raw_payload:
     title: Senior Ruby on Rails Developer
     company: Sur

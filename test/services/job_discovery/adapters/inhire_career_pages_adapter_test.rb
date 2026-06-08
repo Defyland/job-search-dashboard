@@ -31,13 +31,8 @@ class JobDiscovery::Adapters::InhireCareerPagesAdapterTest < ActiveSupport::Test
       canonical_url: "https://deal.inhire.app/vagas/8d53f515-4906-4536-a540-35c0f1419f2a/senior-react-native-engineer",
       source_url: "https://deal.inhire.app/vagas/8d53f515-4906-4536-a540-35c0f1419f2a/senior-react-native-engineer",
       fingerprint: "seed::inhire::deal",
-      reason: "seed",
-      score: 88,
-      match_strength: :strong,
-      seniority: "senior",
       remote_text: "Remote",
-      location_text: "Brazil",
-      stack_tags: [ "react native" ]
+      location_text: "Brazil"
     )
 
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "20d", started_at: Time.current)

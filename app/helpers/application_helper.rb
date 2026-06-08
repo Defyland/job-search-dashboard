@@ -42,17 +42,17 @@ module ApplicationHelper
     ((current_page - 2)..(current_page + 2)).select { |page| page.between?(1, total_pages) }
   end
 
-  def match_label(job)
-    job.match_strength == "strong" ? "Forte" : "Borderline"
+  def match_label(match)
+    match.match_strength == "strong" ? "Forte" : "Borderline"
   end
 
-  def user_state_label(job)
-    case job.user_state
+  def user_state_label(match)
+    case match.user_state
     when "new_match" then "Nova"
     when "seen" then "Vista"
     when "applied" then "Aplicada"
     when "ignored" then "Ignorada"
-    else job.user_state.humanize
+    else match.user_state.humanize
     end
   end
 

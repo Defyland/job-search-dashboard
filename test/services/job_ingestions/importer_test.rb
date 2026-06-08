@@ -31,8 +31,7 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
     assert_equal "14d", result.search_run.window_label
   end
 
-  test "updates an existing job without resetting user state" do
-    jobs(:ruby_role).update!(user_state: :applied)
+  test "updates an existing job without resetting profile user state" do
     job_matches(:ruby_default).update!(user_state: :applied)
 
     payload = {
@@ -56,9 +55,8 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
     result = JobIngestions::Importer.new(payload:).call
 
     assert result.success?
-    assert_equal "applied", jobs(:ruby_role).reload.user_state
     assert_equal "applied", job_matches(:ruby_default).reload.user_state
-    assert_equal 96, jobs(:ruby_role).score
+    assert_equal 96, job_matches(:ruby_default).reload.score
   end
 
   test "recovers when a concurrent insert wins the job unique index race" do
@@ -72,8 +70,6 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
       canonical_url: "https://race.example/jobs/ruby",
       fingerprint: "race::senior ruby race::race.example::1",
       job_source: source,
-      reason: "registro criado por outra ingestao",
-      score: 70,
       first_seen_at: 1.day.ago,
       last_seen_at: 1.day.ago,
       last_validated_at: 1.day.ago
@@ -89,7 +85,7 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
       remote_text: "Remote Brazil",
       location_text: "Brazil",
       seniority: "senior",
-      match_strength: Job.match_strengths.fetch("strong"),
+      match_strength: JobMatch.match_strengths.fetch("strong"),
       reason: "registro recuperado depois de corrida",
       score: 95,
       fingerprint: "race::senior ruby race::race.example::1",
@@ -112,7 +108,7 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
       end
     end
 
-    assert_equal 95, existing_job.reload.score
+    assert_equal "https://race.example/jobs/ruby/apply", existing_job.reload.apply_url
     assert_equal "updated", search_run.search_run_items.last.outcome
   end
 
@@ -159,8 +155,6 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
       canonical_url: "https://race.example/jobs/ruby-match",
       fingerprint: "race::senior ruby match::race.example::1",
       job_source: job_sources(:gupy),
-      reason: "seed",
-      score: 70,
       first_seen_at: 1.day.ago,
       last_seen_at: 1.day.ago,
       last_validated_at: 1.day.ago

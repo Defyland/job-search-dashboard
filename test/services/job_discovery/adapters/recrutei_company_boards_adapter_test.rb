@@ -82,13 +82,8 @@ class JobDiscovery::Adapters::RecruteiCompanyBoardsAdapterTest < ActiveSupport::
       canonical_url: "https://jobs.recrutei.com.br/maxxi/vacancy/145107-desenvolvedora-front-end-reactnextjs-senior",
       source_url: "https://jobs.recrutei.com.br/maxxi/vacancy/145107-desenvolvedora-front-end-reactnextjs-senior",
       fingerprint: "seed::recrutei::145107",
-      reason: "seed",
-      score: 88,
-      match_strength: :strong,
-      seniority: "senior",
       remote_text: "Remoto",
-      location_text: "Brasil",
-      stack_tags: [ "react" ]
+      location_text: "Brasil"
     )
 
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "20d", started_at: Time.current)

@@ -31,13 +31,8 @@ class JobDiscovery::Adapters::SmartrecruitersPostingsApiAdapterTest < ActiveSupp
       canonical_url: "https://jobs.smartrecruiters.com/smartrecruiters/744000109678592-frontend-web-developer",
       source_url: "https://jobs.smartrecruiters.com/smartrecruiters/744000109678592-frontend-web-developer",
       fingerprint: "seed::smartrecruiters::744000109678592",
-      reason: "seed",
-      score: 88,
-      match_strength: :strong,
-      seniority: "senior",
       remote_text: "Remote",
-      location_text: "Brazil",
-      stack_tags: [ "react" ]
+      location_text: "Brazil"
     )
 
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "20d", started_at: Time.current)

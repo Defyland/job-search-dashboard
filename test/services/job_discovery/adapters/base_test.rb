@@ -51,13 +51,8 @@ class JobDiscovery::Adapters::BaseTest < ActiveSupport::TestCase
         canonical_url:,
         source_url: canonical_url,
         fingerprint:,
-        reason: "seed",
-        score: 90,
-        match_strength: :strong,
-        seniority: "senior",
         remote_text: "Remote",
-        location_text: "Brazil",
-        stack_tags: [ "ruby" ]
+        location_text: "Brazil"
       )
     end
 end

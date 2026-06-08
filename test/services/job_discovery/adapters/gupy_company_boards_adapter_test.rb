@@ -83,13 +83,8 @@ class JobDiscovery::Adapters::GupyCompanyBoardsAdapterTest < ActiveSupport::Test
       canonical_url: "https://clicksign.gupy.io/jobs/11234166",
       source_url: "https://clicksign.gupy.io/jobs/11234166",
       fingerprint: "seed::clicksign::11234166",
-      reason: "seed",
-      score: 90,
-      match_strength: :strong,
-      seniority: "senior",
       remote_text: "Remoto",
-      location_text: "Brasil",
-      stack_tags: [ "ruby" ]
+      location_text: "Brasil"
     )
 
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "20d", started_at: Time.current)

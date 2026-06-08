@@ -63,13 +63,13 @@ module JobIngestions
       end
 
       def normalize_match_strength(value)
-        Job.match_strengths.fetch(value.to_s, Job.match_strengths.fetch("strong"))
+        JobMatch.match_strengths.fetch(value.to_s, JobMatch.match_strengths.fetch("strong"))
       end
 
       def normalize_score(item, published_at:)
         return item["score"].to_i if item["score"].present?
 
-        base_score = normalize_match_strength(item["match_strength"]) == Job.match_strengths.fetch("strong") ? 90 : 70
+        base_score = normalize_match_strength(item["match_strength"]) == JobMatch.match_strengths.fetch("strong") ? 90 : 70
         base_score += 5 if published_at.present? && published_at >= 24.hours.ago
         base_score
       end
