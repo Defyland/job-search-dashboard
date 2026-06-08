@@ -7,6 +7,7 @@ class JobsController < ApplicationController
     @source_options = JobSource.order(priority: :asc, name: :asc)
     @search_profiles = current_user.search_profiles.ordered
     @stack_options = @search_profile.target_stacks
+    @title_language_options = JobTitleLanguage::FILTER_OPTIONS
     base_scope = JobMatch.for_profile(@search_profile).includes(job: :job_source)
     filtered_scope = JobMatchFilters.new(scope: base_scope, params: @filters).call
 
@@ -43,7 +44,7 @@ class JobsController < ApplicationController
 
   private
     def filter_params
-      params.permit(:q, :stack, :source, :match_strength, :user_state, :lifecycle_state, :recency, :sort)
+      params.permit(:q, :stack, :source, :match_strength, :user_state, :title_language, :lifecycle_state, :recency, :sort)
     end
 
     def set_search_profile

@@ -28,7 +28,7 @@
     <p class="text-sm text-slate-500"><%= @total_matches %> resultado(s)</p>
   </div>
 
-  <%= form_with url: jobs_path, method: :get, class: "mt-6 grid gap-4 md:grid-cols-8" do |form| %>
+  <%= form_with url: jobs_path, method: :get, class: "mt-6 grid gap-4 md:grid-cols-6 xl:grid-cols-9" do |form| %>
     <div class="md:col-span-2">
       <%= form.label :search_profile_id, "Perfil", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
       <%= form.select :search_profile_id, options_for_select(@search_profiles.map { |profile| [profile.name, profile.id] }, @search_profile.id), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
@@ -54,6 +54,10 @@
       <%= form.select :user_state, options_for_select([["Todos", "all"], ["Nova", "new_match"], ["Vista", "seen"], ["Aplicada", "applied"], ["Ignorada", "ignored"]], @filters[:user_state] || "all"), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
     </div>
     <div>
+      <%= form.label :title_language, "Idioma", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+      <%= form.select :title_language, options_for_select(@title_language_options, @filters[:title_language] || "all"), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
+    </div>
+    <div>
       <%= form.label :lifecycle_state, "Ciclo", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
       <%= form.select :lifecycle_state, options_for_select([["Ativas", "active"], ["Expiradas", "expired"], ["Tudo", "all"]], @filters[:lifecycle_state] || "active"), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
     </div>
@@ -65,7 +69,7 @@
       <%= form.label :sort, "Ordenacao", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
       <%= form.select :sort, options_for_select([["Mais recentes", "newest"], ["Maior score", "score"], ["Atualizadas", "updated"], ["Empresa", "company"]], @filters[:sort] || "newest"), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
     </div>
-    <div class="md:col-span-7 flex gap-3">
+    <div class="flex gap-3 md:col-span-6 xl:col-span-9">
       <%= form.submit "Filtrar", class: "rounded-2xl bg-sky-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-sky-300" %>
       <%= link_to "Limpar", jobs_path, class: "rounded-2xl border border-white/10 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/5" %>
     </div>

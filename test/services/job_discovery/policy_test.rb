@@ -185,7 +185,22 @@ class JobDiscovery::PolicyTest < ActiveSupport::TestCase
     )
 
     assert_equal :rejected, result.classification
-    assert_match(/match suficiente/, result.reason)
+    assert_match(/stack fora do perfil/, result.reason)
+  end
+
+  test "rejects titles that mention non requested stacks even when one target stack is present" do
+    result = JobDiscovery::Policy.new(search_profile: search_profiles(:default)).classify(
+      title: "Profissional de Desenvolvimento Fullstack Senior React e Python",
+      remote_text: "Remoto Brasil",
+      location_text: "Brasil",
+      description: "Produto com React no frontend e Python no backend.",
+      source_slug: "inhire",
+      posted_text: "publicada hoje",
+      published_at: nil
+    )
+
+    assert_equal :rejected, result.classification
+    assert_match(/stack fora do perfil/, result.reason)
   end
 
   test "portuguese salesforce profile accepts portuguese titles and rejects english titles" do

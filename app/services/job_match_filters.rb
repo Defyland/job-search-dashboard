@@ -12,6 +12,7 @@ class JobMatchFilters
     filtered_scope = apply_source_filter(filtered_scope)
     filtered_scope = apply_match_strength_filter(filtered_scope)
     filtered_scope = apply_user_state_filter(filtered_scope)
+    filtered_scope = apply_title_language_filter(filtered_scope)
     filtered_scope = apply_lifecycle_filter(filtered_scope)
     filtered_scope = apply_recency_filter(filtered_scope)
     apply_sort(filtered_scope)
@@ -53,6 +54,12 @@ class JobMatchFilters
       return scope unless JobMatch.user_states.key?(@params[:user_state])
 
       scope.where(user_state: JobMatch.user_states.fetch(@params[:user_state]))
+    end
+
+    def apply_title_language_filter(scope)
+      return scope if @params[:title_language].blank? || @params[:title_language] == "all"
+
+      JobTitleLanguage.filter_scope(scope, @params[:title_language])
     end
 
     def apply_lifecycle_filter(scope)

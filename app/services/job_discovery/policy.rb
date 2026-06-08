@@ -21,11 +21,34 @@ module JobDiscovery
       ".net" => [ ".net", "dotnet", "c#", "asp.net" ],
       "c#" => [ "c#", ".net", "dotnet", "asp.net" ],
       "java" => [ "java", "spring", "spring boot", "jvm" ],
+      "ruby" => [ "ruby" ],
       "ruby on rails" => [ "ruby on rails", "rails" ],
       "rails" => [ "rails", "ruby on rails" ],
       "react" => [ "react", "reactjs", "react.js" ],
       "react native" => [ "react native", "react-native" ],
       "nextjs" => [ "nextjs", "next.js", "next js" ]
+    }.freeze
+    TITLE_STACK_SYNONYMS = STACK_SYNONYMS.merge(
+      "python" => [ "python", "django", "flask", "fastapi" ],
+      "php" => [ "php", "laravel", "symfony" ],
+      "node" => [ "node", "node.js", "nodejs", "nestjs", "nest.js", "express" ],
+      "angular" => [ "angular", "angularjs" ],
+      "vue" => [ "vue", "vue.js", "vuejs", "nuxt", "nuxt.js", "nuxtjs" ],
+      "golang" => [ "golang" ],
+      "elixir" => [ "elixir", "phoenix" ],
+      "ios" => [ "ios", "swift" ],
+      "android" => [ "android", "kotlin" ],
+      "salesforce" => [ "salesforce", "apex", "lightning" ],
+      "servicenow" => [ "servicenow", "service now" ]
+    ).freeze
+    COMPATIBLE_TITLE_STACKS = {
+      "react" => [ "react native", "nextjs", "node" ],
+      "react native" => [ "react" ],
+      "nextjs" => [ "react", "node" ],
+      "ruby on rails" => [ "rails", "ruby" ],
+      "rails" => [ "ruby on rails", "ruby" ],
+      ".net" => [ "c#" ],
+      "c#" => [ ".net" ]
     }.freeze
     DEFAULT_PROFILE_NAME = "Default senior Ruby/Rails/React".freeze
     PORTUGUESE_ROLE_TERMS = [
@@ -102,7 +125,9 @@ module JobDiscovery
       :language_scope,
       :title_stack_patterns,
       :context_stack_patterns,
+      :allowed_catalog_stack_tags,
       :compiled_title_patterns,
+      :catalog_title_stack_patterns,
       :title_patterns,
       :role_patterns,
       :seniority_patterns,
@@ -193,6 +218,9 @@ module JobDiscovery
         return reject("titulo sem marcador de idioma do perfil", criteria.profile) unless title_language_match?(normalized_title, criteria)
 
         title_tags = title_stack_tags(normalized_title, criteria)
+        conflicting_title_tags = conflicting_title_stack_tags(normalized_title, criteria)
+        return reject("titulo aponta para stack fora do perfil", criteria.profile) if conflicting_title_tags.any?
+
         body_tags = title_tags.presence || context_stack_tags(normalized_haystack, criteria)
         return reject("sem stack alvo no titulo ou contexto imediato", criteria.profile) if title_tags.blank? && body_tags.blank?
         return reject("sem foco tecnico compativel no titulo", criteria.profile) unless role_title?(normalized_title, criteria) || title_tags.any?
@@ -293,6 +321,12 @@ module JobDiscovery
         stack_tags(text, criteria.title_stack_patterns)
       end
 
+      def conflicting_title_stack_tags(text, criteria)
+        stack_tags(text, criteria.catalog_title_stack_patterns).reject do |tag|
+          criteria.allowed_catalog_stack_tags.include?(tag)
+        end
+      end
+
       def context_stack_tags(text, criteria)
         stack_tags(text, criteria.context_stack_patterns)
       end
@@ -315,7 +349,9 @@ module JobDiscovery
           language_scope:,
           title_stack_patterns: build_stack_patterns(profile, include_compiler_aliases: true),
           context_stack_patterns: build_stack_patterns(profile, include_compiler_aliases: false),
+          allowed_catalog_stack_tags: allowed_catalog_stack_tags(profile),
           compiled_title_patterns: build_patterns(compiler_generated_titles(profile, language_scope)),
+          catalog_title_stack_patterns: catalog_title_stack_patterns,
           title_patterns: build_patterns(profile.target_titles),
           role_patterns: build_patterns(role_terms_for(language_scope)),
           seniority_patterns: build_patterns(profile.seniority_terms),
@@ -350,6 +386,19 @@ module JobDiscovery
           terms = normalize_list(terms)
           result[tag] = build_patterns(terms)
         end
+      end
+
+      def catalog_title_stack_patterns
+        @catalog_title_stack_patterns ||= TITLE_STACK_SYNONYMS.each_with_object({}) do |(tag, terms), result|
+          result[tag] = build_patterns(terms)
+        end
+      end
+
+      def allowed_catalog_stack_tags(profile)
+        normalize_list(profile.target_stacks).each_with_object([]) do |stack, result|
+          result << stack if TITLE_STACK_SYNONYMS.key?(stack)
+          result.concat(COMPATIBLE_TITLE_STACKS.fetch(stack, []))
+        end.uniq
       end
 
       def compiler_generated_titles(profile, language_scope)

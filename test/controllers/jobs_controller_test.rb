@@ -9,6 +9,7 @@ class JobsControllerTest < ActionDispatch::IntegrationTest
     get jobs_path
     assert_response :success
     assert_match("Radar de vagas", response.body)
+    assert_match("Idioma", response.body)
   end
 
   test "should get show" do
