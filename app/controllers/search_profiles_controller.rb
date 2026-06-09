@@ -18,8 +18,8 @@ class SearchProfilesController < ApplicationController
       @search_profile,
       template: :new,
       success_path: ->(profile) { jobs_path(search_profile_id: profile.id) },
-      success_notice: "Perfil criado. Busca inicial iniciada.",
-      after_save: ->(profile) { bootstrap_profile!(profile) }
+      success_notice: "Perfil criado. Busca inicial enfileirada.",
+      after_save: ->(profile) { request_profile_sync!(profile, prune_stale: false) }
     )
   end
 
@@ -34,8 +34,8 @@ class SearchProfilesController < ApplicationController
       @search_profile,
       template: :edit,
       success_path: ->(_profile) { search_profiles_path },
-      success_notice: "Perfil atualizado. Busca atualizada.",
-      after_save: ->(profile) { refresh_profile!(profile) }
+      success_notice: "Perfil atualizado. Busca reenfileirada.",
+      after_save: ->(profile) { request_profile_sync!(profile, prune_stale: true) }
     )
   end
 
@@ -74,9 +74,12 @@ class SearchProfilesController < ApplicationController
       form_attributes = profile_form_params.to_h
       search_profile.assign_attributes(profile_attributes_for_save(search_profile, form_attributes))
 
-      if search_profile.save
-        sync_result = after_save&.call(search_profile)
-        redirect_to success_path.call(search_profile), notice: success_notice, alert: sync_alert(sync_result)
+      if search_profile.valid?
+        SearchProfile.transaction do
+          search_profile.save!
+          after_save&.call(search_profile)
+        end
+        redirect_to success_path.call(search_profile), notice: success_notice
       else
         restore_compiled_preview(form_attributes["compiled_profile_payload"])
         hydrate_form_state(search_profile, form_attributes)
@@ -91,6 +94,11 @@ class SearchProfilesController < ApplicationController
       restore_compiled_preview(form_attributes["compiled_profile_payload"])
       hydrate_form_state(search_profile, form_attributes)
       render template, status: :unprocessable_entity
+    rescue SearchProfiles::SyncRequest::Error => error
+      search_profile.errors.add(:base, error.message)
+      restore_compiled_preview(form_attributes["compiled_profile_payload"])
+      hydrate_form_state(search_profile, form_attributes)
+      render template, status: :service_unavailable
     end
 
     def profile_attributes_for_save(search_profile, form_attributes)
@@ -207,17 +215,7 @@ class SearchProfilesController < ApplicationController
       )
     end
 
-    def bootstrap_profile!(search_profile)
-      SearchProfiles::Sync.new(search_profile:).call
-    end
-
-    def refresh_profile!(search_profile)
-      SearchProfiles::Sync.new(search_profile:, prune_stale: true).call
-    end
-
-    def sync_alert(sync_result)
-      return if sync_result.blank? || sync_result.success?
-
-      "A busca externa foi iniciada, mas o reaproveitamento local falhou: #{sync_result.errors.to_sentence}."
+    def request_profile_sync!(search_profile, prune_stale:)
+      SearchProfiles::SyncRequest.new(search_profile:, prune_stale:).call
     end
 end

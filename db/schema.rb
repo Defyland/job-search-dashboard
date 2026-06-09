@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_09_093000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_09_143000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -135,6 +135,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_09_093000) do
     t.datetime "created_at", null: false
     t.boolean "include_women_only", default: false, null: false
     t.integer "language_scope", default: 0, null: false
+    t.text "last_sync_error"
+    t.datetime "last_sync_requested_at"
+    t.datetime "last_synced_at"
     t.text "location_terms", default: [], null: false, array: true
     t.string "name", null: false
     t.text "negative_terms", default: [], null: false, array: true
@@ -143,6 +146,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_09_093000) do
     t.text "seniority_terms", default: [], null: false, array: true
     t.jsonb "settings", default: {}, null: false
     t.string "slug", null: false
+    t.integer "sync_state", default: 0, null: false
     t.text "target_stacks", default: [], null: false, array: true
     t.text "target_titles", default: [], null: false, array: true
     t.datetime "updated_at", null: false

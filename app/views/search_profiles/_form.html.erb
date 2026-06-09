@@ -38,15 +38,15 @@
     <div class="grid gap-4 md:grid-cols-3">
       <div>
         <%= label_tag "search_profile_seniority_preset", "Senioridade", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
-        <%= select_tag "search_profile[seniority_preset]", options_for_select(SearchProfile::SENIORITY_PRESET_LABELS.map { |value, label| [ label, value ] }, simple_input["seniority_preset"]), id: "search_profile_seniority_preset", class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
+        <%= select_tag "search_profile[seniority_preset]", options_for_select(SearchProfiles::Vocabulary::SENIORITY_PRESET_LABELS.map { |value, label| [ label, value ] }, simple_input["seniority_preset"]), id: "search_profile_seniority_preset", class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
       </div>
       <div>
         <%= form.label :language_scope, "Idioma dos titulos", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
-        <%= form.select :language_scope, options_for_select(SearchProfile::LANGUAGE_SCOPE_LABELS.map { |value, label| [ label, value ] }, simple_input["language_scope"]), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
+        <%= form.select :language_scope, options_for_select(SearchProfiles::Vocabulary::LANGUAGE_SCOPE_LABELS.map { |value, label| [ label, value ] }, simple_input["language_scope"]), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
       </div>
       <div>
         <%= label_tag "search_profile_region_scope", "Regiao alvo", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
-        <%= select_tag "search_profile[region_scope]", options_for_select(SearchProfile::REGION_SCOPE_LABELS.map { |value, label| [ label, value ] }, simple_input["region_scope"]), id: "search_profile_region_scope", class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
+        <%= select_tag "search_profile[region_scope]", options_for_select(SearchProfiles::Vocabulary::REGION_SCOPE_LABELS.map { |value, label| [ label, value ] }, simple_input["region_scope"]), id: "search_profile_region_scope", class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
       </div>
     </div>
 

@@ -2,6 +2,7 @@ module JobMatching
   class ProfileMatcher
     def initialize(profiles: SearchProfile.active.ordered)
       @profiles = Array(profiles)
+      @policies = @profiles.to_h { |profile| [ profile, JobDiscovery::Policy.new(search_profile: profile) ] }
     end
 
     def match(attributes:, payload:, source:)
@@ -10,7 +11,7 @@ module JobMatching
 
     def decisions(attributes:, payload:, source:)
       @profiles.map do |profile|
-        decision = JobDiscovery::Policy.new(search_profile: profile).classify(
+        decision = @policies.fetch(profile).classify(
           title: attributes[:title],
           remote_text: attributes[:remote_text],
           location_text: attributes[:location_text],

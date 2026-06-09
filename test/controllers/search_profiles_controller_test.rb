@@ -27,13 +27,9 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  class FixedSyncResult
-    def initialize(result)
-      @result = result
-    end
-
+  class RaisingSyncRequest
     def call
-      @result
+      raise SearchProfiles::SyncRequest::Error, "fila indisponivel"
     end
   end
 
@@ -85,22 +81,20 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     compiled_payload = extract_compiled_payload(response.body)
 
     assert_difference("SearchProfile.count", 1) do
-      assert_enqueued_with(
-        job: DiscoverJobsRunJob,
-        args: lambda { |args|
-          options = args.first&.symbolize_keys
-          options == {
-            window_days: 20,
-            trigger_source: :manual,
-            search_profile_id: options[:search_profile_id]
-          } && options[:search_profile_id].is_a?(Integer)
-        }
-      ) do
-        post search_profiles_path, params: {
-          search_profile: compiled_form_params.merge(
-            compiled_profile_payload: compiled_payload
-          )
-        }
+      perform_enqueued_jobs(only: SearchProfileSyncJob) do
+        assert_performed_with(
+          job: SearchProfileSyncJob,
+          args: lambda { |args|
+            options = args.first&.symbolize_keys
+            options[:search_profile_id].is_a?(Integer) && options[:prune_stale] == false
+          }
+        ) do
+          post search_profiles_path, params: {
+            search_profile: compiled_form_params.merge(
+              compiled_profile_payload: compiled_payload
+            )
+          }
+        end
       end
     end
 
@@ -110,6 +104,7 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     assert profile.intent_backed?
     assert_equal "brazil_latam", profile.intent_settings["region_scope"]
     assert_includes profile.compiler_stack_aliases["salesforce"], "apex"
+    assert_equal "synced", profile.reload.sync_state
     assert profile.job_matches.exists?
   end
 
@@ -133,35 +128,31 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     assert_match "Gere novamente antes de salvar", response.body
   end
 
-  test "redirects with alert when the local cache bootstrap fails" do
-    sync_result = SearchProfiles::Sync::Result.new(
-      discovered_bootstrap_result: nil,
-      external_run_enqueued: true,
-      errors: [ "cache import failed" ]
-    )
-
-    with_fake_sync(FixedSyncResult.new(sync_result)) do
-      post search_profiles_path, params: {
-        search_profile: {
-          name: "Senior Java Remote",
-          active: "1",
-          required_remote: "1",
-          include_women_only: "0",
-          language_scope: "both",
-          technology_intent: "",
-          seniority_preset: "senior",
-          region_scope: "brazil_latam",
-          target_stacks_text: "java",
-          target_titles_text: "developer, engineer",
-          seniority_terms_text: "senior, sênior, sr",
-          location_terms_text: "remote, remoto, brasil, brazil",
-          negative_terms_text: SearchProfile::DEFAULT_NEGATIVE_TERMS.join(", ")
+  test "rolls back profile creation when sync enqueue fails" do
+    assert_no_difference("SearchProfile.count") do
+      with_fake_sync_request(RaisingSyncRequest.new) do
+        post search_profiles_path, params: {
+          search_profile: {
+            name: "Senior Java Remote",
+            active: "1",
+            required_remote: "1",
+            include_women_only: "0",
+            language_scope: "both",
+            technology_intent: "",
+            seniority_preset: "senior",
+            region_scope: "brazil_latam",
+            target_stacks_text: "java",
+            target_titles_text: "developer, engineer",
+            seniority_terms_text: "senior, sênior, sr",
+            location_terms_text: "remote, remoto, brasil, brazil",
+            negative_terms_text: SearchProfile::DEFAULT_NEGATIVE_TERMS.join(", ")
+          }
         }
-      }
+      end
     end
 
-    follow_redirect!
-    assert_match "A busca externa foi iniciada, mas o reaproveitamento local falhou: cache import failed.", response.body
+    assert_response :service_unavailable
+    assert_match "fila indisponivel", response.body
   end
 
   test "updates women only preference manually while preserving profile settings" do
@@ -188,32 +179,35 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
       )
     )
 
-    assert_enqueued_with(
-      job: DiscoverJobsRunJob,
-      args: ->(args) { args == [ { window_days: 20, trigger_source: :manual, search_profile_id: profile.id } ] }
-    ) do
-      patch search_profile_path(profile), params: {
-        search_profile: {
-          name: profile.name,
-          required_remote: "1",
-          include_women_only: "1",
-          language_scope: "both",
-          technology_intent: "java",
-          seniority_preset: "senior",
-          region_scope: "brazil_latam",
-          target_stacks_text: profile.target_stacks_text,
-          target_titles_text: profile.target_titles_text,
-          seniority_terms_text: profile.seniority_terms_text,
-          location_terms_text: profile.location_terms_text,
-          negative_terms_text: profile.negative_terms_text
+    perform_enqueued_jobs(only: SearchProfileSyncJob) do
+      assert_performed_with(
+        job: SearchProfileSyncJob,
+        args: ->(args) { args == [ { search_profile_id: profile.id, prune_stale: true } ] }
+      ) do
+        patch search_profile_path(profile), params: {
+          search_profile: {
+            name: profile.name,
+            required_remote: "1",
+            include_women_only: "1",
+            language_scope: "both",
+            technology_intent: "java",
+            seniority_preset: "senior",
+            region_scope: "brazil_latam",
+            target_stacks_text: profile.target_stacks_text,
+            target_titles_text: profile.target_titles_text,
+            seniority_terms_text: profile.seniority_terms_text,
+            location_terms_text: profile.location_terms_text,
+            negative_terms_text: profile.negative_terms_text
+          }
         }
-      }
+      end
     end
 
     assert_redirected_to search_profiles_path
     assert profile.reload.include_women_only?
     assert profile.intent_backed?
     assert_includes profile.compiler_stack_aliases["java"], "spring boot"
+    assert_equal "synced", profile.sync_state
   end
 
   test "updates manual profile and refreshes stored matches" do
@@ -284,32 +278,35 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     SearchProfiles::Bootstrapper.new(search_profile: profile, job_scope: Job.where(id: [ ruby_job.id, java_job.id ]).includes(:job_source)).call
     assert_equal [ ruby_job.id ], JobMatch.for_profile(profile).pluck(:job_id)
 
-    assert_enqueued_with(
-      job: DiscoverJobsRunJob,
-      args: ->(args) { args == [ { window_days: 20, trigger_source: :manual, search_profile_id: profile.id } ] }
-    ) do
-      patch search_profile_path(profile), params: {
-        search_profile: {
-          name: "Senior Java Remote",
-          active: "1",
-          required_remote: "1",
-          include_women_only: "0",
-          language_scope: "both",
-          technology_intent: "",
-          seniority_preset: "senior",
-          region_scope: "brazil_latam",
-          target_stacks_text: "java",
-          target_titles_text: "developer, engineer",
-          seniority_terms_text: "senior, sênior, sr",
-          location_terms_text: "remote, remoto, brasil, brazil",
-          negative_terms_text: SearchProfile::DEFAULT_NEGATIVE_TERMS.join(", ")
+    perform_enqueued_jobs(only: SearchProfileSyncJob) do
+      assert_performed_with(
+        job: SearchProfileSyncJob,
+        args: ->(args) { args == [ { search_profile_id: profile.id, prune_stale: true } ] }
+      ) do
+        patch search_profile_path(profile), params: {
+          search_profile: {
+            name: "Senior Java Remote",
+            active: "1",
+            required_remote: "1",
+            include_women_only: "0",
+            language_scope: "both",
+            technology_intent: "",
+            seniority_preset: "senior",
+            region_scope: "brazil_latam",
+            target_stacks_text: "java",
+            target_titles_text: "developer, engineer",
+            seniority_terms_text: "senior, sênior, sr",
+            location_terms_text: "remote, remoto, brasil, brazil",
+            negative_terms_text: SearchProfile::DEFAULT_NEGATIVE_TERMS.join(", ")
+          }
         }
-      }
+      end
     end
 
     assert_redirected_to search_profiles_path
     refute_includes JobMatch.for_profile(profile).pluck(:job_id), ruby_job.id
     assert_includes JobMatch.for_profile(profile).pluck(:job_id), java_job.id
+    assert_equal "synced", profile.reload.sync_state
   end
 
   private
@@ -340,12 +337,12 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
       end
     end
 
-    def with_fake_sync(fake_sync)
-      original_new = SearchProfiles::Sync.method(:new)
-      SearchProfiles::Sync.singleton_class.send(:define_method, :new) { |_args = nil, **_kwargs| fake_sync }
+    def with_fake_sync_request(fake_sync_request)
+      original_new = SearchProfiles::SyncRequest.method(:new)
+      SearchProfiles::SyncRequest.singleton_class.send(:define_method, :new) { |_args = nil, **_kwargs| fake_sync_request }
       yield
     ensure
-      SearchProfiles::Sync.singleton_class.send(:define_method, :new) do |*args, **kwargs|
+      SearchProfiles::SyncRequest.singleton_class.send(:define_method, :new) do |*args, **kwargs|
         original_new.call(*args, **kwargs)
       end
     end

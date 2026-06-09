@@ -1,7 +1,6 @@
 module JobDiscovery
   class PolicyContractSerializer
     OUTPUT_INSTRUCTION = "POST accepted strong/borderline jobs and useful rejections to /api/v1/job_ingestions".freeze
-    WOMEN_ONLY_EXCLUDE_TERMS = [ "mulheres", "women only", "female only" ].freeze
 
     def self.dump(profile)
       {
@@ -23,7 +22,7 @@ module JobDiscovery
       return profile.effective_exclude_terms if profile.respond_to?(:effective_exclude_terms)
 
       terms = Array(profile.negative_terms).dup
-      terms + (profile.include_women_only? ? [] : WOMEN_ONLY_EXCLUDE_TERMS)
+      terms + (profile.include_women_only? ? [] : SearchProfiles::Vocabulary::WOMEN_ONLY_EXCLUDE_TERMS)
     end
     private_class_method :exclude_terms_for
   end

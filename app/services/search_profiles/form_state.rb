@@ -1,13 +1,5 @@
 module SearchProfiles
   class FormState
-    MANUAL_OVERRIDE_FIELDS = %w[
-      target_stacks_text
-      target_titles_text
-      seniority_terms_text
-      location_terms_text
-      negative_terms_text
-    ].freeze
-
     def initialize(search_profile:, submitted_attributes: {}, compiled_preview: nil, compiled_profile_payload: nil)
       @search_profile = search_profile
       @submitted_attributes = submitted_attributes.deep_stringify_keys
@@ -19,10 +11,10 @@ module SearchProfiles
       {
         "name" => submitted_name,
         "technology_intent" => @submitted_attributes["technology_intent"].to_s,
-        "seniority_preset" => @submitted_attributes["seniority_preset"].presence || "senior",
-        "language_scope" => @submitted_attributes["language_scope"].presence || "both",
+        "seniority_preset" => @submitted_attributes["seniority_preset"].presence || SearchProfiles::Vocabulary::DEFAULT_SENIORITY_PRESET,
+        "language_scope" => @submitted_attributes["language_scope"].presence || SearchProfiles::Vocabulary::DEFAULT_LANGUAGE_SCOPE,
         "required_remote" => @submitted_attributes.key?("required_remote") ? @submitted_attributes["required_remote"] : true,
-        "region_scope" => @submitted_attributes["region_scope"].presence || "brazil_latam",
+        "region_scope" => @submitted_attributes["region_scope"].presence || SearchProfiles::Vocabulary::DEFAULT_REGION_SCOPE,
         "include_women_only" => @submitted_attributes.key?("include_women_only") ? @submitted_attributes["include_women_only"] : false
       }
     end
@@ -32,7 +24,7 @@ module SearchProfiles
     end
 
     def manual_overrides
-      @submitted_attributes.slice(*MANUAL_OVERRIDE_FIELDS)
+      @submitted_attributes.slice(*SearchProfiles::Vocabulary::MANUAL_OVERRIDE_FIELDS.values)
     end
 
     def active_default
@@ -56,10 +48,10 @@ module SearchProfiles
         {}.tap do |overrides|
           overrides["name"] = submitted_name if name_override?
           overrides["technology_intent"] = @submitted_attributes["technology_intent"].to_s if @submitted_attributes.key?("technology_intent")
-          overrides["seniority_preset"] = @submitted_attributes["seniority_preset"].presence || "senior" if @submitted_attributes.key?("seniority_preset")
-          overrides["language_scope"] = @submitted_attributes["language_scope"].presence || "both" if @submitted_attributes.key?("language_scope")
+          overrides["seniority_preset"] = @submitted_attributes["seniority_preset"].presence || SearchProfiles::Vocabulary::DEFAULT_SENIORITY_PRESET if @submitted_attributes.key?("seniority_preset")
+          overrides["language_scope"] = @submitted_attributes["language_scope"].presence || SearchProfiles::Vocabulary::DEFAULT_LANGUAGE_SCOPE if @submitted_attributes.key?("language_scope")
           overrides["required_remote"] = @submitted_attributes["required_remote"] if @submitted_attributes.key?("required_remote")
-          overrides["region_scope"] = @submitted_attributes["region_scope"].presence || "brazil_latam" if @submitted_attributes.key?("region_scope")
+          overrides["region_scope"] = @submitted_attributes["region_scope"].presence || SearchProfiles::Vocabulary::DEFAULT_REGION_SCOPE if @submitted_attributes.key?("region_scope")
           overrides["include_women_only"] = @submitted_attributes["include_women_only"] if @submitted_attributes.key?("include_women_only")
         end
       end

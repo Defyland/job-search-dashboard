@@ -154,12 +154,12 @@ module JobDiscovery
       DefaultProfile.new(
         id: nil,
         name: DEFAULT_PROFILE_NAME,
-        target_stacks: SearchProfile::DEFAULT_TARGET_STACKS,
-        target_titles: SearchProfile::DEFAULT_TARGET_TITLES,
-        seniority_terms: SearchProfile::DEFAULT_SENIORITY_TERMS,
-        location_terms: SearchProfile::DEFAULT_LOCATION_TERMS,
-        negative_terms: SearchProfile::DEFAULT_NEGATIVE_TERMS,
-        language_scope: "both",
+        target_stacks: SearchProfiles::Vocabulary::DEFAULT_TARGET_STACKS,
+        target_titles: SearchProfiles::Vocabulary::DEFAULT_TARGET_TITLES,
+        seniority_terms: SearchProfiles::Vocabulary::DEFAULT_SENIORITY_TERMS,
+        location_terms: SearchProfiles::Vocabulary::DEFAULT_LOCATION_TERMS,
+        negative_terms: SearchProfiles::Vocabulary::DEFAULT_NEGATIVE_TERMS,
+        language_scope: SearchProfiles::Vocabulary::DEFAULT_LANGUAGE_SCOPE,
         required_remote: true,
         include_women_only: false
       )
@@ -361,7 +361,9 @@ module JobDiscovery
       end
 
       def profile_language_scope(profile)
-        profile.respond_to?(:language_scope) ? profile.language_scope.to_s.presence || "both" : "both"
+        return SearchProfiles::Vocabulary::DEFAULT_LANGUAGE_SCOPE unless profile.respond_to?(:language_scope)
+
+        profile.language_scope.to_s.presence || SearchProfiles::Vocabulary::DEFAULT_LANGUAGE_SCOPE
       end
 
       def role_terms_for(language_scope)
@@ -425,10 +427,7 @@ module JobDiscovery
       end
 
       def normalize_list(values)
-        Array(values).flat_map { |value| value.to_s.split(",") }
-                     .map { |value| normalize(value) }
-                     .reject(&:blank?)
-                     .uniq
+        SearchProfiles::Vocabulary.normalize_list(values)
       end
 
       def normalize(value)

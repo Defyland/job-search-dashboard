@@ -1,32 +1,20 @@
 class SearchProfile < ApplicationRecord
-  DEFAULT_TARGET_STACKS = [ "ruby", "ruby on rails", "react", "react native" ].freeze
-  DEFAULT_TARGET_TITLES = [ "software engineer", "engenheiro de software", "frontend", "backend", "fullstack", "developer", "desenvolvedor" ].freeze
-  DEFAULT_SENIORITY_TERMS = [ "senior", "sênior", "sr", "staff" ].freeze
-  DEFAULT_LOCATION_TERMS = [ "remoto", "remote", "home office", "brasil", "brazil", "latam" ].freeze
-  DEFAULT_NEGATIVE_TERMS = [ "junior", "júnior", "pleno", "mid-level", "trainee", "intern", "internship", "estágio" ].freeze
-  SENIORITY_PRESET_LABELS = {
-    "senior" => "Senior",
-    "staff" => "Staff",
-    "principal" => "Principal"
-  }.freeze
-  REGION_SCOPE_LABELS = {
-    "brazil_latam" => "Brasil e LatAm",
-    "brazil" => "Brasil",
-    "latam" => "LatAm",
-    "global_remote" => "Global remoto"
-  }.freeze
-  LANGUAGE_SCOPE_LABELS = {
-    "both" => "Português e Inglês",
-    "portuguese" => "Português",
-    "english" => "Inglês"
-  }.freeze
+  DEFAULT_TARGET_STACKS = SearchProfiles::Vocabulary::DEFAULT_TARGET_STACKS
+  DEFAULT_TARGET_TITLES = SearchProfiles::Vocabulary::DEFAULT_TARGET_TITLES
+  DEFAULT_SENIORITY_TERMS = SearchProfiles::Vocabulary::DEFAULT_SENIORITY_TERMS
+  DEFAULT_LOCATION_TERMS = SearchProfiles::Vocabulary::DEFAULT_LOCATION_TERMS
+  DEFAULT_NEGATIVE_TERMS = SearchProfiles::Vocabulary::DEFAULT_NEGATIVE_TERMS
+  SENIORITY_PRESET_LABELS = SearchProfiles::Vocabulary::SENIORITY_PRESET_LABELS
+  REGION_SCOPE_LABELS = SearchProfiles::Vocabulary::REGION_SCOPE_LABELS
+  LANGUAGE_SCOPE_LABELS = SearchProfiles::Vocabulary::LANGUAGE_SCOPE_LABELS
 
   belongs_to :user
 
   has_many :job_matches, dependent: :destroy
   has_many :jobs, through: :job_matches
 
-  enum :language_scope, { both: 0, portuguese: 1, english: 2 }, prefix: true, validate: true
+  enum :language_scope, SearchProfiles::Vocabulary::LANGUAGE_SCOPE_ENUM, prefix: true, validate: true
+  enum :sync_state, { idle: 0, pending: 1, syncing: 2, synced: 3, failed: 4 }, prefix: true, validate: true
 
   normalizes :name, with: ->(value) { value.to_s.squish }
 
@@ -44,19 +32,7 @@ class SearchProfile < ApplicationRecord
   end
 
   def self.default_attributes
-    {
-      name: "Senior Ruby/Rails/React Remote BR/LatAm",
-      target_stacks: DEFAULT_TARGET_STACKS,
-      target_titles: DEFAULT_TARGET_TITLES,
-      seniority_terms: DEFAULT_SENIORITY_TERMS,
-      location_terms: DEFAULT_LOCATION_TERMS,
-      negative_terms: DEFAULT_NEGATIVE_TERMS,
-      language_scope: :both,
-      required_remote: true,
-      include_women_only: false,
-      scan_window_days: 20,
-      active: true
-    }
+    SearchProfiles::Vocabulary.default_attributes
   end
 
   def policy_contract
@@ -64,13 +40,14 @@ class SearchProfile < ApplicationRecord
   end
 
   def effective_exclude_terms
-    terms = negative_terms.dup
-    terms += [ "mulheres", "women only", "female only" ] unless include_women_only?
-    terms
+    SearchProfiles::Vocabulary.effective_exclude_terms(
+      negative_terms:,
+      include_women_only:
+    )
   end
 
   def language_scope_label
-    LANGUAGE_SCOPE_LABELS.fetch(language_scope, LANGUAGE_SCOPE_LABELS.fetch("both"))
+    SearchProfiles::Vocabulary.language_scope_label(language_scope)
   end
 
   def intent_settings
@@ -91,7 +68,7 @@ class SearchProfile < ApplicationRecord
 
     raw_aliases.each_with_object({}) do |(stack, aliases), result|
       normalized_stack = stack.to_s.downcase.squish
-      normalized_aliases = normalize_list(aliases)
+      normalized_aliases = SearchProfiles::Vocabulary.normalize_list(aliases)
       next if normalized_stack.blank? || normalized_aliases.blank?
 
       result[normalized_stack] = normalized_aliases
@@ -102,12 +79,49 @@ class SearchProfile < ApplicationRecord
     {
       "name" => name,
       "technology_intent" => intent_settings["technology_intent"].presence || target_stacks_text,
-      "seniority_preset" => intent_settings["seniority_preset"].presence || inferred_seniority_preset,
-      "language_scope" => language_scope.to_s.presence || "both",
+      "seniority_preset" => intent_settings["seniority_preset"].presence || SearchProfiles::Vocabulary.infer_seniority_preset(seniority_terms),
+      "language_scope" => language_scope.to_s.presence || SearchProfiles::Vocabulary::DEFAULT_LANGUAGE_SCOPE,
       "required_remote" => required_remote.nil? ? true : required_remote,
-      "region_scope" => intent_settings["region_scope"].presence || inferred_region_scope,
+      "region_scope" => intent_settings["region_scope"].presence || SearchProfiles::Vocabulary.infer_region_scope(location_terms),
       "include_women_only" => include_women_only.nil? ? false : include_women_only
     }
+  end
+
+  def sync_status_label
+    case sync_state
+    when "pending"
+      "Enfileirada"
+    when "syncing"
+      "Sincronizando"
+    when "synced"
+      "Cache atualizado"
+    when "failed"
+      "Falhou"
+    else
+      "Sem sync"
+    end
+  end
+
+  def sync_status_tone
+    case sync_state
+    when "pending", "syncing"
+      :borderline
+    when "synced"
+      :active
+    when "failed"
+      :expired
+    else
+      :ignored
+    end
+  end
+
+  def sync_status_detail
+    return last_sync_error if sync_state_failed? && last_sync_error.present?
+    return "Cache local atualizado; busca externa enfileirada." if sync_state_synced?
+    return "Solicitado em #{I18n.l(last_sync_requested_at, format: :short)}." if sync_state_pending? && last_sync_requested_at.present?
+    return "Ultimo cache em #{I18n.l(last_synced_at, format: :short)}." if last_synced_at.present?
+
+    "Nenhuma sincronizacao recente."
   end
 
   %i[target_stacks target_titles seniority_terms location_terms negative_terms].each do |field|
@@ -116,63 +130,26 @@ class SearchProfile < ApplicationRecord
     end
 
     define_method("#{field}_text=") do |value|
-      public_send("#{field}=", normalize_list(value))
+      public_send("#{field}=", SearchProfiles::Vocabulary.normalize_list(value))
     end
   end
 
   private
-    def inferred_seniority_preset
-      terms = normalize_list(seniority_terms)
-
-      if terms.any? { |term| term.include?("principal") }
-        "principal"
-      elsif terms.any? { |term| term.include?("staff") } && terms.none? { |term| term.include?("senior") || term.include?("sênior") }
-        "staff"
-      else
-        "senior"
-      end
-    end
-
-    def inferred_region_scope
-      terms = normalize_list(location_terms)
-      has_brazil = terms.intersect?(%w[brasil brazil])
-      has_latam = terms.include?("latam")
-      has_global = terms.intersect?(%w[worldwide global anywhere])
-
-      if has_brazil && has_latam
-        "brazil_latam"
-      elsif has_brazil
-        "brazil"
-      elsif has_latam
-        "latam"
-      elsif has_global
-        "global_remote"
-      else
-        "brazil_latam"
-      end
-    end
-
     def apply_defaults
       self.name = name.presence || self.class.default_attributes.fetch(:name)
       self.slug = slug.presence || name
       self.slug = slug.to_s.parameterize
-      self.target_stacks = normalize_list(target_stacks.presence || DEFAULT_TARGET_STACKS)
-      self.target_titles = normalize_list(target_titles.presence || DEFAULT_TARGET_TITLES)
-      self.seniority_terms = normalize_list(seniority_terms.presence || DEFAULT_SENIORITY_TERMS)
-      self.location_terms = normalize_list(location_terms.presence || DEFAULT_LOCATION_TERMS)
-      self.negative_terms = normalize_list(negative_terms.presence || DEFAULT_NEGATIVE_TERMS)
-      self.language_scope = language_scope.presence || "both"
+      self.target_stacks = SearchProfiles::Vocabulary.normalize_list(target_stacks.presence || DEFAULT_TARGET_STACKS)
+      self.target_titles = SearchProfiles::Vocabulary.normalize_list(target_titles.presence || DEFAULT_TARGET_TITLES)
+      self.seniority_terms = SearchProfiles::Vocabulary.normalize_list(seniority_terms.presence || DEFAULT_SENIORITY_TERMS)
+      self.location_terms = SearchProfiles::Vocabulary.normalize_list(location_terms.presence || DEFAULT_LOCATION_TERMS)
+      self.negative_terms = SearchProfiles::Vocabulary.normalize_list(negative_terms.presence || DEFAULT_NEGATIVE_TERMS)
+      self.language_scope = language_scope.presence || SearchProfiles::Vocabulary::DEFAULT_LANGUAGE_SCOPE
       self.scan_window_days ||= 20
       self.settings ||= {}
       self.active = true if active.nil?
       self.required_remote = true if required_remote.nil?
       self.include_women_only = false if include_women_only.nil?
-    end
-
-    def normalize_list(values)
-      Array(values).flat_map { |value| value.to_s.split(",") }
-                   .map { |value| value.downcase.squish }
-                   .reject(&:blank?)
-                   .uniq
+      self.sync_state ||= :idle
     end
 end
