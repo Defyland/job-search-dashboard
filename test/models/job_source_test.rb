@@ -100,12 +100,29 @@ class JobSourceTest < ActiveSupport::TestCase
     JobSources::Catalog.seed!
 
     apinfo = JobSource.find_by!(slug: "apinfo")
+    landor = JobSource.find_by!(slug: "landor-ats")
+    linkedin = JobSource.find_by!(slug: "linkedin")
+    netvagas = JobSource.find_by!(slug: "netvagas")
+    remotely_works = JobSource.find_by!(slug: "remotely-works")
     rubyonremote = JobSource.find_by!(slug: "rubyonremote")
+    get_great_careers = JobSource.find_by!(slug: "get-great-careers")
 
     assert apinfo.codex_fallback_enabled?
     assert_match "rate-limited", apinfo.codex_fallback_reason
+    assert landor.codex_fallback_enabled?
+    assert_match "Flutter", landor.codex_fallback_reason
+    assert_equal [ "https://ats.landor.com.br/vaga-candidatura/51b51917-ffd9-4485-8239-8a986498d109" ], landor.settings["seed_urls"]
+    assert linkedin.codex_fallback_enabled?
+    assert_match "anti-bot", linkedin.codex_fallback_reason
+    assert_equal [ "www.linkedin.com", "br.linkedin.com" ], linkedin.settings["search_hosts"]
+    assert netvagas.codex_fallback_enabled?
+    assert_match "adapter curado", netvagas.codex_fallback_reason
+    assert remotely_works.codex_fallback_enabled?
+    assert_match "Turnstile", remotely_works.codex_fallback_reason
     assert rubyonremote.codex_fallback_enabled?
     assert_match "Cloudflare", rubyonremote.codex_fallback_reason
+    assert get_great_careers.codex_fallback_enabled?
+    assert_match "SPA orientada por query", get_great_careers.codex_fallback_reason
   end
 
   test "backfillable sources require a supported adapter key" do

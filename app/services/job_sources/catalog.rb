@@ -137,6 +137,90 @@ module JobSources
         codex_fallback_enabled: true,
         codex_fallback_reason: "Fonte protegida por Cloudflare para o worker Rails; usar Codex fallback quando houver busca assistida.",
         scan_window_days: 20
+      },
+      {
+        name: "Landor ATS",
+        slug: "landor-ats",
+        source_kind: :ats,
+        base_url: "https://ats.landor.com.br",
+        host: "ats.landor.com.br",
+        priority: 25,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: "ATS SPA em Flutter com dados carregados no cliente; usar Codex fallback com links canonicos de candidatura.",
+        scan_window_days: 20,
+        settings: {
+          seed_urls: [
+            "https://ats.landor.com.br/vaga-candidatura/51b51917-ffd9-4485-8239-8a986498d109"
+          ]
+        }
+      },
+      {
+        name: "Get Great Careers",
+        slug: "get-great-careers",
+        source_kind: :aggregator,
+        base_url: "https://www.getgreatcareers.com/jobs",
+        host: "getgreatcareers.com",
+        priority: 40,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: "Busca SPA orientada por query; usar Codex fallback e preferir link oficial ou ATS antes de reportar.",
+        scan_window_days: 20,
+        settings: {
+          seed_urls: [
+            "https://www.getgreatcareers.com/jobs?keyword=ruby%20on%20rails&location=Remote,%20OR,%20USA&radius=20miles"
+          ]
+        }
+      },
+      {
+        name: "LinkedIn Jobs",
+        slug: "linkedin",
+        source_kind: :aggregator,
+        base_url: "https://www.linkedin.com/jobs",
+        host: "linkedin.com",
+        priority: 45,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: "Busca publica depende de query por perfil e limites anti-bot; usar Codex fallback e canonizar para ATS ou careers page quando possivel.",
+        scan_window_days: 20,
+        settings: {
+          search_hosts: [ "www.linkedin.com", "br.linkedin.com" ],
+          guest_search_path: "/jobs-guest/jobs/api/seeMoreJobPostings/search"
+        }
+      },
+      {
+        name: "NetVagas",
+        slug: "netvagas",
+        source_kind: :aggregator,
+        base_url: "https://www.netvagas.com.br",
+        host: "netvagas.com.br",
+        priority: 45,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: "Portal aberto sem adapter curado ainda; usar Codex fallback para descoberta dirigida por titulo e recencia.",
+        scan_window_days: 20
+      },
+      {
+        name: "Remotely Works",
+        slug: "remotely-works",
+        source_kind: :platform,
+        base_url: "https://platform.remotely.works",
+        host: "platform.remotely.works",
+        priority: 40,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: "Plataforma SPA com fluxo JS e possivel Turnstile; usar Codex fallback para descoberta e validacao.",
+        scan_window_days: 20,
+        settings: {
+          seed_urls: [
+            "https://platform.remotely.works/apply?utm_source=linkedin&utm_medium=admsg&utm_campaign=SeniorFullstackEngineer&li_fat_id=c2705c47-51c6-4e6e-ad60-e8f3d9ffb933"
+          ]
+        }
       }
     ].freeze
 

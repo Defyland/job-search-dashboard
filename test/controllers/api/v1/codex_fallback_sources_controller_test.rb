@@ -16,6 +16,11 @@ class Api::V1::CodexFallbackSourcesControllerTest < ActionDispatch::IntegrationT
     slugs = body.fetch("sources").map { |source| source.fetch("slug") }
 
     assert_includes slugs, "apinfo"
+    assert_includes slugs, "get-great-careers"
+    assert_includes slugs, "landor-ats"
+    assert_includes slugs, "linkedin"
+    assert_includes slugs, "netvagas"
+    assert_includes slugs, "remotely-works"
     assert_includes slugs, "rubyonremote"
     assert_equal "/api/v1/job_ingestions", body.fetch("ingestion_endpoint")
     default_policy = body.dig("policy", "profiles").find { |profile| profile.fetch("profile_name").include?("Ruby/Rails") }
