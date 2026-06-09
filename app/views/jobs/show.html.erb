@@ -32,6 +32,13 @@
         <p class="text-sm text-slate-400"><%= @job.posted_text.presence || "sem texto de recencia" %></p>
       </div>
       <div class="rounded-3xl border border-white/10 bg-white/5 p-4">
+        <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Contrato</p>
+        <p class="mt-2">
+          <span class="rounded-full px-3 py-1 text-xs font-semibold ring-1 <%= tone_class(contract_type_tone(@job)) %>"><%= contract_type_label(@job) %></span>
+        </p>
+        <p class="mt-2 text-sm text-slate-400">Inferido de campos de regime, contrato ou descricao.</p>
+      </div>
+      <div class="rounded-3xl border border-white/10 bg-white/5 p-4">
         <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Datas</p>
         <p class="mt-2 text-sm text-slate-300">Primeira vista: <%= l(@job_match.first_seen_at, format: :short) %></p>
         <p class="text-sm text-slate-300">Ultima vista: <%= l(@job_match.last_seen_at, format: :short) %></p>
@@ -52,8 +59,8 @@
       <% if (apply_url = safe_external_url(@job.apply_url)) %>
         <%= link_to "Abrir candidatura", apply_url, target: "_blank", rel: "noreferrer", class: "rounded-2xl bg-sky-400 px-5 py-3 text-sm font-extrabold uppercase tracking-[0.14em] text-slate-950" %>
       <% end %>
-      <%= button_to "Marcar como aplicada", mark_job_path(@job, search_profile_id: @search_profile.id, user_state: :applied), method: :patch, class: "rounded-2xl border border-fuchsia-300/20 bg-fuchsia-400/10 px-5 py-3 text-sm font-semibold text-fuchsia-100" %>
-      <%= button_to "Ignorar", mark_job_path(@job, search_profile_id: @search_profile.id, user_state: :ignored), method: :patch, class: "rounded-2xl border border-white/10 px-5 py-3 text-sm font-semibold text-slate-200" %>
+      <%= button_to "Marcar como aplicada", mark_job_path(@job, search_profile_id: @search_profile.id, user_state: :applied), method: :patch, **submit_state_button_to_options(loading_text: "Atualizando...", class: "rounded-2xl border border-fuchsia-300/20 bg-fuchsia-400/10 px-5 py-3 text-sm font-semibold text-fuchsia-100") %>
+      <%= button_to "Ignorar", mark_job_path(@job, search_profile_id: @search_profile.id, user_state: :ignored), method: :patch, **submit_state_button_to_options(loading_text: "Atualizando...", class: "rounded-2xl border border-white/10 px-5 py-3 text-sm font-semibold text-slate-200") %>
     </div>
   </article>
 

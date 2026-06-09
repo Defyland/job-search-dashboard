@@ -7,6 +7,7 @@ class Job < ApplicationRecord
   has_many :search_profiles, through: :job_matches
 
   enum :lifecycle_state, { active: 0, expired: 1 }, prefix: true
+  enum :contract_type, { unknown: 0, clt: 1, pj: 2, clt_or_pj: 3 }, prefix: true
 
   normalizes :title, with: ->(value) { value.to_s.squish }
   normalizes :company_name, with: ->(value) { value.to_s.squish }
@@ -38,5 +39,12 @@ class Job < ApplicationRecord
       self.apply_url = apply_url.to_s.delete_suffix("/")
       self.canonical_url = canonical_url.to_s.delete_suffix("/")
       self.source_url = source_url.to_s.delete_suffix("/")
+      self.contract_type = JobContractTypeClassifier.call(
+        title:,
+        remote_text:,
+        location_text:,
+        posted_text:,
+        raw_payload:
+      )
     end
 end

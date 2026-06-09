@@ -39,12 +39,12 @@ class JobsController < ApplicationController
     end
 
     @job.job_matches.find_by!(search_profile: @search_profile).update!(user_state: state)
-    redirect_back fallback_location: job_path(@job, search_profile_id: @search_profile.id), notice: "Status atualizado."
+    redirect_back fallback_location: job_path(@job, search_profile_id: @search_profile.id), notice: job_state_notice(state)
   end
 
   private
     def filter_params
-      params.permit(:q, :stack, :source, :match_strength, :user_state, :title_language, :lifecycle_state, :recency, :sort)
+      params.permit(:q, :stack, :source, :contract_type, :match_strength, :user_state, :title_language, :lifecycle_state, :recency, :sort)
     end
 
     def set_search_profile
@@ -59,5 +59,18 @@ class JobsController < ApplicationController
 
     def set_job
       @job = Job.includes(:job_source).find(params[:id])
+    end
+
+    def job_state_notice(state)
+      case state
+      when "seen"
+        "Vaga marcada como vista."
+      when "applied"
+        "Vaga marcada como aplicada."
+      when "ignored"
+        "Vaga marcada como ignorada."
+      else
+        "Status atualizado."
+      end
     end
 end

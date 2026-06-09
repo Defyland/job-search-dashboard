@@ -31,6 +31,33 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
     assert_equal "14d", result.search_run.window_label
   end
 
+  test "imports contract type from payload" do
+    payload = {
+      run: { window_label: "14d", trigger_source: "manual" },
+      jobs: [
+        {
+          title: "Senior React Engineer",
+          company: "Contract Co",
+          apply_url: "https://jobs.example.com/react",
+          canonical_url: "https://jobs.example.com/react",
+          source_name: "Example Careers",
+          source_kind: "company",
+          remote_signal: "Remoto Brasil",
+          location: "Brasil",
+          reason: "Titulo senior com react no titulo.",
+          stack_tags: [ "react" ],
+          match_strength: "strong",
+          employment_type: "contractor"
+        }
+      ]
+    }
+
+    result = JobIngestions::Importer.new(payload:).call
+
+    assert result.success?
+    assert_predicate Job.order(:created_at).last, :contract_type_pj?
+  end
+
   test "updates an existing job without resetting profile user state" do
     job_matches(:ruby_default).update!(user_state: :applied)
 

@@ -34,7 +34,7 @@ class SearchProfilesTest < ApplicationSystemTestCase
       fill_in "Tecnologia / stack", with: "ServiceNow"
       click_button "Gerar variacoes"
 
-      assert_text "PREVIEW GERADO"
+      assert_text(/preview gerado/i)
       assert_text "servicenow developer"
       assert_selector "input[name='search_profile[compiled_profile_payload]']", visible: false
 

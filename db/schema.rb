@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_08_013000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_09_093000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -105,6 +105,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_08_013000) do
     t.string "ats_name"
     t.string "canonical_url", null: false
     t.string "company_name", null: false
+    t.integer "contract_type", default: 0, null: false
     t.datetime "created_at", null: false
     t.string "external_job_id"
     t.string "fingerprint", null: false
@@ -122,6 +123,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_08_013000) do
     t.string "title", null: false
     t.datetime "updated_at", null: false
     t.index ["canonical_url"], name: "index_jobs_on_canonical_url", unique: true
+    t.index ["contract_type"], name: "index_jobs_on_contract_type"
     t.index ["external_job_id"], name: "index_jobs_on_external_job_id"
     t.index ["fingerprint"], name: "index_jobs_on_fingerprint", unique: true
     t.index ["job_source_id"], name: "index_jobs_on_job_source_id"

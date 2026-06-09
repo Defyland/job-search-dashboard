@@ -1,7 +1,7 @@
 <% simple_input = @simple_profile_input || search_profile.simple_form_state %>
 <% advanced_open = @advanced_open %>
 
-<%= form_with model: search_profile, class: "grid gap-6", data: { turbo: false } do |form| %>
+<%= form_with model: search_profile, **submit_state_form_options(default_loading_text: "Processando...", class: "grid gap-6", data: { turbo: false }) do |form| %>
   <% if search_profile.errors.any? %>
     <div class="rounded-2xl border border-rose-400/30 bg-rose-500/10 p-4 text-sm text-rose-100">
       <p class="font-bold">Revise o perfil antes de salvar.</p>
@@ -73,7 +73,7 @@
       else
         "rounded-2xl cursor-not-allowed bg-slate-700 px-5 py-3 text-sm font-bold text-slate-400"
       end %>
-      <%= form.button "Gerar variacoes", name: "preview_compile", value: "1", class: compile_button_class, disabled: !@intent_compiler_available %>
+      <%= form.button "Gerar variacoes", name: "preview_compile", value: "1", **submit_state_submit_options(loading_text: "Gerando...", class: compile_button_class, disabled: !@intent_compiler_available) %>
       <p class="text-sm text-slate-400">Gera stacks canonicas, aliases e titulos mais provaveis para o stack informado.</p>
     </div>
   </section>
@@ -183,7 +183,7 @@
       </div>
 
       <div class="flex flex-wrap gap-3">
-        <%= form.submit(search_profile.persisted? ? "Salvar perfil" : "Salvar manualmente", class: "rounded-2xl bg-sky-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-sky-300") %>
+        <%= form.submit(search_profile.persisted? ? "Salvar perfil" : "Salvar manualmente", **submit_state_submit_options(loading_text: "Salvando...", class: "rounded-2xl bg-sky-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-sky-300")) %>
         <%= link_to "Cancelar", search_profiles_path, class: "rounded-2xl border border-white/10 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/5" %>
       </div>
     </div>

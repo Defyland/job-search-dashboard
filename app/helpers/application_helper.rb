@@ -1,4 +1,23 @@
 module ApplicationHelper
+  def submit_state_form_options(default_loading_text: "Processando...", data: {}, **options)
+    options.merge(
+      data: merge_submit_state_form_data(data, default_loading_text:)
+    )
+  end
+
+  def submit_state_submit_options(loading_text:, data: {}, **options)
+    options.merge(
+      data: data.to_h.deep_dup.merge(submit_state_loading_text: loading_text)
+    )
+  end
+
+  def submit_state_button_to_options(loading_text:, default_loading_text: nil, form: {}, data: {}, **options)
+    effective_default_text = default_loading_text || loading_text
+    button_options = submit_state_submit_options(loading_text:, data:, **options)
+    button_options[:form] = submit_state_form_options(default_loading_text: effective_default_text, **form)
+    button_options
+  end
+
   def safe_external_url(url)
     uri = URI.parse(url.to_s)
     return unless uri.is_a?(URI::HTTP) && uri.host.present?
@@ -17,6 +36,14 @@ module ApplicationHelper
     else
       "border-slate-400/30 bg-slate-500/10 text-slate-100"
     end
+  end
+
+  def flash_role(type)
+    type.to_sym == :alert ? "alert" : "status"
+  end
+
+  def flash_live_region(type)
+    type.to_sym == :alert ? "assertive" : "polite"
   end
 
   def tone_class(tone)
@@ -60,6 +87,24 @@ module ApplicationHelper
     job.lifecycle_state == "active" ? "Ativa" : "Expirada"
   end
 
+  def contract_type_label(job)
+    case job.contract_type
+    when "clt" then "CLT"
+    when "pj" then "PJ"
+    when "clt_or_pj" then "CLT ou PJ"
+    else "Sem sinal"
+    end
+  end
+
+  def contract_type_tone(job)
+    case job.contract_type
+    when "clt" then :active
+    when "pj" then :borderline
+    when "clt_or_pj" then :strong
+    else :expired
+    end
+  end
+
   def run_status_label(search_run)
     case search_run.status
     when "succeeded" then "Concluida"
@@ -101,4 +146,14 @@ module ApplicationHelper
       :active
     end
   end
+
+  private
+    def merge_submit_state_form_data(data, default_loading_text:)
+      merged_data = data.to_h.deep_dup
+      controllers = merged_data[:controller].to_s.split
+      controllers << "submit-state"
+      merged_data[:controller] = controllers.uniq.join(" ")
+      merged_data[:submit_state_default_text_value] = default_loading_text
+      merged_data
+    end
 end

@@ -1,5 +1,5 @@
 <% flash.each do |type, message| %>
-  <div class="rounded-2xl border px-4 py-3 text-sm shadow-sm <%= flash_class(type) %>">
+  <div role="<%= flash_role(type) %>" aria-live="<%= flash_live_region(type) %>" class="rounded-2xl border px-4 py-3 text-sm shadow-sm <%= flash_class(type) %>">
     <%= message %>
   </div>
 <% end %>

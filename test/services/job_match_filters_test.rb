@@ -58,4 +58,23 @@ class JobMatchFiltersTest < ActiveSupport::TestCase
     assert_includes portuguese_filtered, portuguese_match
     assert_not_includes portuguese_filtered, job_matches(:react_default)
   end
+
+  test "filters matches by job contract type" do
+    jobs(:react_role).update!(raw_payload: { employmentType: "contractor" })
+    jobs(:ruby_role).update!(raw_payload: { regime: "CLT" })
+
+    pj_filtered = JobMatchFilters.new(
+      scope: JobMatch.for_profile(search_profiles(:default)).includes(job: :job_source),
+      params: { contract_type: "pj", lifecycle_state: "active" }
+    ).call
+    clt_filtered = JobMatchFilters.new(
+      scope: JobMatch.for_profile(search_profiles(:default)).includes(job: :job_source),
+      params: { contract_type: "clt", lifecycle_state: "active" }
+    ).call
+
+    assert_includes pj_filtered, job_matches(:react_default)
+    assert_not_includes pj_filtered, job_matches(:ruby_default)
+    assert_includes clt_filtered, job_matches(:ruby_default)
+    assert_not_includes clt_filtered, job_matches(:react_default)
+  end
 end

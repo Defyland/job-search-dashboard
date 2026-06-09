@@ -48,7 +48,7 @@
                 <p class="text-sm font-semibold text-white"><%= current_user.email_address %></p>
                 <p class="text-xs text-slate-400">Acesso privado</p>
               </div>
-              <%= button_to "Sair", session_path, method: :delete, class: "rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/5" %>
+              <%= button_to "Sair", session_path, method: :delete, **submit_state_button_to_options(loading_text: "Saindo...", class: "rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/5") %>
             </div>
           <% end %>
         </div>

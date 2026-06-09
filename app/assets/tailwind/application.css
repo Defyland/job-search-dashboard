@@ -9,3 +9,17 @@
     background: rgba(125, 211, 252, 0.25);
   }
 }
+
+@layer components {
+  form[data-submit-state-pending="true"] {
+    @apply cursor-wait;
+  }
+
+  form[data-submit-state-pending="true"] [data-submit-state-active="true"] {
+    @apply opacity-70;
+  }
+
+  form[data-submit-state-pending="true"] [data-submit-state-disabled="true"] {
+    @apply opacity-60;
+  }
+}

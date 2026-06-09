@@ -81,6 +81,7 @@ class JobDiscovery::Adapters::InhireCareerPagesAdapterTest < ActiveSupport::Test
       updatedAt: "2026-06-05T10:00:00Z",
       lastPublishedAt: "2026-06-05T10:00:00Z",
       description: "<p>React Native para produto remoto no Brasil.</p>",
+      employmentType: "contractor",
       workplaceType: "Remote",
       location: "Brazil"
     }.to_json
@@ -100,5 +101,6 @@ class JobDiscovery::Adapters::InhireCareerPagesAdapterTest < ActiveSupport::Test
     assert_equal "Deal Group", candidates.first[:company_name]
     assert_equal "8d53f515-4906-4536-a540-35c0f1419f2a", candidates.first[:external_job_id]
     assert_equal "https://deal.inhire.app/vagas/8d53f515-4906-4536-a540-35c0f1419f2a", candidates.first[:canonical_url]
+    assert_equal "contractor", candidates.first[:payload][:contract_metadata]["employmentType"]
   end
 end

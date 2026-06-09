@@ -10,6 +10,7 @@ class JobMatchFilters
     filtered_scope = apply_text_search(filtered_scope)
     filtered_scope = apply_stack_filter(filtered_scope)
     filtered_scope = apply_source_filter(filtered_scope)
+    filtered_scope = apply_contract_type_filter(filtered_scope)
     filtered_scope = apply_match_strength_filter(filtered_scope)
     filtered_scope = apply_user_state_filter(filtered_scope)
     filtered_scope = apply_title_language_filter(filtered_scope)
@@ -40,6 +41,13 @@ class JobMatchFilters
       return scope if @params[:source].blank?
 
       scope.where(job_sources: { slug: @params[:source] })
+    end
+
+    def apply_contract_type_filter(scope)
+      return scope if @params[:contract_type].blank? || @params[:contract_type] == "all"
+      return scope unless Job.contract_types.key?(@params[:contract_type])
+
+      scope.where(jobs: { contract_type: Job.contract_types.fetch(@params[:contract_type]) })
     end
 
     def apply_match_strength_filter(scope)

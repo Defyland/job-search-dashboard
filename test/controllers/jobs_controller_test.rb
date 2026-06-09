@@ -23,5 +23,8 @@ class JobsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to job_path(jobs(:react_role), search_profile_id: search_profiles(:default).id)
     assert_equal("applied", job_matches(:react_default).reload.user_state)
+
+    follow_redirect!
+    assert_match("Vaga marcada como aplicada.", response.body)
   end
 end

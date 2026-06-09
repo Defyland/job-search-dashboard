@@ -62,7 +62,8 @@ module JobDiscovery
               tenant_id: tenant.fetch("tenant_id"),
               career_page_slug: career_page_slug_for_job(job, detail["careerPageId"]),
               career_page_id: detail["careerPageId"],
-              active_job_boards: Array(detail["activeJobBoards"])
+              active_job_boards: Array(detail["activeJobBoards"]),
+              contract_metadata: contract_metadata_from(detail)
             }
           )
         rescue JSON::ParserError, RuntimeError
@@ -131,6 +132,24 @@ module JobDiscovery
 
         def normalized_description(value)
           Nokogiri::HTML.fragment(CGI.unescapeHTML(value.to_s)).text.squish
+        end
+
+        def contract_metadata_from(value)
+          case value
+          when Hash
+            value.each_with_object({}) do |(key, child), result|
+              if key.to_s.match?(JobContractTypeClassifier::HIGH_SIGNAL_KEY_PATTERN)
+                result[key] = child
+              else
+                nested = contract_metadata_from(child)
+                result[key] = nested if nested.present?
+              end
+            end
+          when Array
+            value.filter_map { |child| contract_metadata_from(child).presence }
+          else
+            {}
+          end
         end
 
         def parse_time(value)

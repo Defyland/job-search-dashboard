@@ -28,7 +28,7 @@
     <p class="text-sm text-slate-500"><%= @total_matches %> resultado(s)</p>
   </div>
 
-  <%= form_with url: jobs_path, method: :get, class: "mt-6 grid gap-4 md:grid-cols-6 xl:grid-cols-9" do |form| %>
+  <%= form_with url: jobs_path, method: :get, **submit_state_form_options(default_loading_text: "Filtrando...", class: "mt-6 grid gap-4 md:grid-cols-6 xl:grid-cols-9") do |form| %>
     <div class="md:col-span-2">
       <%= form.label :search_profile_id, "Perfil", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
       <%= form.select :search_profile_id, options_for_select(@search_profiles.map { |profile| [profile.name, profile.id] }, @search_profile.id), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
@@ -48,6 +48,10 @@
     <div>
       <%= form.label :source, "Fonte", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
       <%= form.select :source, options_for_select([["Todas", ""]] + @source_options.map { |source| [source.name, source.slug] }, @filters[:source]), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
+    </div>
+    <div>
+      <%= form.label :contract_type, "Contrato", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+      <%= form.select :contract_type, options_for_select([["Todos", "all"], ["CLT", "clt"], ["PJ", "pj"], ["CLT ou PJ", "clt_or_pj"], ["Sem sinal", "unknown"]], @filters[:contract_type] || "all"), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
     </div>
     <div>
       <%= form.label :user_state, "Status", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
@@ -70,7 +74,7 @@
       <%= form.select :sort, options_for_select([["Mais recentes", "newest"], ["Maior score", "score"], ["Atualizadas", "updated"], ["Empresa", "company"]], @filters[:sort] || "newest"), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
     </div>
     <div class="flex gap-3 md:col-span-6 xl:col-span-9">
-      <%= form.submit "Filtrar", class: "rounded-2xl bg-sky-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-sky-300" %>
+      <%= form.submit "Filtrar", **submit_state_submit_options(loading_text: "Filtrando...", class: "rounded-2xl bg-sky-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-sky-300") %>
       <%= link_to "Limpar", jobs_path, class: "rounded-2xl border border-white/10 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/5" %>
     </div>
   <% end %>
@@ -84,6 +88,7 @@
           <th class="px-6 py-4">Vaga</th>
           <th class="px-6 py-4">Stack</th>
           <th class="px-6 py-4">Remoto</th>
+          <th class="px-6 py-4">Contrato</th>
           <th class="px-6 py-4">Fonte</th>
           <th class="px-6 py-4">Sinal</th>
           <th class="px-6 py-4">Acoes</th>
@@ -120,6 +125,9 @@
               </td>
               <td class="px-6 py-5 text-slate-300"><%= job.remote_text.presence || job.location_text.presence || "Sem sinal" %></td>
               <td class="px-6 py-5">
+                <span class="rounded-full px-3 py-1 text-xs font-semibold ring-1 <%= tone_class(contract_type_tone(job)) %>"><%= contract_type_label(job) %></span>
+              </td>
+              <td class="px-6 py-5">
                 <p class="font-semibold text-white"><%= job.job_source_name %></p>
                 <p class="mt-1 text-xs text-slate-500"><%= job.job_source_host %></p>
               </td>
@@ -132,16 +140,16 @@
                   <% if (apply_url = safe_external_url(job.apply_url)) %>
                     <%= link_to "Abrir", apply_url, target: "_blank", rel: "noreferrer", class: "rounded-full bg-white px-3 py-2 text-xs font-extrabold uppercase tracking-[0.14em] text-slate-950" %>
                   <% end %>
-                  <%= button_to "Vista", mark_job_path(job, search_profile_id: @search_profile.id, user_state: :seen), method: :patch, class: "rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-slate-200" %>
-                  <%= button_to "Aplicada", mark_job_path(job, search_profile_id: @search_profile.id, user_state: :applied), method: :patch, class: "rounded-full border border-fuchsia-300/20 bg-fuchsia-400/10 px-3 py-2 text-xs font-semibold text-fuchsia-100" %>
-                  <%= button_to "Ignorar", mark_job_path(job, search_profile_id: @search_profile.id, user_state: :ignored), method: :patch, class: "rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-slate-400" %>
+                  <%= button_to "Vista", mark_job_path(job, search_profile_id: @search_profile.id, user_state: :seen), method: :patch, **submit_state_button_to_options(loading_text: "Atualizando...", class: "rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-slate-200") %>
+                  <%= button_to "Aplicada", mark_job_path(job, search_profile_id: @search_profile.id, user_state: :applied), method: :patch, **submit_state_button_to_options(loading_text: "Atualizando...", class: "rounded-full border border-fuchsia-300/20 bg-fuchsia-400/10 px-3 py-2 text-xs font-semibold text-fuchsia-100") %>
+                  <%= button_to "Ignorar", mark_job_path(job, search_profile_id: @search_profile.id, user_state: :ignored), method: :patch, **submit_state_button_to_options(loading_text: "Atualizando...", class: "rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-slate-400") %>
                 </div>
               </td>
             </tr>
           <% end %>
         <% else %>
           <tr>
-            <td colspan="6" class="px-6 py-12 text-center">
+            <td colspan="7" class="px-6 py-12 text-center">
               <p class="text-base font-semibold text-white">Nenhuma vaga ingerida ainda.</p>
               <p class="mt-2 text-sm text-slate-400">Assim que o primeiro run do Rails ou uma ingestao complementar terminar, a lista aparecera aqui com filtros, score e links diretos.</p>
             </td>

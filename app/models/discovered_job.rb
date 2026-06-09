@@ -36,7 +36,8 @@ class DiscoveredJob < ApplicationRecord
       published_at: published_at&.iso8601,
       stack_tags: stack_tags,
       fingerprint: fingerprint,
-      description: description_text
+      description: description_text,
+      source_payload: payload
     }.tap do |payload|
       payload[:match_strength] = match_strength if match_strength.present?
       payload[:score] = score if score.positive?
