@@ -46,8 +46,7 @@ module JobIngestions
     end
 
     def find_existing_job(attributes)
-      Job.find_by(fingerprint: attributes[:fingerprint]) ||
-        Job.find_by(canonical_url: attributes[:canonical_url])
+      Job.find_duplicate(fingerprint: attributes[:fingerprint], canonical_url: attributes[:canonical_url])
     end
 
     def persist_job(existing_job:, source:, attributes:, payload:)

@@ -186,6 +186,12 @@ class JobDiscovery::OrchestratorTest < ActiveSupport::TestCase
     assert_equal 1, Job.where(company_name: "Clicksign").count
     assert_equal 1, result.search_run.search_run_items.where(outcome: :created).count
     assert_equal 1, result.search_run.search_run_items.where(outcome: :rejected).count
+
+    clicksign_job = Job.find_by!(company_name: "Clicksign")
+    accepted_candidate = result.search_run.discovered_jobs.find_by!(company_name: "Clicksign")
+    rejected_candidate = result.search_run.discovered_jobs.find_by!(company_name: "Example")
+    assert_equal clicksign_job.id, accepted_candidate.job_id, "accepted candidate must be linked to its canonical job"
+    assert_nil rejected_candidate.job_id, "rejected candidate has no canonical job to link"
   end
 
   test "marks run partial when at least one source scan fails after importing matches" do

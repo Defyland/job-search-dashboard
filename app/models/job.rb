@@ -26,6 +26,12 @@ class Job < ApplicationRecord
 
   delegate :name, :slug, :host, to: :job_source, prefix: true
 
+  # Single source of truth for canonical job identity: match on the stronger fingerprint first,
+  # then fall back to the canonical URL. Used by the ingestion store and the discovery linker.
+  def self.find_duplicate(fingerprint:, canonical_url:)
+    find_by(fingerprint:) || find_by(canonical_url:)
+  end
+
   def freshness_at
     published_at || last_seen_at || created_at
   end

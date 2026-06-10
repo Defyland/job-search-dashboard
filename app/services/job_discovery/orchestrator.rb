@@ -170,8 +170,18 @@ module JobDiscovery
       end
 
       def link_discovered_jobs!(source_scan)
-        source_scan.discovered_jobs.where(job_id: nil).find_each do |candidate|
-          job = Job.find_by(fingerprint: candidate.fingerprint) || Job.find_by(canonical_url: candidate.canonical_url)
+        candidates = source_scan.discovered_jobs.where(job_id: nil).to_a
+        return if candidates.empty?
+
+        # Resolve every candidate's canonical Job in two queries instead of two per row,
+        # keeping the same fingerprint-first, canonical-url fallback identity rule as Job.find_duplicate.
+        jobs = Job.where(fingerprint: candidates.filter_map(&:fingerprint))
+                  .or(Job.where(canonical_url: candidates.filter_map(&:canonical_url)))
+        jobs_by_fingerprint = jobs.index_by(&:fingerprint)
+        jobs_by_canonical_url = jobs.index_by(&:canonical_url)
+
+        candidates.each do |candidate|
+          job = jobs_by_fingerprint[candidate.fingerprint] || jobs_by_canonical_url[candidate.canonical_url]
           candidate.update_column(:job_id, job.id) if job
         end
       end
