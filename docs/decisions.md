@@ -5,6 +5,33 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-06-10 — Harden the discovery Fetcher (retry, backoff, jitter, throttling)
+
+**Decision:** Rewrote `JobDiscovery::Fetcher` to be resilient: per-host throttling with jitter,
+retry with exponential backoff on transient network errors and HTTP 408/425/429/5xx, and honoring
+`Retry-After`. Every knob is ENV-tunable (`SEARCH_MIN_REQUEST_INTERVAL`, `SEARCH_MAX_RETRIES`,
+`SEARCH_BACKOFF_BASE`, `SEARCH_MAX_BACKOFF`, `SEARCH_REQUEST_JITTER`, timeouts). Delays funnel through
+an injectable sleeper/clock/rng so the logic is unit-tested without real sleeps or network.
+
+**Why:** Step 2 of the roadmap and the prerequisite to raising discovery frequency. The old Fetcher
+failed the entire source scan on the first transient blip and hit hosts back-to-back; throttle +
+backoff make scans fault-tolerant and polite, which lowers block risk.
+
+**Public interface unchanged:** `call(url, limit:, headers:)` still returns the body and raises on
+permanent failure, so every adapter is untouched. Dispatch now keys on the integer status range
+instead of `Net::HTTP*` classes (for testability), behavior-equivalent for 2xx / 3xx / else.
+
+**Deferred — conditional caching (ETag / If-Modified-Since):** intentionally NOT included. It reduces
+bandwidth, not request *rate*, so it does little for the block-risk goal, and a durable per-URL cache
+would need a schema change. Revisit as its own change if bandwidth/latency becomes the bottleneck.
+
+**Verification:** new `test/services/job_discovery/fetcher_test.rb` (7 cases); full suite 152 runs /
+692 assertions green on Ruby 3.4.9; RuboCop clean.
+
+**Refs:** `app/services/job_discovery/fetcher.rb`, `test/services/job_discovery/fetcher_test.rb`.
+
+---
+
 ## 2026-06-10 — Roadmap priority: notifications → Fetcher resilience → match quality → frequency
 
 **Decision:** Improvement order is (1) push/email notifications on new strong matches,
