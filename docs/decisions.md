@@ -5,6 +5,28 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-06-10 — Make the Farol landing data-driven and drop the placeholder waitlist
+
+**Decision:** The landing now reflects the real product instead of marketing placeholders.
+`PagesController#home` exposes `@source_count`/`@source_names` from `JobSources::Catalog.defaults` (21
+sources); the hero trust line shows "21 fontes mapeadas" and the marquee is server-rendered from the real
+catalog names. The discovery cadence copy was corrected to "Todo dia às 08:30 BRT" to match the actual
+`daily_discovery_run` (config/recurring.yml, 11:30 UTC) — dropping the aspirational "de hora em hora" and
+"25+ fontes". The non-functional email waitlist (`form#capform`) was removed; every CTA now routes to the
+operator login (`new_session_path`).
+
+**Why:** The page should not claim cadence or counts the product does not deliver, and a waitlist form
+that posts nowhere is worse than no form. Sourcing the numbers from the catalog keeps the copy honest as
+the catalog grows.
+
+**Verification:** `PagesControllerTest` asserts the live count string, the daily-cadence copy, the absence
+of the old claims, and that no `#capform` exists; full suite 154 runs / 711 assertions green on Ruby 3.4.9.
+
+**Refs:** `app/controllers/pages_controller.rb`, `app/views/pages/home.html.erb`,
+`test/controllers/pages_controller_test.rb`.
+
+---
+
 ## 2026-06-10 — Farol landing becomes the root homepage with header login
 
 **Decision:** Moved the Farol landing from the static `public/farol.html` into a Rails view at

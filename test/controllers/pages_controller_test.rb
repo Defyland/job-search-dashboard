@@ -7,6 +7,12 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "title", /Farol/
     assert_match "Vagas certas, sem ruído", response.body
+    assert_match "#{JobSources::Catalog.defaults.size} fontes mapeadas", response.body
+    assert_match "Todo dia às 08:30 BRT", response.body
+    assert_no_match "De hora em hora", response.body
+    assert_no_match "25+ fontes", response.body
+    assert_select "form#capform", false
+    assert_select "a[href=?]", new_session_path, minimum: 1
   end
 
   test "home sends authenticated operators straight to the radar" do
