@@ -5,6 +5,27 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-06-10 — Farol landing becomes the root homepage with header login
+
+**Decision:** Moved the Farol landing from the static `public/farol.html` into a Rails view at
+`app/views/pages/home.html.erb`, served at `/` by a new `PagesController#home` (`root "pages#home"`).
+The page is public (`allow_unauthenticated_access`); authenticated operators are redirected straight to
+the radar (`jobs_path`). The header CTA is now a real login link (`Entrar` → `new_session_path`).
+
+**Why:** `/farol.html` is not a homepage. The front door should be the landing for visitors and the radar
+for operators, with one clear way in. Rendering through a controller (instead of a static
+`public/index.html`) keeps the login redirect test-correct and lets `/` stay auth-aware without shadowing
+the Rails router.
+
+**Compatibility:** `after_authentication_url` is unchanged (still `root_url`), so login still redirects to
+`/`, which now bounces authenticated users to `/jobs`. The existing `SessionsControllerTest`
+(`assert_redirected_to root_path`) stays green; new `PagesControllerTest` locks both branches.
+
+**Refs:** `app/views/pages/home.html.erb`, `app/controllers/pages_controller.rb`, `config/routes.rb`,
+`test/controllers/pages_controller_test.rb`.
+
+---
+
 ## 2026-06-10 — Product identity "Farol" + public landing page
 
 **Decision:** Named the product **Farol** (PT: lighthouse/beacon) and shipped a standalone marketing

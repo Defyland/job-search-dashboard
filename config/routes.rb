@@ -22,5 +22,5 @@ Rails.application.routes.draw do
     end
   end
 
-  root "jobs#index"
+  root "pages#home"
 end
