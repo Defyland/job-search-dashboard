@@ -136,7 +136,11 @@
   .closing{text-align:center;padding:108px 0}
   .closing h2{font-family:var(--display);font-weight:500;font-size:clamp(34px,4.4vw,58px);line-height:1.05;letter-spacing:-.025em}
   .closing p{color:var(--muted);font-size:19px;margin:18px auto 34px;max-width:34ch}
-  .closing-actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+  .capture{display:flex;gap:10px;max-width:440px;margin:0 auto;background:rgba(21,33,59,.42);border:1px solid var(--line2);border-radius:999px;padding:7px 7px 7px 8px;opacity:.72;cursor:not-allowed}
+  .capture input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--body);font-size:16px;padding:0 14px;cursor:not-allowed}
+  .capture input::placeholder{color:var(--muted)}
+  .capture button:disabled{background:rgba(246,181,74,.62);color:rgba(36,21,0,.78);cursor:not-allowed;box-shadow:0 0 0 1px rgba(246,181,74,.28);transform:none}
+  .capture-note{font-family:var(--mono);font-size:12px;color:var(--muted2);margin:14px auto 0;max-width:48ch;line-height:1.5}
 
   /* FOOTER */
   footer{border-top:1px solid var(--line);padding:42px 0}
@@ -170,7 +174,7 @@
     <a href="#radar">No radar</a>
     <a href="#fontes">Fontes</a>
   </div>
-  <%= link_to "Entrar", new_session_path, class: "btn btn-amber" %>
+  <%= link_to "Entrar no painel", new_session_path, class: "btn btn-amber" %>
 </div></nav>
 
 <header class="wrap hero">
@@ -179,7 +183,7 @@
     <h1 class="serif">O farol que acende <em>só</em> nas vagas que são suas.</h1>
     <p class="lead">O Farol varre dezenas de boards — Gupy, Lever, Greenhouse, Ashby, Workable — e ignora o ruído. Você só vê as vagas que batem com a sua stack, senioridade e modelo remoto.</p>
     <div class="cta-row">
-      <%= link_to "Entrar no painel", new_session_path, class: "btn btn-amber" %>
+      <a href="#entrar" class="btn btn-amber">Ver lista de espera</a>
       <a href="#como" class="btn btn-ghost">Ver como funciona</a>
     </div>
     <div class="trust">
@@ -285,13 +289,14 @@
 </div></section>
 
 <section id="entrar" class="closing"><div class="wrap">
-  <span class="eyebrow">Acesso privado</span>
+  <span class="eyebrow">Lista de espera</span>
   <h2 class="serif" style="margin-top:18px">Pare de caçar.<br>Deixe o farol acender.</h2>
-  <p>Use seu login para entrar no painel, configurar perfis e acompanhar os matches novos sem depender da thread.</p>
-  <div class="closing-actions">
-    <%= link_to "Entrar no painel", new_session_path, class: "btn btn-amber" %>
-    <a href="#como" class="btn btn-ghost">Ver o fluxo</a>
-  </div>
+  <p>A lista de espera ainda não está aberta. O acesso atual é privado para quem já tem login.</p>
+  <form class="capture" id="capform" aria-disabled="true" autocomplete="off">
+    <input id="emailcap" type="email" placeholder="seu@email.com" disabled aria-disabled="true" />
+    <button class="btn btn-amber" type="submit" disabled aria-disabled="true">Em breve</button>
+  </form>
+  <div class="capture-note">A lista de espera ainda não está aberta. Por enquanto, use seu login para entrar no painel.</div>
 </div></section>
 
 <footer><div class="wrap footrow">

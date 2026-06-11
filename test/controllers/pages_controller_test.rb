@@ -11,8 +11,11 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert_match "Todo dia às 08:30 BRT", response.body
     assert_no_match "De hora em hora", response.body
     assert_no_match "25+ fontes", response.body
-    assert_select "form#capform", false
-    assert_select "a[href=?]", new_session_path, minimum: 1
+    assert_no_match "Pronto — você está na lista", response.body
+    assert_select "form#capform[aria-disabled=true]"
+    assert_select "form#capform input[type=email][disabled][aria-disabled=true][placeholder=?]", "seu@email.com"
+    assert_select "form#capform button[disabled][aria-disabled=true]", text: "Em breve"
+    assert_select "a[href=?]", new_session_path, text: "Entrar no painel", minimum: 1
   end
 
   test "home sends authenticated operators straight to the radar" do
