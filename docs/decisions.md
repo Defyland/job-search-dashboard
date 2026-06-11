@@ -5,6 +5,26 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-06-10 — Product identity "Farol" + public landing page
+
+**Decision:** Named the product **Farol** (PT: lighthouse/beacon) and shipped a standalone marketing
+landing page at `public/farol.html`, served by Rails at `/farol.html`. Identity: ink-navy base with an
+amber "beam" as the primary accent and a green "strong match" signal; type pairing Fraunces (display) +
+Hanken Grotesk (body) + JetBrains Mono (data/dev accents); voice built on the lighthouse metaphor
+(*varre / acende*). Copy is PT-BR for the BR/LatAm dev audience.
+
+**Why:** The internal "Codex + Rails" framing is plumbing, not a product. "Farol" turns the app's own
+"radar" language into one promise — a beam that sweeps the boards and lights up only on roles that match
+your profile.
+
+**Placement:** Static file under `public/` (like the existing error pages), NOT a Rails route — keeps the
+authenticated dashboard at `/` untouched and adds zero runtime/dependency surface. CSP is disabled (Rails
+default), so the Google Fonts CDN loads fine.
+
+**Refs:** `public/farol.html`.
+
+---
+
 ## 2026-06-10 — Harden the discovery Fetcher (retry, backoff, jitter, throttling)
 
 **Decision:** Rewrote `JobDiscovery::Fetcher` to be resilient: per-host throttling with jitter,

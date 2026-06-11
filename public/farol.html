@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Farol — vagas certas, sem ruído</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#06090f; --ink2:#0a0f1c; --surface:#0f1830; --surface2:#15213b;
+    --line:rgba(233,238,252,.09); --line2:rgba(233,238,252,.16);
+    --beam:#f6b54a; --beam-soft:#ffd98a;
+    --signal:#54e6a2; --signal-deep:#0f7a52;
+    --text:#eef2fb; --muted:#9aa7c4; --muted2:#62708f;
+    --display:'Fraunces',Georgia,serif; --body:'Hanken Grotesk',system-ui,sans-serif; --mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--ink); color:var(--text); font-family:var(--body);
+    font-size:17px; line-height:1.65; -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+    background-image:
+      radial-gradient(1200px 700px at 78% -8%, rgba(246,181,74,.16), transparent 60%),
+      radial-gradient(900px 600px at 10% 110%, rgba(84,230,162,.07), transparent 55%);
+  }
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:1; opacity:.45;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+    mix-blend-mode:overlay;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:0 32px;position:relative;z-index:2}
+  a{color:inherit;text-decoration:none}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--beam);font-weight:500}
+  .serif{font-family:var(--display)}
+  em{font-style:italic;color:var(--beam-soft)}
+
+  /* NAV */
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);background:rgba(6,9,15,.55);border-bottom:1px solid var(--line)}
+  .navrow{display:flex;align-items:center;justify-content:space-between;height:74px}
+  .brand{display:flex;align-items:center;gap:12px;font-family:var(--display);font-size:24px;font-weight:600;letter-spacing:-.01em}
+  .navlinks{display:flex;align-items:center;gap:34px;font-size:15px;color:var(--muted)}
+  .navlinks a:hover{color:var(--text)}
+  .btn{font-family:var(--body);font-weight:600;font-size:15px;border:none;cursor:pointer;border-radius:999px;padding:12px 22px;transition:.2s}
+  .btn-amber{background:var(--beam);color:#241500;box-shadow:0 0 0 1px rgba(246,181,74,.5),0 8px 30px -8px rgba(246,181,74,.5)}
+  .btn-amber:hover{background:var(--beam-soft);transform:translateY(-1px)}
+  .btn-ghost{background:transparent;color:var(--text);box-shadow:inset 0 0 0 1px var(--line2)}
+  .btn-ghost:hover{box-shadow:inset 0 0 0 1px var(--text)}
+
+  /* HERO */
+  .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;padding:84px 0 72px}
+  .hero h1{font-family:var(--display);font-weight:500;font-size:clamp(44px,5.6vw,72px);line-height:1.02;letter-spacing:-.025em;margin:22px 0 24px}
+  .hero p.lead{font-size:20px;color:var(--muted);max-width:30em;line-height:1.55}
+  .cta-row{display:flex;gap:14px;margin:34px 0 26px;flex-wrap:wrap}
+  .trust{display:flex;gap:22px;font-family:var(--mono);font-size:12.5px;color:var(--muted2);letter-spacing:.02em;flex-wrap:wrap}
+  .trust span{display:flex;align-items:center;gap:7px}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--signal);box-shadow:0 0 10px var(--signal)}
+
+  /* RADAR */
+  .stage{position:relative;display:flex;align-items:center;justify-content:center;min-height:460px}
+  .noise-words{position:absolute;inset:0;overflow:hidden;border-radius:24px}
+  .noise-words span{position:absolute;font-family:var(--mono);font-size:12px;color:rgba(154,167,196,.22);white-space:nowrap;animation:drift 9s ease-in-out infinite}
+  @keyframes drift{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:.5;transform:translateY(-6px)}}
+  .radar{position:relative;width:430px;height:430px;border-radius:50%;
+    background:
+      radial-gradient(circle at center, rgba(246,181,74,.10), transparent 62%),
+      repeating-radial-gradient(circle at center, transparent 0 52px, rgba(233,238,252,.07) 52px 53px);
+    box-shadow:inset 0 0 0 1px var(--line2), 0 40px 120px -40px rgba(246,181,74,.4)}
+  .radar::before,.radar::after{content:"";position:absolute;background:rgba(233,238,252,.07)}
+  .radar::before{left:50%;top:0;width:1px;height:100%;transform:translateX(-.5px)}
+  .radar::after{top:50%;left:0;height:1px;width:100%;transform:translateY(-.5px)}
+  .sweep{position:absolute;inset:0;border-radius:50%;overflow:hidden}
+  .sweep::after{content:"";position:absolute;inset:0;border-radius:50%;
+    background:conic-gradient(from 0deg, rgba(246,181,74,0) 0deg, rgba(246,181,74,.04) 22deg, rgba(246,181,74,.34) 52deg, rgba(255,217,138,.55) 58deg, rgba(246,181,74,0) 60deg);
+    animation:sweep 6s linear infinite}
+  @keyframes sweep{to{transform:rotate(360deg)}}
+  .core{position:absolute;left:50%;top:50%;width:14px;height:14px;border-radius:50%;transform:translate(-50%,-50%);
+    background:var(--beam-soft);box-shadow:0 0 24px 6px rgba(246,181,74,.7)}
+  .blip{position:absolute;width:8px;height:8px;border-radius:50%;background:rgba(154,167,196,.4)}
+  .blip.b1{left:30%;top:34%}.blip.b2{left:70%;top:26%}.blip.b3{left:24%;top:66%}
+  .blip.b4{left:78%;top:62%}.blip.b5{left:58%;top:74%}
+  .match{position:absolute;left:67%;top:60%;width:13px;height:13px;border-radius:50%;background:var(--signal);
+    box-shadow:0 0 0 0 rgba(84,230,162,.55);animation:ping 6s ease-out infinite}
+  @keyframes ping{0%,72%{box-shadow:0 0 0 0 rgba(84,230,162,0);background:rgba(84,230,162,.25)}
+    78%{box-shadow:0 0 0 5px rgba(84,230,162,.5);background:var(--signal)}
+    100%{box-shadow:0 0 0 26px rgba(84,230,162,0);background:rgba(84,230,162,.25)}}
+  .match-tag{position:absolute;left:calc(67% + 18px);top:calc(60% - 10px);font-family:var(--mono);font-size:11px;
+    color:var(--signal);letter-spacing:.05em;opacity:0;animation:tag 6s ease-out infinite}
+  @keyframes tag{0%,74%{opacity:0}80%,96%{opacity:1}100%{opacity:0}}
+
+  /* SECTIONS */
+  section{padding:88px 0;position:relative}
+  .rule{height:1px;background:linear-gradient(90deg,transparent,var(--line2),transparent)}
+  .manifesto{font-family:var(--display);font-weight:500;font-size:clamp(26px,3.4vw,40px);line-height:1.25;letter-spacing:-.02em;max-width:18ch;margin:0 auto;text-align:center}
+  .manifesto small{display:block;font-family:var(--body);font-weight:400;font-size:17px;color:var(--muted);letter-spacing:0;margin-top:24px;max-width:52ch;margin-left:auto;margin-right:auto}
+
+  .sec-head{max-width:40ch;margin-bottom:52px}
+  .sec-head h2{font-family:var(--display);font-weight:500;font-size:clamp(30px,3.6vw,46px);line-height:1.08;letter-spacing:-.02em;margin:16px 0 0}
+
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .step{position:relative;padding:28px;border-radius:18px;background:linear-gradient(180deg,var(--surface),var(--ink2));border:1px solid var(--line)}
+  .step .n{font-family:var(--mono);font-size:12px;color:var(--beam);letter-spacing:.1em}
+  .step h3{font-family:var(--display);font-weight:500;font-size:23px;margin:14px 0 10px;letter-spacing:-.01em}
+  .step p{font-size:15.5px;color:var(--muted);line-height:1.55}
+
+  .features{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .feat{padding:26px 24px;border-radius:16px;background:rgba(21,33,59,.5);border:1px solid var(--line);transition:.25s}
+  .feat:hover{border-color:var(--line2);transform:translateY(-3px);background:rgba(21,33,59,.85)}
+  .feat .ic{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:20px;color:var(--beam);background:rgba(246,181,74,.12);box-shadow:inset 0 0 0 1px rgba(246,181,74,.25);margin-bottom:16px}
+  .feat h4{font-size:18px;font-weight:600;margin-bottom:8px;letter-spacing:-.01em}
+  .feat p{font-size:14.5px;color:var(--muted);line-height:1.5}
+
+  /* MARQUEE */
+  .marquee{overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+  .track{display:flex;gap:14px;width:max-content;animation:scroll 32s linear infinite}
+  .chip{font-family:var(--mono);font-size:14px;color:var(--muted);border:1px solid var(--line2);border-radius:999px;padding:9px 18px;white-space:nowrap}
+  @keyframes scroll{to{transform:translateX(-50%)}}
+
+  /* MATCH CARD */
+  .showcase{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+  .mcard{background:linear-gradient(180deg,var(--surface2),var(--ink2));border:1px solid var(--line2);border-radius:20px;padding:26px;box-shadow:0 40px 90px -40px rgba(0,0,0,.8)}
+  .mcard .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .badge-strong{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:#06281b;background:var(--signal);padding:5px 11px;border-radius:999px}
+  .score{font-family:var(--display);font-size:30px;font-weight:600;color:var(--signal)}
+  .mcard h3{font-family:var(--display);font-weight:500;font-size:24px;letter-spacing:-.01em;margin-bottom:4px}
+  .co{color:var(--muted);font-size:15px;margin-bottom:16px}
+  .meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .pill{font-family:var(--mono);font-size:12px;color:var(--text);background:rgba(233,238,252,.07);border:1px solid var(--line);padding:6px 11px;border-radius:8px}
+  .pill.stack{color:var(--beam-soft);border-color:rgba(246,181,74,.3);background:rgba(246,181,74,.08)}
+  .reason{font-size:14px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;line-height:1.5}
+  .reason b{color:var(--text);font-weight:500}
+
+  /* CTA */
+  .closing{text-align:center;padding:108px 0}
+  .closing h2{font-family:var(--display);font-weight:500;font-size:clamp(34px,4.4vw,58px);line-height:1.05;letter-spacing:-.025em}
+  .closing p{color:var(--muted);font-size:19px;margin:18px auto 34px;max-width:34ch}
+  .capture{display:flex;gap:10px;max-width:440px;margin:0 auto;background:rgba(21,33,59,.6);border:1px solid var(--line2);border-radius:999px;padding:7px 7px 7px 8px}
+  .capture input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--body);font-size:16px;padding:0 14px}
+  .capture input::placeholder{color:var(--muted2)}
+  .ok{font-family:var(--mono);font-size:13px;color:var(--signal);margin-top:16px;min-height:18px;opacity:0;transition:.3s}
+  .ok.show{opacity:1}
+
+  /* FOOTER */
+  footer{border-top:1px solid var(--line);padding:42px 0}
+  .footrow{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:18px}
+  .foot-tag{font-family:var(--display);font-style:italic;font-size:18px;color:var(--muted)}
+  .foot-meta{font-family:var(--mono);font-size:12px;color:var(--muted2);letter-spacing:.04em}
+
+  .markmini{flex:none}
+  @media(max-width:900px){
+    .hero,.showcase{grid-template-columns:1fr;gap:36px}
+    .steps,.features{grid-template-columns:1fr}
+    .stage{min-height:380px}.radar{width:330px;height:330px}
+    .navlinks{display:none}
+  }
+</style>
+</head>
+<body>
+
+<nav><div class="wrap navrow">
+  <div class="brand">
+    <svg class="markmini" width="30" height="30" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+      <circle cx="16" cy="16" r="15" stroke="rgba(246,181,74,.35)"/>
+      <circle cx="16" cy="16" r="9" stroke="rgba(246,181,74,.55)"/>
+      <path d="M16 16 L31 9 A15 15 0 0 1 31 23 Z" fill="#f6b54a" fill-opacity="0.85"/>
+      <circle cx="16" cy="16" r="2.6" fill="#ffd98a"/>
+    </svg>
+    Farol
+  </div>
+  <div class="navlinks">
+    <a href="#como">Como funciona</a>
+    <a href="#radar">No radar</a>
+    <a href="#fontes">Fontes</a>
+    <a href="#entrar">Entrar</a>
+  </div>
+  <button class="btn btn-amber" onclick="document.getElementById('emailcap').focus()">Ligar o farol</button>
+</div></nav>
+
+<header class="wrap hero">
+  <div>
+    <span class="eyebrow">Radar de vagas remotas · BR + global</span>
+    <h1 class="serif">O farol que acende <em>só</em> nas vagas que são suas.</h1>
+    <p class="lead">O Farol varre dezenas de boards — Gupy, Lever, Greenhouse, Ashby, Workable — e ignora o ruído. Você só vê as vagas que batem com a sua stack, senioridade e modelo remoto.</p>
+    <div class="cta-row">
+      <button class="btn btn-amber" onclick="document.getElementById('emailcap').focus()">Quero acesso</button>
+      <a href="#como" class="btn btn-ghost">Ver como funciona</a>
+    </div>
+    <div class="trust">
+      <span><i class="dot"></i> Varredura diária</span>
+      <span><i class="dot"></i> 25+ fontes</span>
+      <span><i class="dot"></i> zero vagas duplicadas</span>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="noise-words">
+      <span style="left:4%;top:12%">senior fullstack</span>
+      <span style="left:62%;top:8%;animation-delay:1.2s">react native</span>
+      <span style="left:70%;top:84%;animation-delay:2.1s">remoto brasil</span>
+      <span style="left:2%;top:78%;animation-delay:.6s">ruby on rails</span>
+      <span style="left:78%;top:46%;animation-delay:3s">latam</span>
+      <span style="left:-2%;top:46%;animation-delay:1.7s">node · go</span>
+    </div>
+    <div class="radar">
+      <div class="sweep"></div>
+      <i class="blip b1"></i><i class="blip b2"></i><i class="blip b3"></i><i class="blip b4"></i><i class="blip b5"></i>
+      <i class="match"></i><span class="match-tag">strong match</span>
+      <i class="core"></i>
+    </div>
+  </div>
+</header>
+
+<div class="wrap"><div class="rule"></div></div>
+
+<section><div class="wrap">
+  <p class="manifesto serif">Caçar vaga não é rolar 30 abas.
+    <small>É deixar o farol varrer o mar de listagens e te chamar no instante em que a vaga certa aparece. Sem agregador genérico, sem newsletter de tudo. Só o que é seu.</small>
+  </p>
+</div></section>
+
+<section id="como"><div class="wrap">
+  <div class="sec-head">
+    <span class="eyebrow">Como funciona</span>
+    <h2 class="serif">Três passos. Depois é só o farol trabalhar.</h2>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="n">01 — calibre</div>
+      <h3 class="serif">Seu perfil, na sua língua</h3>
+      <p>Stacks, títulos, senioridade, remoto, Brasil ou global. Você descreve em linguagem natural — o Farol compila o resto em critérios precisos.</p>
+    </div>
+    <div class="step">
+      <div class="n">02 — varre</div>
+      <h3 class="serif">O farol gira pelos boards</h3>
+      <p>De hora em hora nas fontes com API, todo dia nos boards públicos. Brasileiros e globais, no mesmo giro. Sem você abrir uma aba sequer.</p>
+    </div>
+    <div class="step">
+      <div class="n">03 — acende</div>
+      <h3 class="serif">Acende no match certo</h3>
+      <p>Strong ou borderline, com a justificativa de cada acerto e zero duplicata. Você marca: vista, apliquei, ignorar — perfil por perfil.</p>
+    </div>
+  </div>
+</div></section>
+
+<section id="radar"><div class="wrap">
+  <div class="sec-head">
+    <span class="eyebrow">No radar</span>
+    <h2 class="serif">Feito para quem cansou de filtrar no olho.</h2>
+  </div>
+  <div class="features">
+    <div class="feat"><div class="ic serif">⌖</div><h4>Match pela sua stack</h4><p>Título primeiro, sinônimos e stacks compatíveis. Ruby não vira Rust, React não vira “qualquer front”.</p></div>
+    <div class="feat"><div class="ic serif">◑</div><h4>Strong vs borderline</h4><p>Cada vaga pontuada e justificada. Você sabe exatamente por que ela acendeu — ou por que ficou de fora.</p></div>
+    <div class="feat"><div class="ic serif">≣</div><h4>Sem duplicata</h4><p>URL canônica e fingerprint. A mesma vaga em três boards diferentes chega como uma só.</p></div>
+    <div class="feat"><div class="ic serif">⤬</div><h4>Remoto de verdade</h4><p>Filtra presencial e híbrido disfarçado. Remoto BR, LatAm ou global — do jeito que você definir.</p></div>
+    <div class="feat"><div class="ic serif">◎</div><h4>BR e global no mesmo giro</h4><p>Gupy, Sólides e Trampos lado a lado com Lever, Greenhouse e Ashby.</p></div>
+    <div class="feat"><div class="ic serif">↗</div><h4>Do match à candidatura</h4><p>Fluxo de estados por perfil: nova, vista, apliquei, ignorada. Sua caça organizada num lugar só.</p></div>
+  </div>
+</div></section>
+
+<section id="fontes"><div class="wrap">
+  <div class="sec-head" style="margin-bottom:34px">
+    <span class="eyebrow">O que o farol enxerga</span>
+  </div>
+</div>
+  <div class="marquee"><div class="track" id="track"></div></div>
+</section>
+
+<section><div class="wrap showcase">
+  <div>
+    <span class="eyebrow">Quando acende</span>
+    <h2 class="serif" style="font-family:var(--display);font-weight:500;font-size:clamp(28px,3.4vw,42px);line-height:1.1;letter-spacing:-.02em;margin:16px 0 18px">Você recebe o sinal, não a varredura.</h2>
+    <p style="color:var(--muted);font-size:17px;max-width:34ch">Nada de lista infinita. O Farol entrega a vaga já classificada, com a stack reconhecida, o sinal remoto confirmado e o porquê do match. Pronta pra você decidir em segundos.</p>
+  </div>
+  <div class="mcard">
+    <div class="top">
+      <span class="badge-strong">strong match</span>
+      <span class="score serif">96</span>
+    </div>
+    <h3 class="serif">Senior Ruby on Rails Engineer</h3>
+    <div class="co">Clicksign · via Gupy</div>
+    <div class="meta">
+      <span class="pill">Remoto · Brasil</span>
+      <span class="pill stack">ruby</span>
+      <span class="pill stack">rails</span>
+      <span class="pill">publicada hoje</span>
+    </div>
+    <p class="reason"><b>Por que acendeu:</b> título sênior com Ruby on Rails, remoto BR confirmado e stack no foco do seu perfil. Sem termos negativos.</p>
+  </div>
+</div></section>
+
+<section id="entrar" class="closing"><div class="wrap">
+  <span class="eyebrow">Acesso antecipado</span>
+  <h2 class="serif" style="margin-top:18px">Pare de caçar.<br>Deixe o farol acender.</h2>
+  <p>Entre na lista. Avisamos no instante em que o Farol abrir para a sua stack.</p>
+  <form class="capture" id="capform" autocomplete="off">
+    <input id="emailcap" type="email" placeholder="voce@email.com" required />
+    <button class="btn btn-amber" type="submit">Quero acesso</button>
+  </form>
+  <div class="ok" id="ok">Pronto — você está na lista. O farol avisa.</div>
+</div></section>
+
+<footer><div class="wrap footrow">
+  <div class="brand" style="font-size:20px">
+    <svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+      <circle cx="16" cy="16" r="15" stroke="rgba(246,181,74,.35)"/>
+      <path d="M16 16 L31 9 A15 15 0 0 1 31 23 Z" fill="#f6b54a" fill-opacity="0.85"/>
+      <circle cx="16" cy="16" r="2.6" fill="#ffd98a"/>
+    </svg>
+    Farol
+  </div>
+  <div class="foot-tag serif">Vagas certas, sem ruído.</div>
+  <div class="foot-meta">© 2026 Farol · radar de vagas para devs</div>
+</div></footer>
+
+<script>
+  const sources = ["Gupy","Lever","Greenhouse","Ashby","Workable","Sólides","Trampos","Coodesh","Recrutei","Inhire","SmartRecruiters","Teamtailor","ProgramaThor","Remotar"];
+  const track = document.getElementById('track');
+  const html = sources.map(s => `<span class="chip">${s}</span>`).join('');
+  track.innerHTML = html + html;
+  document.getElementById('capform').addEventListener('submit', e => {
+    e.preventDefault();
+    document.getElementById('ok').classList.add('show');
+    e.target.querySelector('input').value = '';
+  });
+</script>
+</body>
+</html>
