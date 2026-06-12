@@ -9,7 +9,7 @@ class JobMatch < ApplicationRecord
   validates :score, numericality: { greater_than_or_equal_to: 0 }
   validates :job_id, uniqueness: { scope: :search_profile_id }
 
-  scope :recent_first, -> { joins(:job).order(Arel.sql("COALESCE(jobs.published_at, job_matches.last_seen_at, job_matches.created_at) DESC")) }
+  scope :recent_first, -> { order(first_seen_at: :desc, updated_at: :desc) }
   scope :highest_score_first, -> { order(score: :desc, updated_at: :desc) }
   scope :for_profile, ->(profile) { where(search_profile: profile) }
 
