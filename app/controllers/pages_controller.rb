@@ -8,5 +8,6 @@ class PagesController < ApplicationController
 
     @source_count = JobSources::Catalog.defaults.size
     @source_names = JobSources::Catalog.defaults.map { |source| source.fetch(:name) }
+    @waitlist_email = flash[:waitlist_email].to_s
   end
 end

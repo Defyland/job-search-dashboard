@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
   resource :session, only: %i[new create destroy]
+  resources :waitlist_entries, only: :create
   resources :jobs, only: %i[index show] do
     patch :mark, on: :member
   end
