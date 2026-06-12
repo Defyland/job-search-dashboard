@@ -5,6 +5,32 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-06-12 — Split JobDiscovery::Policy by responsibility, not by pattern
+
+**Decision:** Kept `JobDiscovery::Policy` as the public entrypoint, but moved its two internal
+responsibilities into focused collaborators under the same namespace:
+`JobDiscovery::Policy::CriteriaBuilder` compiles one profile into regex criteria, and
+`JobDiscovery::Policy::CriteriaEvaluator` classifies one candidate against that compiled profile.
+`Policy` now just selects profiles, builds evaluators and returns the best accepted decision.
+
+**Why:** The old `policy.rb` mixed catalog/vocabulary, criteria compilation and runtime classification in
+one 437-line file. That made the core matching rule hard to scan and expensive to change safely. This cut
+keeps one stable API for callers (`potential_match?`, `classify`, `contract`, `default_profile`) while
+separating compile-time concerns from runtime decision logic.
+
+**Rejected:** a broader "clean architecture" rewrite with commands/use-cases/entities around matching.
+That would add indirection without changing ownership. The useful cut here is just two collaborators with
+one reason to change each, inside the same bounded namespace.
+
+**Verification:** existing `JobDiscovery::PolicyTest`, `BootstrapperTest`, `ImporterTest` and `SyncTest`
+rerun green; full suite, RuboCop and Brakeman rerun after the extraction.
+
+**Refs:** `app/services/job_discovery/policy.rb`,
+`app/services/job_discovery/policy/criteria_builder.rb`,
+`app/services/job_discovery/policy/criteria_evaluator.rb`.
+
+---
+
 ## 2026-06-12 — Canonicalize JobMatch writes behind one upserter
 
 **Decision:** `JobMatch` creation/update/recovery now has one write path in
