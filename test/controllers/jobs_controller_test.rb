@@ -10,6 +10,16 @@ class JobsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match("Radar de vagas", response.body)
     assert_match("Idioma", response.body)
+    assert_match("Frontend Engineer Senior", response.body)
+    assert_no_match("Senior Ruby on Rails Developer", response.body)
+  end
+
+  test "should allow switching to all jobs tab" do
+    get jobs_path(user_state: :all)
+
+    assert_response :success
+    assert_match("Frontend Engineer Senior", response.body)
+    assert_match("Senior Ruby on Rails Developer", response.body)
   end
 
   test "should get show" do

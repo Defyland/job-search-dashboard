@@ -32,6 +32,15 @@
     <p class="text-sm text-slate-500"><%= @total_matches %> resultado(s)</p>
   </div>
 
+  <% tab_query = request.query_parameters.except("page", "user_state").merge("search_profile_id" => @search_profile.id) %>
+  <% tabs = [["Novas", "new_match"], ["Todas", "all"], ["Vistas", "seen"], ["Aplicadas", "applied"], ["Ignoradas", "ignored"]] %>
+  <div class="mt-6 flex flex-wrap gap-2">
+    <% tabs.each do |label, state| %>
+      <% active = (@filters[:user_state] || "new_match") == state %>
+      <%= link_to label, jobs_path(tab_query.merge("user_state" => state)), class: "rounded-full px-4 py-2 text-sm font-semibold transition #{active ? 'bg-white text-slate-950' : 'border border-white/10 text-slate-300 hover:bg-white/5 hover:text-white'}" %>
+    <% end %>
+  </div>
+
   <%= form_with url: jobs_path, method: :get, **submit_state_form_options(default_loading_text: "Filtrando...", class: "mt-6 grid gap-4 md:grid-cols-6 xl:grid-cols-9") do |form| %>
     <div class="md:col-span-2">
       <%= form.label :search_profile_id, "Perfil", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
@@ -154,8 +163,13 @@
         <% else %>
           <tr>
             <td colspan="7" class="px-6 py-12 text-center">
-              <p class="text-base font-semibold text-white">Nenhuma vaga ingerida ainda.</p>
-              <p class="mt-2 text-sm text-slate-400">Assim que o primeiro run do Rails ou uma ingestao complementar terminar, a lista aparecera aqui com filtros, score e links diretos.</p>
+              <% if @has_any_matches %>
+                <p class="text-base font-semibold text-white">Nenhuma vaga nova nesse recorte.</p>
+                <p class="mt-2 text-sm text-slate-400">A aba principal mostra apenas vagas nao vistas e nao aplicadas. Troque para "Todas" ou outro status para revisar o historico.</p>
+              <% else %>
+                <p class="text-base font-semibold text-white">Nenhuma vaga ingerida ainda.</p>
+                <p class="mt-2 text-sm text-slate-400">Assim que o primeiro run do Rails ou uma ingestao complementar terminar, a lista aparecera aqui com filtros, score e links diretos.</p>
+              <% end %>
             </td>
           </tr>
         <% end %>
