@@ -5,6 +5,31 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-06-12 — Canonicalize JobMatch writes behind one upserter
+
+**Decision:** `JobMatch` creation/update/recovery now has one write path in
+`JobMatches::Upserter`. Both `JobIngestions::Store#persist_job_matches` and
+`SearchProfiles::Bootstrapper#upsert_match` delegate to it instead of carrying duplicate
+`find_or_initialize_by + transaction + rescue RecordNotUnique/RecordInvalid` flows.
+
+**Why:** This is a critical persistence boundary. The old shape had the same uniqueness-race handling
+and attribute mapping duplicated in two workflows: Codex/adapter ingestion and profile cache backfill.
+That makes future changes to `raw_decision`, timestamps, `user_state`, or eligibility flags easier to
+drift. One owner is the practical clean-architecture cut here; adding callbacks or concerns would hide
+the write semantics instead of clarifying them.
+
+**Rejected:** moving this into `JobMatch` callbacks/class methods. The rule depends on a policy decision
+plus workflow timestamp and is shared by orchestration services, so a small dedicated writer is the
+clearest owner.
+
+**Verification:** added `JobMatches::UpserterTest` for create/update semantics; full suite, RuboCop and
+Brakeman rerun after the refactor.
+
+**Refs:** `app/services/job_matches/upserter.rb`, `app/services/job_ingestions/store.rb`,
+`app/services/search_profiles/bootstrapper.rb`, `test/services/job_matches/upserter_test.rb`.
+
+---
+
 ## 2026-06-10 — Make the Farol landing data-driven and drop the placeholder waitlist
 
 **Decision:** The landing now reflects the real product instead of marketing placeholders.

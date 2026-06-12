@@ -70,7 +70,7 @@ module JobIngestions
       timestamp = Time.current
 
       decisions.each do |decision|
-        upsert_job_match(job, decision, timestamp)
+        JobMatches::Upserter.call(job:, decision:, timestamp:)
       end
     end
 
@@ -119,47 +119,6 @@ module JobIngestions
         raise unless recovered_job
 
         update_existing_job(recovered_job, job_attributes, attributes[:reason], payload)
-      end
-
-      def upsert_job_match(job, decision, timestamp)
-        match = job.job_matches.find_or_initialize_by(search_profile: decision.search_profile)
-        assign_match_attributes(match, decision, timestamp)
-
-        JobMatch.transaction(requires_new: true) do
-          match.save!
-        end
-      rescue ActiveRecord::RecordNotUnique
-        recover_job_match(job, decision, timestamp)
-      rescue ActiveRecord::RecordInvalid => error
-        raise unless unique_job_match_conflict?(error.record)
-
-        recover_job_match(job, decision, timestamp)
-      end
-
-      def assign_match_attributes(match, decision, timestamp)
-        match.assign_attributes(
-          match_strength: JobMatch.match_strengths.fetch(decision.classification.to_s),
-          score: decision.score,
-          reason: decision.reason,
-          seniority: decision.seniority,
-          stack_tags: decision.stack_tags,
-          eligibility_flags: decision.eligibility_flags,
-          raw_decision: {
-            classification: decision.classification,
-            remote_signal: decision.remote_signal,
-            exclusion_reason: decision.exclusion_reason
-          },
-          last_seen_at: timestamp,
-          last_validated_at: timestamp
-        )
-        match.first_seen_at ||= timestamp
-        match.user_state = :new_match if match.new_record?
-      end
-
-      def recover_job_match(job, decision, timestamp)
-        match = job.job_matches.reset.find_by!(search_profile: decision.search_profile)
-        assign_match_attributes(match, decision, timestamp)
-        match.save!
       end
 
       def build_run_item(job, outcome, reason, payload)
@@ -211,11 +170,6 @@ module JobIngestions
       def unique_job_conflict?(record)
         record.is_a?(Job) &&
           (record.errors.of_kind?(:fingerprint, :taken) || record.errors.of_kind?(:canonical_url, :taken))
-      end
-
-      def unique_job_match_conflict?(record)
-        record.is_a?(JobMatch) &&
-          (record.errors.of_kind?(:job_id, :taken) || record.errors.of_kind?(:search_profile_id, :taken))
       end
 
       def normalize_source_kind(value)
