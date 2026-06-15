@@ -163,7 +163,7 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
       perform_enqueued_jobs(only: SearchProfileSyncJob) do
         post search_profiles_path(onboarding: 1), params: {
           search_profile: {
-            technology_intent: ".NET, React",
+            stack_presets: [ ".net", "react" ],
             seniority_preset: "senior",
             language_scope: "english"
           }

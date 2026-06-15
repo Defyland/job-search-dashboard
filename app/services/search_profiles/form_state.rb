@@ -10,7 +10,9 @@ module SearchProfiles
     def simple_input
       {
         "name" => submitted_name,
-        "technology_intent" => @submitted_attributes["technology_intent"].to_s,
+        "technology_intent" => submitted_technology_intent,
+        "technology_intent_text" => submitted_technology_intent_text,
+        "stack_presets" => selected_stack_presets,
         "seniority_preset" => @submitted_attributes["seniority_preset"].presence || SearchProfiles::Vocabulary::DEFAULT_SENIORITY_PRESET,
         "language_scope" => @submitted_attributes["language_scope"].presence || SearchProfiles::Vocabulary::DEFAULT_LANGUAGE_SCOPE,
         "required_remote" => @submitted_attributes.key?("required_remote") ? @submitted_attributes["required_remote"] : true,
@@ -47,7 +49,9 @@ module SearchProfiles
       def simple_input_overrides
         {}.tap do |overrides|
           overrides["name"] = submitted_name if name_override?
-          overrides["technology_intent"] = @submitted_attributes["technology_intent"].to_s if @submitted_attributes.key?("technology_intent")
+          overrides["technology_intent"] = submitted_technology_intent if technology_intent_override?
+          overrides["technology_intent_text"] = submitted_technology_intent_text if @submitted_attributes.key?("technology_intent")
+          overrides["stack_presets"] = selected_stack_presets if stack_presets_override?
           overrides["seniority_preset"] = @submitted_attributes["seniority_preset"].presence || SearchProfiles::Vocabulary::DEFAULT_SENIORITY_PRESET if @submitted_attributes.key?("seniority_preset")
           overrides["language_scope"] = @submitted_attributes["language_scope"].presence || SearchProfiles::Vocabulary::DEFAULT_LANGUAGE_SCOPE if @submitted_attributes.key?("language_scope")
           overrides["required_remote"] = @submitted_attributes["required_remote"] if @submitted_attributes.key?("required_remote")
@@ -67,6 +71,29 @@ module SearchProfiles
         return true if @search_profile.persisted?
 
         @submitted_attributes["name"].to_s != SearchProfile.default_attributes.fetch(:name)
+      end
+
+      def submitted_technology_intent
+        SearchProfiles::Vocabulary.normalize_list(selected_stack_presets + [ submitted_technology_intent_text ]).join(", ")
+      end
+
+      def submitted_technology_intent_text
+        @submitted_attributes["technology_intent"].to_s
+      end
+
+      def selected_stack_presets
+        presets = Array(@submitted_attributes["stack_presets"])
+        SearchProfiles::Vocabulary.normalize_list(presets).select do |preset|
+          SearchProfiles::Vocabulary.onboarding_stack_preset_values.include?(preset)
+        end
+      end
+
+      def technology_intent_override?
+        @submitted_attributes.key?("technology_intent") || stack_presets_override?
+      end
+
+      def stack_presets_override?
+        @submitted_attributes.key?("stack_presets")
       end
   end
 end

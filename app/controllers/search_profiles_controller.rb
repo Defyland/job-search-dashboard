@@ -266,7 +266,8 @@ class SearchProfilesController < ApplicationController
         :target_titles_text,
         :seniority_terms_text,
         :location_terms_text,
-        :negative_terms_text
+        :negative_terms_text,
+        stack_presets: []
       )
     end
 

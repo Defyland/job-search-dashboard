@@ -3,7 +3,7 @@ require "application_system_test_case"
 class SearchProfilesTest < ApplicationSystemTestCase
   class FakeIntentCompiler
     def call(technology_intent:, seniority_preset:, language_scope:, required_remote:, region_scope:, include_women_only:)
-      raise ArgumentError, "expected servicenow stack" unless technology_intent == "ServiceNow"
+      raise ArgumentError, "expected servicenow stack" unless technology_intent == "servicenow"
       raise ArgumentError, "unexpected seniority" unless seniority_preset == "senior"
       raise ArgumentError, "unexpected language" unless language_scope == "both"
       raise ArgumentError, "unexpected remote flag" unless required_remote == "1" || required_remote == true
@@ -59,7 +59,8 @@ class SearchProfilesTest < ApplicationSystemTestCase
     visit root_path
 
     assert_text "Monte seu primeiro radar"
-    fill_in "Linguagens / stack", with: "Salesforce, React"
+    check "search_profile_stack_preset_salesforce"
+    check "search_profile_stack_preset_react"
     select "Senior", from: "Senioridade"
     select "Português", from: "Idioma alvo"
     click_button "Criar perfil e iniciar busca"
@@ -68,7 +69,7 @@ class SearchProfilesTest < ApplicationSystemTestCase
     assert_text "Radar de vagas"
 
     profile = SearchProfile.order(:created_at).last
-    assert_equal [ "salesforce", "react" ], profile.target_stacks
+    assert_equal [ "react", "salesforce" ], profile.target_stacks.sort
     assert_equal "portuguese", profile.language_scope
   end
 
