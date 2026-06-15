@@ -6,6 +6,7 @@ module JobDiscovery
       "gupy_company_boards" => JobDiscovery::Adapters::GupyCompanyBoardsAdapter,
       "greenhouse_boards_api" => JobDiscovery::Adapters::GreenhouseBoardsApiAdapter,
       "inhire_career_pages" => JobDiscovery::Adapters::InhireCareerPagesAdapter,
+      "jobtarget_hosted_apply" => JobDiscovery::Adapters::JobtargetHostedApplyAdapter,
       "lever_company_boards" => JobDiscovery::Adapters::LeverCompanyBoardsAdapter,
       "programathor_remote_senior" => JobDiscovery::Adapters::ProgramathorRemoteSeniorAdapter,
       "recrutei_company_boards" => JobDiscovery::Adapters::RecruteiCompanyBoardsAdapter,

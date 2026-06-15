@@ -92,6 +92,24 @@ module JobSources
           board_slugs: %w[ruby-labs skydropx]
         }
       },
+      {
+        name: "JobTarget Hosted Apply",
+        slug: "jobtarget-hosted-apply",
+        source_kind: :ats,
+        base_url: "https://hosted-apply.jobtarget.com",
+        host: "hosted-apply.jobtarget.com",
+        priority: 25,
+        adapter_key: "jobtarget_hosted_apply",
+        supports_backfill: true,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: "Provider orientado a job pages isoladas; usar Codex para descobrir novos links e o adapter Rails para canonizar, validar e revisitar URLs conhecidas.",
+        scan_window_days: 20,
+        settings: {
+          seed_urls: [
+            "https://hosted-apply.jobtarget.com/job/Senior-Full-Stack-Engineer-Ruby-on-Rails-React-LATAM-Remote-XnkxWLcVeRG8qTJZGuKGdy"
+          ]
+        }
+      },
       { name: "Teamtailor", slug: "teamtailor", source_kind: :ats, base_url: "https://career.teamtailor.com", host: "teamtailor.com", priority: 20, adapter_key: "teamtailor_company_boards", supports_backfill: true, scan_window_days: 20 },
       { name: "Workable", slug: "workable", source_kind: :ats, base_url: "https://jobs.workable.com", host: "jobs.workable.com", priority: 20, adapter_key: "workable_global_api", supports_backfill: true, scan_window_days: 20 },
       {
