@@ -4,7 +4,10 @@ class PagesController < ApplicationController
 
   # Public marketing landing at "/". Authenticated operators skip it and go straight to the radar.
   def home
-    return redirect_to jobs_path if authenticated?
+    if authenticated?
+      return redirect_to new_search_profile_path(onboarding: 1) unless current_user.search_profiles.exists?
+      return redirect_to jobs_path
+    end
 
     @source_count = JobSources::Catalog.defaults.size
     @source_names = JobSources::Catalog.defaults.map { |source| source.fetch(:name) }

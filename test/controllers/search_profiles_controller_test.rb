@@ -155,6 +155,30 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     assert_match "fila indisponivel", response.body
   end
 
+  test "creates first profile from onboarding fields with heuristic fallback" do
+    sign_out
+    sign_in_as(users(:three))
+
+    assert_difference("SearchProfile.count", 1) do
+      perform_enqueued_jobs(only: SearchProfileSyncJob) do
+        post search_profiles_path(onboarding: 1), params: {
+          search_profile: {
+            technology_intent: ".NET, React",
+            seniority_preset: "senior",
+            language_scope: "english"
+          }
+        }
+      end
+    end
+
+    profile = SearchProfile.order(:created_at).last
+    assert_redirected_to jobs_path(search_profile_id: profile.id)
+    assert_equal [ ".net", "react" ], profile.target_stacks
+    assert_equal "english", profile.language_scope
+    assert_equal "heuristic", profile.compiler_settings["provider"]
+    assert_equal ".net developer", profile.compiler_settings.dig("generated_titles", "en").first
+  end
+
   test "updates women only preference manually while preserving profile settings" do
     profile = users(:one).search_profiles.create!(
       SearchProfiles::ProfileBuilder.from_compiled(

@@ -1,4 +1,5 @@
 class JobsController < ApplicationController
+  before_action :ensure_search_profile!, only: %i[index show mark]
   before_action :set_search_profile
   before_action :set_job, only: %i[show mark]
 
@@ -45,6 +46,12 @@ class JobsController < ApplicationController
   end
 
   private
+    def ensure_search_profile!
+      return if current_user.search_profiles.exists?
+
+      redirect_to new_search_profile_path(onboarding: 1), alert: "Crie seu primeiro perfil para iniciar o radar."
+    end
+
     def filter_params
       params.permit(:q, :stack, :source, :contract_type, :match_strength, :user_state, :title_language, :lifecycle_state, :recency, :sort)
     end
@@ -56,7 +63,7 @@ class JobsController < ApplicationController
 
     def selected_search_profile
       requested_id = params[:search_profile_id].presence || session[:search_profile_id]
-      current_user.search_profiles.find_by(id: requested_id) || SearchProfile.ensure_default_for(current_user)
+      current_user.search_profiles.find_by(id: requested_id) || current_user.search_profiles.ordered.first
     end
 
     def set_job

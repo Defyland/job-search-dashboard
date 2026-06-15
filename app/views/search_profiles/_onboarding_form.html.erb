@@ -1,0 +1,60 @@
+<% simple_input = @simple_profile_input || search_profile.simple_form_state %>
+
+<%= form_with model: search_profile, url: search_profiles_path(onboarding: 1), **submit_state_form_options(default_loading_text: "Montando radar...", class: "grid gap-6", data: { turbo: false }) do |form| %>
+  <% if search_profile.errors.any? %>
+    <div class="rounded-2xl border border-rose-400/30 bg-rose-500/10 p-4 text-sm text-rose-100">
+      <p class="font-bold">Revise o perfil antes de continuar.</p>
+      <ul class="mt-2 list-disc pl-5">
+        <% search_profile.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <section class="grid gap-5 rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-5">
+    <div class="space-y-1">
+      <p class="text-xs font-semibold uppercase tracking-[0.18em] text-sky-200/70">Onboarding</p>
+      <h2 class="text-xl font-bold text-white">Monte seu primeiro radar</h2>
+      <p class="text-sm text-slate-400">Escolha stack, senioridade e idioma. O app gera o perfil base e dispara a primeira busca.</p>
+    </div>
+
+    <div class="grid gap-4 md:grid-cols-2">
+      <div class="md:col-span-2">
+        <%= label_tag "search_profile_technology_intent", "Linguagens / stack", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+        <%= text_field_tag "search_profile[technology_intent]", simple_input["technology_intent"], id: "search_profile_technology_intent", class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white", placeholder: "Java, .NET, Salesforce, Ruby on Rails, React..." %>
+      </div>
+
+      <div>
+        <%= label_tag "search_profile_seniority_preset", "Senioridade", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+        <%= select_tag "search_profile[seniority_preset]", options_for_select(SearchProfiles::Vocabulary::SENIORITY_PRESET_LABELS.map { |value, label| [ label, value ] }, simple_input["seniority_preset"]), id: "search_profile_seniority_preset", class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
+      </div>
+
+      <div>
+        <%= form.label :language_scope, "Idioma alvo", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+        <%= form.select :language_scope, options_for_select(SearchProfiles::Vocabulary::LANGUAGE_SCOPE_LABELS.map { |value, label| [ label, value ] }, simple_input["language_scope"]), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
+      </div>
+    </div>
+
+    <div class="grid gap-3 rounded-2xl border border-white/10 bg-slate-950/50 p-4 text-sm text-slate-300">
+      <p class="font-semibold text-white">Defaults aplicados neste primeiro perfil</p>
+      <ul class="grid gap-2 md:grid-cols-3">
+        <li>Remoto BR/LatAm</li>
+        <li>Janela inicial de 20 dias</li>
+        <li>Exclusoes de junior, pleno, trainee e estagio</li>
+      </ul>
+      <p class="text-xs text-slate-400">
+        <% if @intent_compiler_available %>
+          O compilador monta aliases e titulos automaticamente a partir da stack informada.
+        <% else %>
+          Sem chave de IA externa, o app usa regras locais para montar um perfil base e voce ajusta o restante depois.
+        <% end %>
+      </p>
+    </div>
+
+    <div class="flex flex-wrap gap-3">
+      <%= form.submit "Criar perfil e iniciar busca", **submit_state_submit_options(loading_text: "Montando radar...", class: "rounded-2xl bg-sky-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-sky-300") %>
+      <%= link_to "Configuracao avancada", new_search_profile_path, class: "rounded-2xl border border-white/10 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/5" %>
+    </div>
+  </section>
+<% end %>

@@ -52,6 +52,26 @@ class SearchProfilesTest < ApplicationSystemTestCase
     end
   end
 
+  test "first access onboarding creates a profile from three fields" do
+    visit new_session_path
+    sign_in_as(users(:three))
+
+    visit root_path
+
+    assert_text "Monte seu primeiro radar"
+    fill_in "Linguagens / stack", with: "Salesforce, React"
+    select "Senior", from: "Senioridade"
+    select "Português", from: "Idioma alvo"
+    click_button "Criar perfil e iniciar busca"
+
+    assert_current_path jobs_path, ignore_query: true
+    assert_text "Radar de vagas"
+
+    profile = SearchProfile.order(:created_at).last
+    assert_equal [ "salesforce", "react" ], profile.target_stacks
+    assert_equal "portuguese", profile.language_scope
+  end
+
   private
     def sign_in_as(user)
       session = user.sessions.create!(user_agent: "System Test", ip_address: "127.0.0.1")

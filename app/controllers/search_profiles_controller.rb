@@ -1,6 +1,7 @@
 class SearchProfilesController < ApplicationController
   before_action :set_search_profile, only: %i[edit update destroy]
   before_action :build_new_search_profile, only: %i[new create]
+  before_action :set_onboarding_mode, only: %i[new create]
   before_action :set_intent_compiler_availability, only: %i[new edit create update]
 
   def index
@@ -12,6 +13,7 @@ class SearchProfilesController < ApplicationController
   end
 
   def create
+    return persist_onboarding_profile(@search_profile) if onboarding_mode?
     return render_compiled_preview(@search_profile) if preview_compile_requested?
 
     persist_profile(
@@ -62,12 +64,53 @@ class SearchProfilesController < ApplicationController
       @intent_compiler_setup_hint = SearchProfiles::CompilerClient.setup_hint
     end
 
+    def set_onboarding_mode
+      @onboarding_mode = onboarding_mode?
+    end
+
     def intent_compiler
       @intent_compiler ||= SearchProfiles::IntentCompiler.new
     end
 
+    def heuristic_intent_compiler
+      @heuristic_intent_compiler ||= SearchProfiles::HeuristicIntentCompiler.new
+    end
+
     def compiled_payload_token
       @compiled_payload_token ||= SearchProfiles::CompiledPayloadToken.new
+    end
+
+    def persist_onboarding_profile(search_profile)
+      form_attributes = profile_form_params.to_h
+      form_state = SearchProfiles::FormState.new(search_profile:, submitted_attributes: form_attributes)
+      simple_input = form_state.simple_input
+
+      search_profile.assign_attributes(
+        SearchProfiles::ProfileBuilder.from_compiled(
+          simple_input:,
+          compiled_payload: compile_with_fallback(simple_input),
+          active: form_state.active_default
+        )
+      )
+
+      if search_profile.valid?
+        SearchProfile.transaction do
+          search_profile.save!
+          request_profile_sync!(search_profile, prune_stale: false)
+        end
+        redirect_to jobs_path(search_profile_id: search_profile.id), notice: "Perfil criado. Busca inicial enfileirada."
+      else
+        hydrate_form_state(search_profile, form_attributes)
+        render :new, status: :unprocessable_entity
+      end
+    rescue SearchProfiles::IntentCompiler::Error => error
+      search_profile.errors.add(:base, error.message)
+      hydrate_form_state(search_profile, form_attributes)
+      render :new, status: :unprocessable_entity
+    rescue SearchProfiles::SyncRequest::Error => error
+      search_profile.errors.add(:base, error.message)
+      hydrate_form_state(search_profile, form_attributes)
+      render :new, status: :service_unavailable
     end
 
     def persist_profile(search_profile, template:, success_path:, success_notice:, after_save: nil)
@@ -157,8 +200,20 @@ class SearchProfilesController < ApplicationController
       ).symbolize_keys
     end
 
+    def compile_with_fallback(simple_input)
+      return heuristic_intent_compiler.call(**compiler_input_from(simple_input)) unless @intent_compiler_available
+
+      intent_compiler.call(**compiler_input_from(simple_input))
+    rescue SearchProfiles::CompilerClient::ConfigurationError, SearchProfiles::IntentCompiler::Error
+      heuristic_intent_compiler.call(**compiler_input_from(simple_input))
+    end
+
     def preview_compile_requested?
       params[:preview_compile] == "1"
+    end
+
+    def onboarding_mode?
+      params[:onboarding] == "1"
     end
 
     def render_compiled_preview(search_profile)

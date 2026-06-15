@@ -37,4 +37,15 @@ class JobsControllerTest < ActionDispatch::IntegrationTest
     follow_redirect!
     assert_match("Vaga marcada como aplicada.", response.body)
   end
+
+  test "redirects users without profiles to onboarding instead of creating a default profile" do
+    sign_out
+    sign_in_as(users(:three))
+
+    assert_no_difference("SearchProfile.count") do
+      get jobs_path
+    end
+
+    assert_redirected_to new_search_profile_path(onboarding: 1)
+  end
 end
