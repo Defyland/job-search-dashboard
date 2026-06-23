@@ -1,5 +1,6 @@
 <% simple_input = @simple_profile_input || search_profile.simple_form_state %>
 <% selected_presets = Array(simple_input["stack_presets"]) %>
+<% technology_intent_text = params.dig("search_profile", "technology_intent").to_s %>
 
 <%= form_with model: search_profile, url: search_profiles_path(onboarding: 1), **submit_state_form_options(default_loading_text: "Montando radar...", class: "grid gap-6", data: { turbo: false }) do |form| %>
   <% if search_profile.errors.any? %>
@@ -39,7 +40,7 @@
 
       <div class="md:col-span-2">
         <%= label_tag "search_profile_technology_intent", "Complemento opcional", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
-        <%= text_field_tag "search_profile[technology_intent]", simple_input["technology_intent_text"].presence || "", id: "search_profile_technology_intent", class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white", placeholder: "Ex.: Next.js, Kotlin, Elixir, Data Engineer..." %>
+        <%= text_field_tag "search_profile[technology_intent]", technology_intent_text, id: "search_profile_technology_intent", class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white", placeholder: "Ex.: Next.js, Kotlin, Elixir, Data Engineer..." %>
         <p class="mt-2 text-xs text-slate-400">Use este campo so quando precisar complementar algo fora dos presets.</p>
       </div>
 

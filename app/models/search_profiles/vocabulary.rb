@@ -158,9 +158,5 @@ module SearchProfiles
       terms = normalize_list(negative_terms)
       terms + (BOOLEAN.cast(include_women_only) ? [] : WOMEN_ONLY_EXCLUDE_TERMS)
     end
-
-    def onboarding_stack_preset_values
-      ONBOARDING_STACK_PRESETS.map { |preset| preset.fetch("value") }
-    end
   end
 end

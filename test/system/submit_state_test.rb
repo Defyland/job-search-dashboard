@@ -9,7 +9,7 @@ class SubmitStateTest < ApplicationSystemTestCase
     def call(technology_intent:, seniority_preset:, language_scope:, required_remote:, region_scope:, include_women_only:)
       sleep @delay
 
-      raise ArgumentError, "expected servicenow stack" unless technology_intent == "ServiceNow"
+      raise ArgumentError, "expected servicenow stack" unless technology_intent == "servicenow"
       raise ArgumentError, "unexpected seniority" unless seniority_preset == "senior"
       raise ArgumentError, "unexpected language" unless language_scope == "both"
       raise ArgumentError, "unexpected remote flag" unless required_remote == "1" || required_remote == true

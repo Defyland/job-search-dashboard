@@ -89,7 +89,7 @@ The rest of the catalog is still present for normalization/filtering. Sources th
 
 Requirements:
 
-- Ruby `3.4.2`
+- Ruby `3.4.9`
 - PostgreSQL
 
 Setup:

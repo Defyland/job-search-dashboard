@@ -11,7 +11,6 @@ module SearchProfiles
       {
         "name" => submitted_name,
         "technology_intent" => submitted_technology_intent,
-        "technology_intent_text" => submitted_technology_intent_text,
         "stack_presets" => selected_stack_presets,
         "seniority_preset" => @submitted_attributes["seniority_preset"].presence || SearchProfiles::Vocabulary::DEFAULT_SENIORITY_PRESET,
         "language_scope" => @submitted_attributes["language_scope"].presence || SearchProfiles::Vocabulary::DEFAULT_LANGUAGE_SCOPE,
@@ -50,7 +49,6 @@ module SearchProfiles
         {}.tap do |overrides|
           overrides["name"] = submitted_name if name_override?
           overrides["technology_intent"] = submitted_technology_intent if technology_intent_override?
-          overrides["technology_intent_text"] = submitted_technology_intent_text if @submitted_attributes.key?("technology_intent")
           overrides["stack_presets"] = selected_stack_presets if stack_presets_override?
           overrides["seniority_preset"] = @submitted_attributes["seniority_preset"].presence || SearchProfiles::Vocabulary::DEFAULT_SENIORITY_PRESET if @submitted_attributes.key?("seniority_preset")
           overrides["language_scope"] = @submitted_attributes["language_scope"].presence || SearchProfiles::Vocabulary::DEFAULT_LANGUAGE_SCOPE if @submitted_attributes.key?("language_scope")
@@ -83,8 +81,10 @@ module SearchProfiles
 
       def selected_stack_presets
         presets = Array(@submitted_attributes["stack_presets"])
+        allowed_preset_values = SearchProfiles::Vocabulary::ONBOARDING_STACK_PRESETS.map { |preset| preset.fetch("value") }
+
         SearchProfiles::Vocabulary.normalize_list(presets).select do |preset|
-          SearchProfiles::Vocabulary.onboarding_stack_preset_values.include?(preset)
+          allowed_preset_values.include?(preset)
         end
       end
 

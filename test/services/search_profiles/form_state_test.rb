@@ -37,7 +37,6 @@ module SearchProfiles
 
       assert_equal [ "react", ".net" ], state.simple_input["stack_presets"]
       assert_equal "react, .net, next.js", state.simple_input["technology_intent"]
-      assert_equal "Next.js", state.simple_input["technology_intent_text"]
     end
   end
 end

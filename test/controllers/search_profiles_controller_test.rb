@@ -179,6 +179,25 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     assert_equal ".net developer", profile.compiler_settings.dig("generated_titles", "en").first
   end
 
+  test "onboarding rerender preserves the optional complement when sync fails" do
+    sign_out
+    sign_in_as(users(:three))
+
+    with_fake_sync_request(RaisingSyncRequest.new) do
+      post search_profiles_path(onboarding: 1), params: {
+        search_profile: {
+          stack_presets: [ "react" ],
+          technology_intent: "Next.js",
+          seniority_preset: "senior",
+          language_scope: "both"
+        }
+      }
+    end
+
+    assert_response :service_unavailable
+    assert_match(/id="search_profile_technology_intent".*value="Next\.js"/m, response.body)
+  end
+
   test "updates women only preference manually while preserving profile settings" do
     profile = users(:one).search_profiles.create!(
       SearchProfiles::ProfileBuilder.from_compiled(
