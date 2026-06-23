@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_11_150000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_23_173000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -68,6 +68,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_11_150000) do
     t.index ["last_seen_at"], name: "index_job_matches_on_last_seen_at"
     t.index ["match_strength", "user_state"], name: "index_job_matches_on_match_strength_and_user_state"
     t.index ["search_profile_id", "job_id"], name: "index_job_matches_on_search_profile_id_and_job_id", unique: true
+    t.index ["search_profile_id", "user_state", "first_seen_at", "id"], name: "index_job_matches_on_radar_order", order: { first_seen_at: :desc, id: :desc }
     t.index ["search_profile_id"], name: "index_job_matches_on_search_profile_id"
   end
 
