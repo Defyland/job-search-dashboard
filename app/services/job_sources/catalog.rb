@@ -110,6 +110,21 @@ module JobSources
           ]
         }
       },
+      {
+        name: "Quickin",
+        slug: "quickin",
+        source_kind: :ats,
+        base_url: "https://jobs.quickin.io",
+        host: "jobs.quickin.io",
+        priority: 25,
+        adapter_key: "quickin_company_boards",
+        supports_backfill: true,
+        scan_window_days: 20,
+        settings: {
+          company_slugs: %w[evtit botcity reply qintess],
+          max_pages: 6
+        }
+      },
       { name: "Teamtailor", slug: "teamtailor", source_kind: :ats, base_url: "https://career.teamtailor.com", host: "teamtailor.com", priority: 20, adapter_key: "teamtailor_company_boards", supports_backfill: true, scan_window_days: 20 },
       { name: "Workable", slug: "workable", source_kind: :ats, base_url: "https://jobs.workable.com", host: "jobs.workable.com", priority: 20, adapter_key: "workable_global_api", supports_backfill: true, scan_window_days: 20 },
       {
@@ -207,6 +222,86 @@ module JobSources
         settings: {
           search_hosts: [ "www.linkedin.com", "br.linkedin.com" ],
           guest_search_path: "/jobs-guest/jobs/api/seeMoreJobPostings/search"
+        }
+      },
+      {
+        name: "iCIMS",
+        slug: "icims",
+        source_kind: :ats,
+        base_url: "https://careers.icims.com",
+        host: "careers.icims.com",
+        priority: 45,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: "ATS amplo sem adapter Rails ainda; usar busca site:careers.icims.com e canonizar para pagina oficial antes da ingestao.",
+        scan_window_days: 20,
+        settings: {
+          search_hosts: [ "careers.icims.com" ]
+        }
+      },
+      {
+        name: "Jobvite",
+        slug: "jobvite",
+        source_kind: :ats,
+        base_url: "https://jobs.jobvite.com",
+        host: "jobs.jobvite.com",
+        priority: 45,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: "ATS amplo sem adapter Rails ainda; usar busca site:jobs.jobvite.com e canonizar para pagina oficial antes da ingestao.",
+        scan_window_days: 20,
+        settings: {
+          search_hosts: [ "jobs.jobvite.com" ]
+        }
+      },
+      {
+        name: "Workday",
+        slug: "workday",
+        source_kind: :ats,
+        base_url: "https://wd1.myworkdayjobs.com",
+        host: "myworkdayjobs.com",
+        priority: 45,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: "ATS amplo e variavel por tenant; usar busca site:myworkdayjobs.com e canonizar para a pagina de vaga antes da ingestao.",
+        scan_window_days: 20,
+        settings: {
+          search_hosts: [ "wd1.myworkdayjobs.com", "myworkdayjobs.com" ]
+        }
+      },
+      {
+        name: "BambooHR",
+        slug: "bamboohr",
+        source_kind: :ats,
+        base_url: "https://jobs.bamboohr.com",
+        host: "jobs.bamboohr.com",
+        priority: 45,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: "ATS amplo sem adapter Rails ainda; usar busca site:jobs.bamboohr.com e canonizar para pagina oficial antes da ingestao.",
+        scan_window_days: 20,
+        settings: {
+          search_hosts: [ "jobs.bamboohr.com" ]
+        }
+      },
+      {
+        name: "JazzHR",
+        slug: "jazzhr",
+        source_kind: :ats,
+        base_url: "https://apply.jazz.co",
+        host: "apply.jazz.co",
+        priority: 45,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: "ATS amplo sem adapter Rails ainda; usar busca site:apply.jazz.co e canonizar para pagina oficial antes da ingestao.",
+        scan_window_days: 20,
+        settings: {
+          search_hosts: [ "apply.jazz.co" ]
         }
       },
       {

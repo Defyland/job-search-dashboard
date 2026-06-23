@@ -3,6 +3,7 @@ class Api::V1::CodexFallbackSourcesController < Api::V1::BaseController
     render json: {
       sources: fallback_sources.map { |source| source_payload(source) },
       policy: policy_payload,
+      search_index: search_index_payload,
       ingestion_endpoint: api_v1_job_ingestions_path
     }
   end
@@ -29,5 +30,15 @@ class Api::V1::CodexFallbackSourcesController < Api::V1::BaseController
 
     def policy_payload
       JobDiscovery::Policy.contract
+    end
+
+    def search_index_payload
+      {
+        rails_native_enabled: JobDiscovery::SearchIndex::Client.configured?,
+        provider: ENV.fetch("SEARCH_INDEX_PROVIDER", "serpapi"),
+        queries: JobDiscovery::SearchIndex::QueryBuilder.new(search_profiles: SearchProfile.active.ordered.to_a)
+                                                        .queries
+                                                        .map(&:to_h)
+      }
     end
 end

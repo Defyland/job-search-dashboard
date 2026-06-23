@@ -9,6 +9,7 @@ module JobDiscovery
       "jobtarget_hosted_apply" => JobDiscovery::Adapters::JobtargetHostedApplyAdapter,
       "lever_company_boards" => JobDiscovery::Adapters::LeverCompanyBoardsAdapter,
       "programathor_remote_senior" => JobDiscovery::Adapters::ProgramathorRemoteSeniorAdapter,
+      "quickin_company_boards" => JobDiscovery::Adapters::QuickinCompanyBoardsAdapter,
       "recrutei_company_boards" => JobDiscovery::Adapters::RecruteiCompanyBoardsAdapter,
       "remotar_jobs_api" => JobDiscovery::Adapters::RemotarJobsApiAdapter,
       "solides_portal_vacancies" => JobDiscovery::Adapters::SolidesPortalVacanciesAdapter,

@@ -78,19 +78,24 @@ class JobSourceTest < ActiveSupport::TestCase
   test "seed_defaults bootstraps curated adapter settings for blank existing sources" do
     JobSources::Catalog.seed!
     source = JobSource.find_by!(slug: "lever")
+    quickin = JobSource.find_by!(slug: "quickin")
     recrutei = JobSource.find_by!(slug: "recrutei")
     smartrecruiters = JobSource.find_by!(slug: "smartrecruiters")
 
     source.update!(settings: {})
+    quickin.update!(settings: {})
     recrutei.update!(settings: {})
     smartrecruiters.update!(settings: {})
 
     JobSources::Catalog.seed!
     source.reload
+    quickin.reload
     recrutei.reload
     smartrecruiters.reload
 
     assert_equal %w[ciandt jobgether decilegroup toptal], source.settings["company_slugs"]
+    assert_equal %w[evtit botcity reply qintess], quickin.settings["company_slugs"]
+    assert_equal 6, quickin.settings["max_pages"]
     assert_equal [ "maxxi" ], recrutei.settings["company_labels"]
     assert_equal [ "https://jobs.recrutei.com.br/maxxi/vacancy/145107-desenvolvedora-front-end-reactnextjs-senior" ], recrutei.settings["vacancy_urls"]
     assert_equal [ "smartrecruiters" ], smartrecruiters.settings["company_identifiers"]
@@ -102,6 +107,11 @@ class JobSourceTest < ActiveSupport::TestCase
     apinfo = JobSource.find_by!(slug: "apinfo")
     landor = JobSource.find_by!(slug: "landor-ats")
     linkedin = JobSource.find_by!(slug: "linkedin")
+    icims = JobSource.find_by!(slug: "icims")
+    jobvite = JobSource.find_by!(slug: "jobvite")
+    workday = JobSource.find_by!(slug: "workday")
+    bamboohr = JobSource.find_by!(slug: "bamboohr")
+    jazzhr = JobSource.find_by!(slug: "jazzhr")
     netvagas = JobSource.find_by!(slug: "netvagas")
     remotely_works = JobSource.find_by!(slug: "remotely-works")
     rubyonremote = JobSource.find_by!(slug: "rubyonremote")
@@ -115,6 +125,16 @@ class JobSourceTest < ActiveSupport::TestCase
     assert linkedin.codex_fallback_enabled?
     assert_match "anti-bot", linkedin.codex_fallback_reason
     assert_equal [ "www.linkedin.com", "br.linkedin.com" ], linkedin.settings["search_hosts"]
+    assert icims.codex_fallback_enabled?
+    assert_equal [ "careers.icims.com" ], icims.settings["search_hosts"]
+    assert jobvite.codex_fallback_enabled?
+    assert_equal [ "jobs.jobvite.com" ], jobvite.settings["search_hosts"]
+    assert workday.codex_fallback_enabled?
+    assert_equal [ "wd1.myworkdayjobs.com", "myworkdayjobs.com" ], workday.settings["search_hosts"]
+    assert bamboohr.codex_fallback_enabled?
+    assert_equal [ "jobs.bamboohr.com" ], bamboohr.settings["search_hosts"]
+    assert jazzhr.codex_fallback_enabled?
+    assert_equal [ "apply.jazz.co" ], jazzhr.settings["search_hosts"]
     assert netvagas.codex_fallback_enabled?
     assert_match "adapter curado", netvagas.codex_fallback_reason
     assert remotely_works.codex_fallback_enabled?

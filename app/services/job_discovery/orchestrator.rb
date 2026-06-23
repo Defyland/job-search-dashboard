@@ -6,12 +6,20 @@ module JobDiscovery
       end
     end
 
-    def initialize(window_days:, trigger_source: :manual, source_scope: JobSource.backfillable, registry: JobDiscovery::Registry.new, search_profiles: nil)
+    def initialize(
+      window_days:,
+      trigger_source: :manual,
+      source_scope: JobSource.backfillable,
+      registry: JobDiscovery::Registry.new,
+      search_profiles: nil,
+      search_index_seeder_class: JobDiscovery::SearchIndex::BoardSeeder
+    )
       @window_days = window_days.to_i.positive? ? window_days.to_i : 20
       @trigger_source = trigger_source
       @source_scope = source_scope
       @registry = registry
       @search_profiles = Array(search_profiles).compact
+      @search_index_seeder_class = search_index_seeder_class
       @errors = []
     end
 
@@ -23,6 +31,7 @@ module JobDiscovery
         started_at: Time.current,
         summary: run_summary
       )
+      search_run.update!(summary: search_run.summary.merge(search_index: seed_search_index))
 
       recorder = JobIngestions::Recorder.new(search_run:, profiles: @search_profiles.presence)
       discovery_counts = { discovered_count: 0, source_scans_count: 0 }
@@ -122,6 +131,25 @@ module JobDiscovery
             expired_count: counts[:expired_count]
           )
         end
+      end
+
+      def seed_search_index
+        @search_index_seeder_class.new(
+          search_profiles: profiles_for_search_index,
+          sources: @source_scope
+        ).call.to_h
+      rescue StandardError => error
+        {
+          enabled: JobDiscovery::SearchIndex::Client.configured?,
+          query_count: 0,
+          result_count: 0,
+          seeded_count: 0,
+          errors: [ error.message ]
+        }
+      end
+
+      def profiles_for_search_index
+        @search_profiles.presence || SearchProfile.active.ordered.to_a
       end
 
       def mark_unsupported_source!(search_run:, source:)

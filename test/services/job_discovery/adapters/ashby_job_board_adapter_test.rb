@@ -38,6 +38,9 @@ class JobDiscovery::Adapters::AshbyJobBoardAdapterTest < ActiveSupport::TestCase
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "20d", started_at: Time.current)
     source_scan = search_run.source_scans.create!(job_source: source, status: :running, started_at: Time.current)
 
+    updated_at = 2.days.ago.iso8601
+    published_date = 2.days.ago.to_date.iso8601
+
     app_data = {
       organization: { name: "Ruby Labs" },
       jobBoard: {
@@ -45,8 +48,8 @@ class JobDiscovery::Adapters::AshbyJobBoardAdapterTest < ActiveSupport::TestCase
           {
             id: "5fc64202-b0a7-4cb7-b7ff-07fc63fd5325",
             title: "Senior React Native Developer",
-            updatedAt: "2026-06-02T20:44:31.423Z",
-            publishedDate: "2026-06-02",
+            updatedAt: updated_at,
+            publishedDate: published_date,
             workplaceType: "Remote",
             locationName: "Brazil",
             teamName: "Engineering",
@@ -56,8 +59,8 @@ class JobDiscovery::Adapters::AshbyJobBoardAdapterTest < ActiveSupport::TestCase
           {
             id: "other",
             title: "Senior Growth Manager",
-            updatedAt: "2026-06-02T20:44:31.423Z",
-            publishedDate: "2026-06-02",
+            updatedAt: updated_at,
+            publishedDate: published_date,
             workplaceType: "Remote",
             locationName: "Europe"
           }

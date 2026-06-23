@@ -29,19 +29,21 @@ class JobDiscovery::Adapters::RecruteiCompanyBoardsAdapterTest < ActiveSupport::
     )
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "20d", started_at: Time.current)
     source_scan = search_run.source_scans.create!(job_source: source, status: :running, started_at: Time.current)
+    published_at = 2.days.ago.strftime("%d/%m/%Y %H:%M:%S")
+    created_at = 2.days.ago.iso8601
 
     detail_html = <<~HTML
       <html>
         <head>
           <link rel="canonical" href="https://jobs.recrutei.com.br/maxxi/vacancy/145107-desenvolvedora-front-end-reactnextjs-senior" />
           <script type="application/ld+json">
-            {"@context":"https://schema.org","@type":"JobPosting","title":"Desenvolvedor(a) Front-end React/Next.js Sênior","datePosted":"27/05/2026 14:34:36","description":"React e Next.js remoto","hiringOrganization":{"name":"Maxxi"}}
+            {"@context":"https://schema.org","@type":"JobPosting","title":"Desenvolvedor(a) Front-end React/Next.js Sênior","datePosted":"#{published_at}","description":"React e Next.js remoto","hiringOrganization":{"name":"Maxxi"}}
           </script>
         </head>
         <body>
           <a href="https://talent.recrutei.com.br/maxxi/145107/signup?utm_medium=btn-details-page">Candidatar-se agora</a>
           <script id="__NEXT_DATA__" type="application/json">
-            {"props":{"pageProps":{"retorno":{"company":{"company":{"name":"Maxxi","label":"maxxi"}},"vacancy":{"id":145107,"title":"Desenvolvedor(a) Front-end React/Next.js Sênior","description":"<p>React e Typescript remoto</p>","published_at":"27/05/2026 14:34:36","created_at":"2026-05-27T17:34:36.000000Z","public_link":"https://jobs.recrutei.com.br/maxxi/vacancy/145107-desenvolvedora-front-end-reactnextjs-senior","country":"Brasil","remote":1,"location":"Remoto","expired":false,"regime":{"description":"CLT ou PJ"}}}}}}
+            {"props":{"pageProps":{"retorno":{"company":{"company":{"name":"Maxxi","label":"maxxi"}},"vacancy":{"id":145107,"title":"Desenvolvedor(a) Front-end React/Next.js Sênior","description":"<p>React e Typescript remoto</p>","published_at":"#{published_at}","created_at":"#{created_at}","public_link":"https://jobs.recrutei.com.br/maxxi/vacancy/145107-desenvolvedora-front-end-reactnextjs-senior","country":"Brasil","remote":1,"location":"Remoto","expired":false,"regime":{"description":"CLT ou PJ"}}}}}}
           </script>
         </body>
       </html>
@@ -88,6 +90,8 @@ class JobDiscovery::Adapters::RecruteiCompanyBoardsAdapterTest < ActiveSupport::
 
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "20d", started_at: Time.current)
     source_scan = search_run.source_scans.create!(job_source: source, status: :running, started_at: Time.current)
+    published_at = 2.days.ago.strftime("%d/%m/%Y %H:%M:%S")
+    created_at = 2.days.ago.iso8601
 
     board_html = <<~HTML
       <html><body>
@@ -99,13 +103,13 @@ class JobDiscovery::Adapters::RecruteiCompanyBoardsAdapterTest < ActiveSupport::
         <head>
           <link rel="canonical" href="https://jobs.recrutei.com.br/maxxi/vacancy/145107-desenvolvedora-front-end-reactnextjs-senior" />
           <script type="application/ld+json">
-            {"@context":"https://schema.org","@type":"JobPosting","title":"Desenvolvedor(a) Front-end React/Next.js Sênior","datePosted":"27/05/2026 14:34:36","description":"React e Next.js remoto","hiringOrganization":{"name":"Maxxi"}}
+            {"@context":"https://schema.org","@type":"JobPosting","title":"Desenvolvedor(a) Front-end React/Next.js Sênior","datePosted":"#{published_at}","description":"React e Next.js remoto","hiringOrganization":{"name":"Maxxi"}}
           </script>
         </head>
         <body>
           <a href="https://talent.recrutei.com.br/maxxi/145107/signup">Candidatar-se agora</a>
           <script id="__NEXT_DATA__" type="application/json">
-            {"props":{"pageProps":{"retorno":{"company":{"company":{"name":"Maxxi","label":"maxxi"}},"vacancy":{"id":145107,"title":"Desenvolvedor(a) Front-end React/Next.js Sênior","description":"<p>React e Typescript remoto</p>","published_at":"27/05/2026 14:34:36","created_at":"2026-05-27T17:34:36.000000Z","public_link":"https://jobs.recrutei.com.br/maxxi/vacancy/145107-desenvolvedora-front-end-reactnextjs-senior","country":"Brasil","remote":1,"location":"Remoto","expired":false}}}}}
+            {"props":{"pageProps":{"retorno":{"company":{"company":{"name":"Maxxi","label":"maxxi"}},"vacancy":{"id":145107,"title":"Desenvolvedor(a) Front-end React/Next.js Sênior","description":"<p>React e Typescript remoto</p>","published_at":"#{published_at}","created_at":"#{created_at}","public_link":"https://jobs.recrutei.com.br/maxxi/vacancy/145107-desenvolvedora-front-end-reactnextjs-senior","country":"Brasil","remote":1,"location":"Remoto","expired":false}}}}}
           </script>
         </body>
       </html>
