@@ -79,70 +79,40 @@ class JobMatchFiltersTest < ActiveSupport::TestCase
   end
 
   test "sorts newest by when the match entered the radar" do
-    older_posted_job = Job.create!(
-      job_source: job_sources(:gupy),
+    older_posted_job = create_job(
       title: "Senior React Engineer",
       company_name: "Late Arrival",
-      apply_url: "https://acme.example/jobs/late-arrival",
-      canonical_url: "https://acme.example/jobs/late-arrival",
-      source_url: "https://acme.example/jobs/late-arrival",
-      remote_text: "Remoto",
-      location_text: "Brasil",
-      lifecycle_state: :active,
+      slug: "late-arrival",
       posted_text: "publicada ha 30 dias",
       published_at: 30.days.ago,
-      first_seen_at: 1.hour.ago,
-      last_seen_at: 1.hour.ago,
-      last_validated_at: 1.hour.ago,
-      fingerprint: "late-arrival::senior-react-engineer"
+      seen_at: 1.hour.ago
     )
-    newer_posted_job = Job.create!(
-      job_source: job_sources(:gupy),
+    newer_posted_job = create_job(
       title: "Senior React Native Engineer",
       company_name: "Old Inbox",
-      apply_url: "https://acme.example/jobs/old-inbox",
-      canonical_url: "https://acme.example/jobs/old-inbox",
-      source_url: "https://acme.example/jobs/old-inbox",
-      remote_text: "Remoto",
-      location_text: "Brasil",
-      lifecycle_state: :active,
+      slug: "old-inbox",
       posted_text: "publicada ha 2 dias",
       published_at: 2.days.ago,
-      first_seen_at: 10.days.ago,
-      last_seen_at: 1.day.ago,
-      last_validated_at: 1.day.ago,
-      fingerprint: "old-inbox::senior-react-native-engineer"
+      seen_at: 10.days.ago,
+      last_seen_at: 1.day.ago
     )
 
-    late_arrival_match = JobMatch.create!(
+    late_arrival_match = create_match(
       search_profile: search_profiles(:default),
       job: older_posted_job,
-      match_strength: :strong,
-      user_state: :new_match,
       score: 90,
       reason: "Entrou no radar agora.",
-      seniority: "senior",
       stack_tags: [ "react" ],
-      eligibility_flags: [],
-      raw_decision: {},
-      first_seen_at: 1.hour.ago,
-      last_seen_at: 1.hour.ago,
-      last_validated_at: 1.hour.ago
+      seen_at: 1.hour.ago
     )
-    old_inbox_match = JobMatch.create!(
+    old_inbox_match = create_match(
       search_profile: search_profiles(:default),
       job: newer_posted_job,
-      match_strength: :strong,
-      user_state: :new_match,
       score: 91,
       reason: "Ja estava no radar faz tempo.",
-      seniority: "senior",
       stack_tags: [ "react native" ],
-      eligibility_flags: [],
-      raw_decision: {},
-      first_seen_at: 10.days.ago,
-      last_seen_at: 1.day.ago,
-      last_validated_at: 1.day.ago
+      seen_at: 10.days.ago,
+      last_seen_at: 1.day.ago
     )
 
     filtered = JobMatchFilters.new(
@@ -161,70 +131,36 @@ class JobMatchFiltersTest < ActiveSupport::TestCase
     source = job_sources(:gupy)
     captured_at = 2.hours.ago
 
-    first_job = Job.create!(
-      job_source: source,
+    first_job = create_job(
       title: "Senior React Engineer A",
       company_name: "Batch A",
-      apply_url: "https://acme.example/jobs/batch-a",
-      canonical_url: "https://acme.example/jobs/batch-a",
-      source_url: "https://acme.example/jobs/batch-a",
-      remote_text: "Remoto",
-      location_text: "Brasil",
-      lifecycle_state: :active,
-      posted_text: "publicada hoje",
-      published_at: 1.day.ago,
-      first_seen_at: captured_at,
-      last_seen_at: captured_at,
-      last_validated_at: captured_at,
-      fingerprint: "batch-a::senior-react-engineer"
+      source:,
+      slug: "batch-a",
+      seen_at: captured_at
     )
-    second_job = Job.create!(
-      job_source: source,
+    second_job = create_job(
       title: "Senior React Engineer B",
       company_name: "Batch B",
-      apply_url: "https://acme.example/jobs/batch-b",
-      canonical_url: "https://acme.example/jobs/batch-b",
-      source_url: "https://acme.example/jobs/batch-b",
-      remote_text: "Remoto",
-      location_text: "Brasil",
-      lifecycle_state: :active,
-      posted_text: "publicada hoje",
-      published_at: 1.day.ago,
-      first_seen_at: captured_at,
-      last_seen_at: captured_at,
-      last_validated_at: captured_at,
-      fingerprint: "batch-b::senior-react-engineer"
+      source:,
+      slug: "batch-b",
+      seen_at: captured_at
     )
 
-    first_match = JobMatch.create!(
+    first_match = create_match(
       search_profile: profile,
       job: first_job,
-      match_strength: :strong,
-      user_state: :new_match,
       score: 90,
       reason: "Entrou no mesmo lote.",
-      seniority: "senior",
       stack_tags: [ "react" ],
-      eligibility_flags: [],
-      raw_decision: {},
-      first_seen_at: captured_at,
-      last_seen_at: captured_at,
-      last_validated_at: captured_at
+      seen_at: captured_at
     )
-    second_match = JobMatch.create!(
+    second_match = create_match(
       search_profile: profile,
       job: second_job,
-      match_strength: :strong,
-      user_state: :new_match,
       score: 91,
       reason: "Entrou no mesmo lote depois.",
-      seniority: "senior",
       stack_tags: [ "react" ],
-      eligibility_flags: [],
-      raw_decision: {},
-      first_seen_at: captured_at,
-      last_seen_at: captured_at,
-      last_validated_at: captured_at
+      seen_at: captured_at
     )
     first_match.update_columns(updated_at: 1.hour.from_now)
 
@@ -235,4 +171,43 @@ class JobMatchFiltersTest < ActiveSupport::TestCase
 
     assert_equal [ second_match, first_match ], filtered
   end
+
+  private
+    def create_job(title:, company_name:, slug:, source: job_sources(:gupy), posted_text: "publicada hoje", published_at: 1.day.ago, seen_at: Time.current, last_seen_at: seen_at)
+      Job.create!(
+        job_source: source,
+        title:,
+        company_name:,
+        apply_url: "https://acme.example/jobs/#{slug}",
+        canonical_url: "https://acme.example/jobs/#{slug}",
+        source_url: "https://acme.example/jobs/#{slug}",
+        remote_text: "Remoto",
+        location_text: "Brasil",
+        lifecycle_state: :active,
+        posted_text:,
+        published_at:,
+        first_seen_at: seen_at,
+        last_seen_at:,
+        last_validated_at: last_seen_at,
+        fingerprint: "#{slug}::#{title.parameterize}"
+      )
+    end
+
+    def create_match(search_profile:, job:, score:, reason:, stack_tags:, seen_at:, last_seen_at: seen_at)
+      JobMatch.create!(
+        search_profile:,
+        job:,
+        match_strength: :strong,
+        user_state: :new_match,
+        score:,
+        reason:,
+        seniority: "senior",
+        stack_tags:,
+        eligibility_flags: [],
+        raw_decision: {},
+        first_seen_at: seen_at,
+        last_seen_at:,
+        last_validated_at: last_seen_at
+      )
+    end
 end

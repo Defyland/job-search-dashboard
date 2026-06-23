@@ -32,10 +32,6 @@ class JobMatch < ApplicationRecord
            :job_source_host,
            to: :job
 
-  def freshness_at
-    published_at || last_seen_at || created_at
-  end
-
   private
     def normalize_fields
       self.stack_tags = normalize_list(stack_tags)
