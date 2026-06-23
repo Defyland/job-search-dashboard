@@ -153,4 +153,86 @@ class JobMatchFiltersTest < ActiveSupport::TestCase
     assert_equal late_arrival_match, filtered.first
     assert_includes filtered, old_inbox_match
   end
+
+  test "sorts same capture timestamp with stable id tie breaker" do
+    profile = SearchProfile.create!(
+      SearchProfile.default_attributes.merge(user: users(:one), name: "Ordering tie breaker", slug: "ordering-tie-breaker")
+    )
+    source = job_sources(:gupy)
+    captured_at = 2.hours.ago
+
+    first_job = Job.create!(
+      job_source: source,
+      title: "Senior React Engineer A",
+      company_name: "Batch A",
+      apply_url: "https://acme.example/jobs/batch-a",
+      canonical_url: "https://acme.example/jobs/batch-a",
+      source_url: "https://acme.example/jobs/batch-a",
+      remote_text: "Remoto",
+      location_text: "Brasil",
+      lifecycle_state: :active,
+      posted_text: "publicada hoje",
+      published_at: 1.day.ago,
+      first_seen_at: captured_at,
+      last_seen_at: captured_at,
+      last_validated_at: captured_at,
+      fingerprint: "batch-a::senior-react-engineer"
+    )
+    second_job = Job.create!(
+      job_source: source,
+      title: "Senior React Engineer B",
+      company_name: "Batch B",
+      apply_url: "https://acme.example/jobs/batch-b",
+      canonical_url: "https://acme.example/jobs/batch-b",
+      source_url: "https://acme.example/jobs/batch-b",
+      remote_text: "Remoto",
+      location_text: "Brasil",
+      lifecycle_state: :active,
+      posted_text: "publicada hoje",
+      published_at: 1.day.ago,
+      first_seen_at: captured_at,
+      last_seen_at: captured_at,
+      last_validated_at: captured_at,
+      fingerprint: "batch-b::senior-react-engineer"
+    )
+
+    first_match = JobMatch.create!(
+      search_profile: profile,
+      job: first_job,
+      match_strength: :strong,
+      user_state: :new_match,
+      score: 90,
+      reason: "Entrou no mesmo lote.",
+      seniority: "senior",
+      stack_tags: [ "react" ],
+      eligibility_flags: [],
+      raw_decision: {},
+      first_seen_at: captured_at,
+      last_seen_at: captured_at,
+      last_validated_at: captured_at
+    )
+    second_match = JobMatch.create!(
+      search_profile: profile,
+      job: second_job,
+      match_strength: :strong,
+      user_state: :new_match,
+      score: 91,
+      reason: "Entrou no mesmo lote depois.",
+      seniority: "senior",
+      stack_tags: [ "react" ],
+      eligibility_flags: [],
+      raw_decision: {},
+      first_seen_at: captured_at,
+      last_seen_at: captured_at,
+      last_validated_at: captured_at
+    )
+    first_match.update_columns(updated_at: 1.hour.from_now)
+
+    filtered = JobMatchFilters.new(
+      scope: JobMatch.for_profile(profile).includes(job: :job_source),
+      params: { lifecycle_state: "active", user_state: "new_match", sort: "newest" }
+    ).call.to_a
+
+    assert_equal [ second_match, first_match ], filtered
+  end
 end

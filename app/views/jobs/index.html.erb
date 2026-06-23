@@ -145,7 +145,8 @@
                 <p class="mt-1 text-xs text-slate-500"><%= job.job_source_host %></p>
               </td>
               <td class="px-6 py-5">
-                <p class="font-semibold text-white"><%= job.posted_text.presence || (job.published_at ? time_ago_in_words(job.published_at) + " atras" : "sem data") %></p>
+                <p class="font-semibold text-white"><%= radar_seen_label(job_match) %></p>
+                <p class="mt-1 text-xs text-slate-400"><%= publication_signal_label(job) %></p>
                 <p class="mt-1 text-xs text-slate-500">Score <%= job_match.score %></p>
               </td>
               <td class="px-6 py-5">

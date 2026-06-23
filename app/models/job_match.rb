@@ -9,7 +9,7 @@ class JobMatch < ApplicationRecord
   validates :score, numericality: { greater_than_or_equal_to: 0 }
   validates :job_id, uniqueness: { scope: :search_profile_id }
 
-  scope :recent_first, -> { order(first_seen_at: :desc, updated_at: :desc) }
+  scope :recent_first, -> { order(first_seen_at: :desc, id: :desc) }
   scope :highest_score_first, -> { order(score: :desc, updated_at: :desc) }
   scope :for_profile, ->(profile) { where(search_profile: profile) }
 
