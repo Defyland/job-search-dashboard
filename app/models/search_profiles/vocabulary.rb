@@ -8,6 +8,18 @@ module SearchProfiles
     DEFAULT_LANGUAGE_SCOPE = "both".freeze
     DEFAULT_SENIORITY_PRESET = "senior".freeze
     DEFAULT_REGION_SCOPE = "brazil_latam".freeze
+    DEFAULT_SCAN_WINDOW_DAYS = 20
+    MAX_SCAN_WINDOW_DAYS = 60
+    SCAN_WINDOW_DAY_OPTIONS = [
+      [ "24h", 1 ],
+      [ "7 dias", 7 ],
+      [ "14 dias", 14 ],
+      [ "20 dias", 20 ],
+      [ "30 dias", 30 ],
+      [ "45 dias", 45 ],
+      [ "60 dias", 60 ]
+    ].freeze
+    SCAN_WINDOW_DAY_LABELS = SCAN_WINDOW_DAY_OPTIONS.to_h { |label, days| [ days, label ] }.freeze
     DEFAULT_TARGET_STACKS = [ "ruby", "ruby on rails", "react", "react native" ].freeze
     DEFAULT_TARGET_TITLES = [ "software engineer", "engenheiro de software", "frontend", "backend", "fullstack", "developer", "desenvolvedor" ].freeze
     DEFAULT_SENIORITY_TERMS = [ "senior", "sênior", "sr", "staff" ].freeze
@@ -78,7 +90,7 @@ module SearchProfiles
         language_scope: DEFAULT_LANGUAGE_SCOPE,
         required_remote: true,
         include_women_only: false,
-        scan_window_days: 20,
+        scan_window_days: DEFAULT_SCAN_WINDOW_DAYS,
         active: true
       }
     end
@@ -107,6 +119,15 @@ module SearchProfiles
     def normalize_region_scope(value)
       value = value.to_s
       REGION_TERMS.key?(value) ? value : DEFAULT_REGION_SCOPE
+    end
+
+    def normalize_scan_window_days(value)
+      (value.presence || DEFAULT_SCAN_WINDOW_DAYS).to_i.clamp(1, MAX_SCAN_WINDOW_DAYS)
+    end
+
+    def scan_window_label(value)
+      normalized_value = normalize_scan_window_days(value)
+      SCAN_WINDOW_DAY_LABELS.fetch(normalized_value, "#{normalized_value} dias")
     end
 
     def role_titles_for(language_scope)

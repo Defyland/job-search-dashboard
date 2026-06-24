@@ -49,6 +49,14 @@ class SearchRunsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to search_runs_path
   end
 
+  test "create clamps manual backfill to the profile scan window ceiling" do
+    assert_enqueued_with(job: DiscoverJobsRunJob, args: [ { window_days: 60, trigger_source: :manual, source_slug: nil } ]) do
+      post search_runs_path, params: { window_days: 90 }
+    end
+
+    assert_redirected_to search_runs_path
+  end
+
   test "create enqueues a source-scoped rails backfill" do
     source = JobSource.create!(
       name: "Scoped Source",

@@ -32,6 +32,7 @@ class SearchProfilesTest < ApplicationSystemTestCase
 
       visit new_search_profile_path
       fill_in "Tecnologia / stack", with: "ServiceNow"
+      select "45 dias", from: "Buscar vagas desde"
       click_button "Gerar variacoes"
 
       assert_text(/preview gerado/i)
@@ -46,6 +47,7 @@ class SearchProfilesTest < ApplicationSystemTestCase
       profile = SearchProfile.order(:created_at).last
       assert_equal "Senior ServiceNow Remote BR/LatAm", profile.name
       assert_equal [ "servicenow" ], profile.target_stacks
+      assert_equal 45, profile.scan_window_days
       assert profile.intent_backed?
       assert_includes profile.compiler_stack_aliases["servicenow"], "itsm"
       end
@@ -63,6 +65,7 @@ class SearchProfilesTest < ApplicationSystemTestCase
     check "search_profile_stack_preset_react"
     select "Senior", from: "Senioridade"
     select "Português", from: "Idioma alvo"
+    select "30 dias", from: "Buscar vagas desde"
     click_button "Criar perfil e iniciar busca"
 
     assert_current_path jobs_path, ignore_query: true
@@ -71,6 +74,7 @@ class SearchProfilesTest < ApplicationSystemTestCase
     profile = SearchProfile.order(:created_at).last
     assert_equal [ "react", "salesforce" ], profile.target_stacks.sort
     assert_equal "portuguese", profile.language_scope
+    assert_equal 30, profile.scan_window_days
   end
 
   private

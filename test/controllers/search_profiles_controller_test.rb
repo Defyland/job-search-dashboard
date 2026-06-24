@@ -101,6 +101,7 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     profile = SearchProfile.order(:created_at).last
     assert_redirected_to jobs_path(search_profile_id: profile.id)
     assert_equal [ "salesforce" ], profile.target_stacks
+    assert_equal 30, profile.scan_window_days
     assert profile.intent_backed?
     assert_equal "brazil_latam", profile.intent_settings["region_scope"]
     assert_includes profile.compiler_stack_aliases["salesforce"], "apex"
@@ -165,7 +166,8 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
           search_profile: {
             stack_presets: [ ".net", "react" ],
             seniority_preset: "senior",
-            language_scope: "english"
+            language_scope: "english",
+            scan_window_days: "45"
           }
         }
       end
@@ -175,6 +177,7 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to jobs_path(search_profile_id: profile.id)
     assert_equal [ ".net", "react" ], profile.target_stacks
     assert_equal "english", profile.language_scope
+    assert_equal 45, profile.scan_window_days
     assert_equal "heuristic", profile.compiler_settings["provider"]
     assert_equal ".net developer", profile.compiler_settings.dig("generated_titles", "en").first
   end
@@ -236,6 +239,7 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
             technology_intent: "java",
             seniority_preset: "senior",
             region_scope: "brazil_latam",
+            scan_window_days: "30",
             target_stacks_text: profile.target_stacks_text,
             target_titles_text: profile.target_titles_text,
             seniority_terms_text: profile.seniority_terms_text,
@@ -248,6 +252,7 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to search_profiles_path
     assert profile.reload.include_women_only?
+    assert_equal 30, profile.scan_window_days
     assert profile.intent_backed?
     assert_includes profile.compiler_stack_aliases["java"], "spring boot"
     assert_equal "synced", profile.sync_state
@@ -336,6 +341,7 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
             technology_intent: "",
             seniority_preset: "senior",
             region_scope: "brazil_latam",
+            scan_window_days: "60",
             target_stacks_text: "java",
             target_titles_text: "developer, engineer",
             seniority_terms_text: "senior, sênior, sr",
@@ -349,6 +355,7 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to search_profiles_path
     refute_includes JobMatch.for_profile(profile).pluck(:job_id), ruby_job.id
     assert_includes JobMatch.for_profile(profile).pluck(:job_id), java_job.id
+    assert_equal 60, profile.reload.scan_window_days
     assert_equal "synced", profile.reload.sync_state
   end
 
@@ -361,7 +368,8 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
         language_scope: "both",
         required_remote: "1",
         region_scope: "brazil_latam",
-        include_women_only: "0"
+        include_women_only: "0",
+        scan_window_days: "30"
       }
     end
 

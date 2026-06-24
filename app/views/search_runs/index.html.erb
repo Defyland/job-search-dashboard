@@ -11,7 +11,7 @@
       <%= form_with url: search_runs_path, method: :post, **submit_state_form_options(default_loading_text: "Enfileirando...", class: "flex flex-wrap items-end gap-3") do |form| %>
         <div>
           <%= form.label :window_days, "Backfill", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
-          <%= form.select :window_days, options_for_select([["24h", 1], ["7 dias", 7], ["20 dias", 20], ["30 dias", 30]], 20), {}, class: "mt-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
+          <%= form.select :window_days, options_for_select(SearchProfiles::Vocabulary::SCAN_WINDOW_DAY_OPTIONS, SearchProfiles::Vocabulary::DEFAULT_SCAN_WINDOW_DAYS), {}, class: "mt-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
         </div>
         <div>
           <%= form.label :source_slug, "Fonte", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>

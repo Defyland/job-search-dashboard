@@ -5,7 +5,10 @@ class SearchRunsController < ApplicationController
   end
 
   def create
-    window_days = params.fetch(:window_days, 20).to_i.clamp(1, 30)
+    window_days = params.fetch(:window_days, SearchProfiles::Vocabulary::DEFAULT_SCAN_WINDOW_DAYS).to_i.clamp(
+      1,
+      SearchProfiles::Vocabulary::MAX_SCAN_WINDOW_DAYS
+    )
     source_slug = params[:source_slug].presence
 
     if source_slug.present?

@@ -21,8 +21,8 @@
       <p class="text-sm text-slate-400">Escolha stack, senioridade e idioma. O app gera o perfil base e dispara a primeira busca.</p>
     </div>
 
-    <div class="grid gap-4 md:grid-cols-2">
-      <div class="md:col-span-2">
+    <div class="grid gap-4 md:grid-cols-3">
+      <div class="md:col-span-3">
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Linguagens / stack</p>
         <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <% SearchProfiles::Vocabulary::ONBOARDING_STACK_PRESETS.each do |preset| %>
@@ -38,7 +38,7 @@
         </div>
       </div>
 
-      <div class="md:col-span-2">
+      <div class="md:col-span-3">
         <%= label_tag "search_profile_technology_intent", "Complemento opcional", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
         <%= text_field_tag "search_profile[technology_intent]", technology_intent_text, id: "search_profile_technology_intent", class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white", placeholder: "Ex.: Next.js, Kotlin, Elixir, Data Engineer..." %>
         <p class="mt-2 text-xs text-slate-400">Use este campo so quando precisar complementar algo fora dos presets.</p>
@@ -53,13 +53,18 @@
         <%= form.label :language_scope, "Idioma alvo", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
         <%= form.select :language_scope, options_for_select(SearchProfiles::Vocabulary::LANGUAGE_SCOPE_LABELS.map { |value, label| [ label, value ] }, simple_input["language_scope"]), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
       </div>
+
+      <div>
+        <%= form.label :scan_window_days, "Buscar vagas desde", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+        <%= form.select :scan_window_days, options_for_select(SearchProfiles::Vocabulary::SCAN_WINDOW_DAY_OPTIONS, simple_input["scan_window_days"]), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
+      </div>
     </div>
 
     <div class="grid gap-3 rounded-2xl border border-white/10 bg-slate-950/50 p-4 text-sm text-slate-300">
       <p class="font-semibold text-white">Defaults aplicados neste primeiro perfil</p>
       <ul class="grid gap-2 md:grid-cols-3">
         <li>Remoto BR/LatAm</li>
-        <li>Janela inicial de 20 dias</li>
+        <li>Janela inicial de <%= SearchProfiles::Vocabulary.scan_window_label(simple_input["scan_window_days"]) %></li>
         <li>Exclusoes de junior, pleno, trainee e estagio</li>
       </ul>
       <p class="text-xs text-slate-400">

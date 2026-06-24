@@ -18,6 +18,7 @@ module SearchProfiles
         required_remote: required_remote,
         include_women_only: BOOLEAN.cast(simple_input["include_women_only"]),
         language_scope: language_scope,
+        scan_window_days: SearchProfiles::Vocabulary.normalize_scan_window_days(simple_input["scan_window_days"]),
         target_stacks: SearchProfiles::Vocabulary.normalize_list(compiled_payload["canonical_stacks"]),
         target_titles: SearchProfiles::Vocabulary.normalize_list(
           generated_titles_for(compiled_payload, language_scope) + SearchProfiles::Vocabulary.role_titles_for(language_scope)
@@ -34,7 +35,7 @@ module SearchProfiles
     def self.from_manual(form_attributes:, existing_settings: {}, active_default: true)
       form_attributes = form_attributes.deep_stringify_keys
 
-      {
+      attributes = {
         name: form_attributes["name"],
         active: boolean_or_default(form_attributes["active"], active_default),
         required_remote: boolean_or_default(form_attributes["required_remote"], true),
@@ -47,6 +48,8 @@ module SearchProfiles
         negative_terms: SearchProfiles::Vocabulary.normalize_list(form_attributes["negative_terms_text"]),
         settings: existing_settings.presence || {}
       }
+      attributes[:scan_window_days] = SearchProfiles::Vocabulary.normalize_scan_window_days(form_attributes["scan_window_days"]) if form_attributes.key?("scan_window_days")
+      attributes
     end
 
     def self.intent_fingerprint(simple_input)

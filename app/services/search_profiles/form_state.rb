@@ -16,7 +16,8 @@ module SearchProfiles
         "language_scope" => @submitted_attributes["language_scope"].presence || SearchProfiles::Vocabulary::DEFAULT_LANGUAGE_SCOPE,
         "required_remote" => @submitted_attributes.key?("required_remote") ? @submitted_attributes["required_remote"] : true,
         "region_scope" => @submitted_attributes["region_scope"].presence || SearchProfiles::Vocabulary::DEFAULT_REGION_SCOPE,
-        "include_women_only" => @submitted_attributes.key?("include_women_only") ? @submitted_attributes["include_women_only"] : false
+        "include_women_only" => @submitted_attributes.key?("include_women_only") ? @submitted_attributes["include_women_only"] : false,
+        "scan_window_days" => submitted_scan_window_days
       }
     end
 
@@ -55,6 +56,7 @@ module SearchProfiles
           overrides["required_remote"] = @submitted_attributes["required_remote"] if @submitted_attributes.key?("required_remote")
           overrides["region_scope"] = @submitted_attributes["region_scope"].presence || SearchProfiles::Vocabulary::DEFAULT_REGION_SCOPE if @submitted_attributes.key?("region_scope")
           overrides["include_women_only"] = @submitted_attributes["include_women_only"] if @submitted_attributes.key?("include_women_only")
+          overrides["scan_window_days"] = SearchProfiles::Vocabulary.normalize_scan_window_days(@submitted_attributes["scan_window_days"]) if @submitted_attributes.key?("scan_window_days")
         end
       end
 
@@ -62,6 +64,12 @@ module SearchProfiles
         return "" unless name_override?
 
         @submitted_attributes["name"].to_s
+      end
+
+      def submitted_scan_window_days
+        SearchProfiles::Vocabulary.normalize_scan_window_days(
+          @submitted_attributes.fetch("scan_window_days", @search_profile.scan_window_days)
+        )
       end
 
       def name_override?

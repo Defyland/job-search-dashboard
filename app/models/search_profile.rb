@@ -4,6 +4,7 @@ class SearchProfile < ApplicationRecord
   DEFAULT_SENIORITY_TERMS = SearchProfiles::Vocabulary::DEFAULT_SENIORITY_TERMS
   DEFAULT_LOCATION_TERMS = SearchProfiles::Vocabulary::DEFAULT_LOCATION_TERMS
   DEFAULT_NEGATIVE_TERMS = SearchProfiles::Vocabulary::DEFAULT_NEGATIVE_TERMS
+  MAX_SCAN_WINDOW_DAYS = SearchProfiles::Vocabulary::MAX_SCAN_WINDOW_DAYS
   SENIORITY_PRESET_LABELS = SearchProfiles::Vocabulary::SENIORITY_PRESET_LABELS
   REGION_SCOPE_LABELS = SearchProfiles::Vocabulary::REGION_SCOPE_LABELS
   LANGUAGE_SCOPE_LABELS = SearchProfiles::Vocabulary::LANGUAGE_SCOPE_LABELS
@@ -20,7 +21,7 @@ class SearchProfile < ApplicationRecord
 
   validates :name, :slug, presence: true
   validates :slug, uniqueness: { scope: :user_id }
-  validates :scan_window_days, numericality: { greater_than: 0, less_than_or_equal_to: 60 }
+  validates :scan_window_days, numericality: { greater_than: 0, less_than_or_equal_to: MAX_SCAN_WINDOW_DAYS }
 
   scope :active, -> { where(active: true) }
   scope :ordered, -> { order(active: :desc, name: :asc) }
@@ -83,7 +84,8 @@ class SearchProfile < ApplicationRecord
       "language_scope" => language_scope.to_s.presence || SearchProfiles::Vocabulary::DEFAULT_LANGUAGE_SCOPE,
       "required_remote" => required_remote.nil? ? true : required_remote,
       "region_scope" => intent_settings["region_scope"].presence || SearchProfiles::Vocabulary.infer_region_scope(location_terms),
-      "include_women_only" => include_women_only.nil? ? false : include_women_only
+      "include_women_only" => include_women_only.nil? ? false : include_women_only,
+      "scan_window_days" => SearchProfiles::Vocabulary.normalize_scan_window_days(scan_window_days)
     }
   end
 
@@ -145,7 +147,7 @@ class SearchProfile < ApplicationRecord
       self.location_terms = SearchProfiles::Vocabulary.normalize_list(location_terms.presence || DEFAULT_LOCATION_TERMS)
       self.negative_terms = SearchProfiles::Vocabulary.normalize_list(negative_terms.presence || DEFAULT_NEGATIVE_TERMS)
       self.language_scope = language_scope.presence || SearchProfiles::Vocabulary::DEFAULT_LANGUAGE_SCOPE
-      self.scan_window_days ||= 20
+      self.scan_window_days ||= SearchProfiles::Vocabulary::DEFAULT_SCAN_WINDOW_DAYS
       self.settings ||= {}
       self.active = true if active.nil?
       self.required_remote = true if required_remote.nil?

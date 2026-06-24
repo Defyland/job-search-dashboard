@@ -261,6 +261,7 @@ class SearchProfilesController < ApplicationController
         :technology_intent,
         :seniority_preset,
         :region_scope,
+        :scan_window_days,
         :compiled_profile_payload,
         :target_stacks_text,
         :target_titles_text,

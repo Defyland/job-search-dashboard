@@ -4,6 +4,7 @@ module SearchProfiles
   class FormStateTest < ActiveSupport::TestCase
     test "hydrates the simple form state without losing persisted defaults" do
       profile = search_profiles(:default)
+      profile.update!(scan_window_days: 45)
 
       state = FormState.new(
         search_profile: profile,
@@ -19,6 +20,7 @@ module SearchProfiles
 
       assert_equal "java", state.simple_input["technology_intent"]
       assert_equal "Senior Ruby/Rails/React Remote BR/LatAm", state.hydrated_simple_input["name"]
+      assert_equal 45, state.simple_input["scan_window_days"]
       assert_equal "signed-token", state.compiled_profile_payload
       assert_equal "0", state.active_default
       assert state.advanced_open?
