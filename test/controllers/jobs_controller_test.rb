@@ -9,6 +9,7 @@ class JobsControllerTest < ActionDispatch::IntegrationTest
     get jobs_path
     assert_response :success
     assert_match("Radar de vagas", response.body)
+    assert_no_match("Codex + Rails", response.body)
     assert_match("Idioma", response.body)
     assert_match("Frontend Engineer Senior", response.body)
     assert_no_match("Senior Ruby on Rails Developer", response.body)
@@ -36,6 +37,25 @@ class JobsControllerTest < ActionDispatch::IntegrationTest
 
     follow_redirect!
     assert_match("Vaga marcada como aplicada.", response.body)
+  end
+
+  test "opening a job marks a new match as seen for the selected profile" do
+    post open_job_path(jobs(:react_role), search_profile_id: search_profiles(:default).id)
+
+    assert_response :success
+    assert_match "Abrindo candidatura", response.body
+    assert_match ERB::Util.html_escape(jobs(:react_role).apply_url), response.body
+    assert_equal("seen", job_matches(:react_default).reload.user_state)
+  end
+
+  test "opening a job does not downgrade an applied match" do
+    job_matches(:react_default).update!(user_state: :applied)
+
+    post open_job_path(jobs(:react_role), search_profile_id: search_profiles(:default).id)
+
+    assert_response :success
+    assert_match "Abrindo candidatura", response.body
+    assert_equal("applied", job_matches(:react_default).reload.user_state)
   end
 
   test "redirects users without profiles to onboarding instead of creating a default profile" do

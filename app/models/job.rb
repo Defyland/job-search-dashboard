@@ -36,6 +36,15 @@ class Job < ApplicationRecord
     published_at || last_seen_at || created_at
   end
 
+  def safe_apply_url
+    uri = URI.parse(apply_url.to_s)
+    return unless uri.is_a?(URI::HTTP) && uri.host.present?
+
+    uri.to_s
+  rescue URI::InvalidURIError
+    nil
+  end
+
   private
     def normalize_fields
       self.raw_payload ||= {}

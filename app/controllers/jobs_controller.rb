@@ -1,7 +1,7 @@
 class JobsController < ApplicationController
-  before_action :ensure_search_profile!, only: %i[index show mark]
+  before_action :ensure_search_profile!, only: %i[index show open mark]
   before_action :set_search_profile
-  before_action :set_job, only: %i[show mark]
+  before_action :set_job, only: %i[show open mark]
 
   def index
     @filters = filter_params.to_h.symbolize_keys
@@ -31,6 +31,18 @@ class JobsController < ApplicationController
   def show
     @job_match = @job.job_matches.find_by!(search_profile: @search_profile)
     @history = @job.search_run_items.includes(:search_run).order(created_at: :desc).limit(20)
+  end
+
+  def open
+    @apply_url = @job.safe_apply_url
+
+    unless @apply_url
+      redirect_back fallback_location: job_path(@job, search_profile_id: @search_profile.id), alert: "Link de candidatura indisponivel."
+      return
+    end
+
+    job_match = @job.job_matches.find_by!(search_profile: @search_profile)
+    job_match.update!(user_state: :seen) if job_match.user_state_new_match?
   end
 
   def mark

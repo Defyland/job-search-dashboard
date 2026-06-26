@@ -1,0 +1,15 @@
+<% content_for :title, "Abrindo candidatura" %>
+<% content_for :head do %>
+  <meta http-equiv="refresh" content="0;url=<%= @apply_url %>">
+<% end %>
+
+<section class="mx-auto grid min-h-[50vh] max-w-xl place-items-center text-center">
+  <div class="space-y-5 rounded-[2rem] border border-white/10 bg-slate-950/70 p-8 shadow-2xl shadow-slate-950/30">
+    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-200/70">Candidatura</p>
+    <h1 class="text-3xl font-extrabold text-white">Abrindo candidatura...</h1>
+    <p class="text-sm leading-6 text-slate-400">A vaga ja foi marcada como vista neste perfil.</p>
+    <form action="<%= @apply_url %>" method="get" data-turbo="false">
+      <button type="submit" class="inline-flex rounded-2xl bg-sky-400 px-5 py-3 text-sm font-extrabold uppercase tracking-[0.14em] text-slate-950 transition hover:bg-sky-300">Continuar</button>
+    </form>
+  </div>
+</section>

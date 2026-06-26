@@ -2,6 +2,7 @@ Rails.application.routes.draw do
   resource :session, only: %i[new create destroy]
   resources :waitlist_entries, only: :create
   resources :jobs, only: %i[index show] do
+    post :open, on: :member
     patch :mark, on: :member
   end
   resources :search_profiles, except: :show

@@ -18,15 +18,6 @@ module ApplicationHelper
     button_options
   end
 
-  def safe_external_url(url)
-    uri = URI.parse(url.to_s)
-    return unless uri.is_a?(URI::HTTP) && uri.host.present?
-
-    uri.to_s
-  rescue URI::InvalidURIError
-    nil
-  end
-
   def flash_class(type)
     case type.to_sym
     when :notice
