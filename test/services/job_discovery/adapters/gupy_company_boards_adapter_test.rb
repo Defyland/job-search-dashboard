@@ -31,10 +31,11 @@ class JobDiscovery::Adapters::GupyCompanyBoardsAdapterTest < ActiveSupport::Test
         <a href="/jobs/11234166?jobBoardSource=gupy_public_page">Desenvolvedor(a) Ruby on Rails Sênior Trabalho Remoto Efetivo</a>
       </body></html>
     HTML
+    recent_date = 2.days.ago.to_date.iso8601
     detail_html = <<~HTML
       <html><body>
         <script type="application/ld+json">
-          {"@context":"http://schema.org","@type":"JobPosting","title":"Desenvolvedor(a) Ruby on Rails Sênior","datePosted":"2026-06-04","description":"Vaga remota em Ruby on Rails","hiringOrganization":{"name":"Clicksign"}}
+          {"@context":"http://schema.org","@type":"JobPosting","title":"Desenvolvedor(a) Ruby on Rails Sênior","datePosted":"#{recent_date}","description":"Vaga remota em Ruby on Rails","hiringOrganization":{"name":"Clicksign"}}
         </script>
         <a href="/candidates/jobs/11234166/apply?jobBoardSource=gupy_public_page">Candidatar-se</a>
       </body></html>
@@ -95,10 +96,11 @@ class JobDiscovery::Adapters::GupyCompanyBoardsAdapterTest < ActiveSupport::Test
         <a href="/jobs/11234166?jobBoardSource=gupy_public_page">Desenvolvedor(a) Ruby on Rails Sênior Trabalho Remoto Efetivo</a>
       </body></html>
     HTML
+    recent_date = 2.days.ago.to_date.iso8601
     detail_html = <<~HTML
       <html><body>
         <script type="application/ld+json">
-          {"@context":"http://schema.org","@type":"JobPosting","title":"Desenvolvedor(a) Ruby on Rails Sênior","datePosted":"2026-06-04","description":"Vaga remota em Ruby on Rails","hiringOrganization":{"name":"Clicksign"}}
+          {"@context":"http://schema.org","@type":"JobPosting","title":"Desenvolvedor(a) Ruby on Rails Sênior","datePosted":"#{recent_date}","description":"Vaga remota em Ruby on Rails","hiringOrganization":{"name":"Clicksign"}}
         </script>
         <a href="/candidates/jobs/11234166/apply?jobBoardSource=gupy_public_page">Candidatar-se</a>
       </body></html>

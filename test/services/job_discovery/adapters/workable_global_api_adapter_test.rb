@@ -16,6 +16,7 @@ class JobDiscovery::Adapters::WorkableGlobalApiAdapterTest < ActiveSupport::Test
     source.update!(adapter_key: "workable_global_api", supports_backfill: true, scan_window_days: 20, settings: { "max_pages" => 1 })
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "20d", started_at: Time.current)
     source_scan = search_run.source_scans.create!(job_source: source, status: :running, started_at: Time.current)
+    recent_timestamp = 2.days.ago.change(usec: 0).iso8601
 
     response_body = {
       jobs: [
@@ -25,8 +26,8 @@ class JobDiscovery::Adapters::WorkableGlobalApiAdapterTest < ActiveSupport::Test
           "state" => "published",
           "description" => "<p>Remote role for Ruby on Rails in Brazil</p>",
           "employmentType" => "Full-time",
-          "updated" => "2026-06-05T10:00:00Z",
-          "created" => "2026-06-05T10:00:00Z",
+          "updated" => recent_timestamp,
+          "created" => recent_timestamp,
           "url" => "https://jobs.workable.com/view/vFiUCegceZETVwRh5nAx32/remote-senior-ruby-on-rails-developer",
           "workplace" => "remote",
           "location" => { "city" => "São Paulo", "countryName" => "Brazil" },
@@ -37,8 +38,8 @@ class JobDiscovery::Adapters::WorkableGlobalApiAdapterTest < ActiveSupport::Test
           "title" => "Product Designer",
           "state" => "published",
           "description" => "<p>Remote</p>",
-          "updated" => "2026-06-05T10:00:00Z",
-          "created" => "2026-06-05T10:00:00Z",
+          "updated" => recent_timestamp,
+          "created" => recent_timestamp,
           "url" => "https://jobs.workable.com/view/other/product-designer",
           "workplace" => "remote",
           "location" => { "countryName" => "Brazil" },

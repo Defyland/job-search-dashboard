@@ -37,6 +37,7 @@ class JobDiscovery::Adapters::InhireCareerPagesAdapterTest < ActiveSupport::Test
 
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "20d", started_at: Time.current)
     source_scan = search_run.source_scans.create!(job_source: source, status: :running, started_at: Time.current)
+    recent_timestamp = 2.days.ago.change(usec: 0).iso8601
 
     tenant_response = {
       tenant: {
@@ -77,9 +78,9 @@ class JobDiscovery::Adapters::InhireCareerPagesAdapterTest < ActiveSupport::Test
       displayName: "Senior React Native Engineer",
       careerPageId: "default",
       activeJobBoards: [ "linkedin", "jobBoardPool" ],
-      publishedAt: "2026-06-05T10:00:00Z",
-      updatedAt: "2026-06-05T10:00:00Z",
-      lastPublishedAt: "2026-06-05T10:00:00Z",
+      publishedAt: recent_timestamp,
+      updatedAt: recent_timestamp,
+      lastPublishedAt: recent_timestamp,
       description: "<p>React Native para produto remoto no Brasil.</p>",
       employmentType: "contractor",
       workplaceType: "Remote",

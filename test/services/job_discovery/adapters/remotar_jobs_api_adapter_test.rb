@@ -25,6 +25,7 @@ class JobDiscovery::Adapters::RemotarJobsApiAdapterTest < ActiveSupport::TestCas
     )
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "20d", started_at: Time.current)
     source_scan = search_run.source_scans.create!(job_source: source, status: :running, started_at: Time.current)
+    recent_timestamp = 2.days.ago.change(usec: 0).iso8601
 
     response_body = {
       meta: { current_page: 1, last_page: 1 },
@@ -36,8 +37,8 @@ class JobDiscovery::Adapters::RemotarJobsApiAdapterTest < ActiveSupport::TestCas
           "description" => "<p>Vaga 100% remota</p>",
           "active" => true,
           "type" => "remote",
-          "updatedAt" => "2026-06-05T20:09:32.116-03:00",
-          "createdAt" => "2026-06-05T20:09:30.030-03:00",
+          "updatedAt" => recent_timestamp,
+          "createdAt" => recent_timestamp,
           "externalLink" => "https://lwsa.inhire.app/vagas/f44362ce-96f5-4952-ae0b-28ae3c35596d/vindi-or-coordenador-de-sistemas-ruby-or-remoto",
           "integrationSource" => "inhire",
           "country" => "Brazil",
@@ -50,8 +51,8 @@ class JobDiscovery::Adapters::RemotarJobsApiAdapterTest < ActiveSupport::TestCas
           "description" => "<p>Remoto</p>",
           "active" => true,
           "type" => "remote",
-          "updatedAt" => "2026-06-05T20:09:32.116-03:00",
-          "createdAt" => "2026-06-05T20:09:30.030-03:00",
+          "updatedAt" => recent_timestamp,
+          "createdAt" => recent_timestamp,
           "externalLink" => "https://example.com/jobs/designer",
           "integrationSource" => "manual",
           "company" => { "name" => "Example" }
