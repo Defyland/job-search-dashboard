@@ -12,6 +12,8 @@ class JobsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match("Codex + Rails", response.body)
     assert_match("Idioma", response.body)
     assert_match("Frontend Engineer Senior", response.body)
+    assert_match('rel="noopener"', response.body)
+    assert_no_match('rel="noreferrer"', response.body)
     assert_no_match("Senior Ruby on Rails Developer", response.body)
   end
 
