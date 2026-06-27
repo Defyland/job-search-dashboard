@@ -3,6 +3,14 @@
 <% advanced_open = @advanced_open && !creation_mode %>
 <% form_options = submit_state_form_options(default_loading_text: "Processando...", class: "grid gap-6", data: { turbo: false }) %>
 <% form_options[:url] = search_profiles_path(onboarding: 1) if @onboarding_mode %>
+<% technology_intent_error = @technology_intent_error.presence %>
+<% technology_intent_error_id = "search_profile_technology_intent_error" %>
+<% technology_intent_field_class = [
+  "mt-2 w-full rounded-2xl bg-white/5 px-4 py-3 text-sm text-white",
+  technology_intent_error ? "border border-rose-300/60 ring-2 ring-rose-400/25" : "border border-white/10"
+].join(" ") %>
+<% technology_intent_field_options = { id: "search_profile_technology_intent", class: technology_intent_field_class } %>
+<% technology_intent_field_options[:aria] = { invalid: true, describedby: technology_intent_error_id } if technology_intent_error %>
 
 <%= form_with model: search_profile, **form_options do |form| %>
   <% if search_profile.errors.any? %>
@@ -41,7 +49,10 @@
       <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_220px]">
         <div>
           <%= label_tag "search_profile_technology_intent", "Linguagem / stack", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
-          <%= text_field_tag "search_profile[technology_intent]", simple_input["technology_intent"], id: "search_profile_technology_intent", class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white", placeholder: "Java, Ruby, .NET, Salesforce, React..." %>
+          <%= text_field_tag "search_profile[technology_intent]", simple_input["technology_intent"], **technology_intent_field_options.merge(placeholder: "Java, Ruby, .NET, Salesforce, React...") %>
+          <% if technology_intent_error %>
+            <p id="<%= technology_intent_error_id %>" class="mt-2 text-sm font-semibold text-rose-100"><%= technology_intent_error %></p>
+          <% end %>
         </div>
         <div>
           <%= form.label :scan_window_days, "Buscar vagas desde", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
@@ -56,7 +67,10 @@
         </div>
         <div>
           <%= label_tag "search_profile_technology_intent", "Tecnologia / stack", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
-          <%= text_field_tag "search_profile[technology_intent]", simple_input["technology_intent"], id: "search_profile_technology_intent", class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white", placeholder: "Java, ServiceNow, .NET, Salesforce, Ruby on Rails..." %>
+          <%= text_field_tag "search_profile[technology_intent]", simple_input["technology_intent"], **technology_intent_field_options.merge(placeholder: "Java, ServiceNow, .NET, Salesforce, Ruby on Rails...") %>
+          <% if technology_intent_error %>
+            <p id="<%= technology_intent_error_id %>" class="mt-2 text-sm font-semibold text-rose-100"><%= technology_intent_error %></p>
+          <% end %>
         </div>
       </div>
 

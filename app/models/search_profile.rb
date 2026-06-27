@@ -27,6 +27,7 @@ class SearchProfile < ApplicationRecord
   scope :ordered, -> { order(active: :desc, name: :asc) }
 
   before_validation :apply_defaults
+  before_validation :deduplicate_slug_for_new_record
 
   def self.ensure_default_for(user)
     user.search_profiles.ordered.first || user.search_profiles.create!(default_attributes)
@@ -153,5 +154,24 @@ class SearchProfile < ApplicationRecord
       self.required_remote = true if required_remote.nil?
       self.include_women_only = false if include_women_only.nil?
       self.sync_state ||= :idle
+    end
+
+    def deduplicate_slug_for_new_record
+      return unless new_record?
+      return if user_id.blank? || slug.blank?
+
+      base_slug = slug
+      candidate_slug = base_slug
+      suffix = 2
+
+      while self.class.where(user_id:, slug: candidate_slug).exists?
+        candidate_slug = "#{base_slug}-#{suffix}"
+        suffix += 1
+      end
+
+      return if candidate_slug == base_slug
+
+      self.slug = candidate_slug
+      self.name = "#{name} #{suffix - 1}"
     end
 end

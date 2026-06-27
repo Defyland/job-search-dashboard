@@ -43,6 +43,10 @@ class SearchProfilesTest < ApplicationSystemTestCase
 
       assert_current_path jobs_path, ignore_query: true
       assert_text "Radar de vagas"
+      assert_text(/perfil ativo/i)
+      assert_text "Senior ServiceNow Remote BR/LatAm"
+      assert_text "Janela 45 dias"
+      assert_text "Busca enfileirada"
 
       profile = SearchProfile.order(:created_at).last
       assert_equal "Senior ServiceNow Remote BR/LatAm", profile.name
@@ -77,6 +81,26 @@ class SearchProfilesTest < ApplicationSystemTestCase
     assert_equal [ "react", "salesforce" ], profile.target_stacks.sort
     assert_equal "both", profile.language_scope
     assert_equal 30, profile.scan_window_days
+  end
+
+  test "mobile profile creation stays on the simple stack flow" do
+    visit new_session_path
+    sign_in_as(users(:three))
+    page.driver.browser.manage.window.resize_to(390, 844)
+
+    visit new_search_profile_path(onboarding: 1)
+
+    assert_text "Crie o radar pela stack"
+    assert_field "Linguagem / stack"
+    assert_no_text "Modo avancado"
+
+    fill_in "Linguagem / stack", with: "Java"
+    select "14 dias", from: "Buscar vagas desde"
+    click_button "Gerar variacoes"
+
+    assert_text(/preview gerado/i)
+    assert_text "java developer"
+    assert_button "Criar perfil e iniciar busca"
   end
 
   private

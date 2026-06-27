@@ -69,7 +69,11 @@ module SearchProfiles
       def explicit_stack_tokens(technology_intent)
         technology_intent.to_s.tr("/", ",").split(/[\n,;+]/)
                          .map { |token| SearchProfiles::Vocabulary.normalize(token) }
-                         .reject(&:blank?)
+                         .select { |token| usable_stack_token?(token) }
+      end
+
+      def usable_stack_token?(token)
+        token.match?(/[[:alnum:]]/)
       end
 
       def matches_term?(input, term)

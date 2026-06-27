@@ -16,6 +16,15 @@ class SearchProfileTest < ActiveSupport::TestCase
     assert profile.language_scope_both?
   end
 
+  test "deduplicates generated slugs for the same user" do
+    users(:one).search_profiles.create!(name: "Senior Java Remote", target_stacks: [ "java" ])
+
+    duplicate = users(:one).search_profiles.create!(name: "Senior Java Remote", target_stacks: [ "java" ])
+
+    assert_equal "Senior Java Remote 2", duplicate.name
+    assert_equal "senior-java-remote-2", duplicate.slug
+  end
+
   test "women only terms are profile scoped" do
     default_profile = search_profiles(:default)
     inclusive_profile = search_profiles(:women_inclusive)

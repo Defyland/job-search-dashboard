@@ -33,5 +33,20 @@ module SearchProfiles
 
       assert_equal "Informe ao menos a stack principal do perfil.", error.message
     end
+
+    test "rejects punctuation-only technology intents" do
+      error = assert_raises(SearchProfiles::IntentCompiler::Error) do
+        HeuristicIntentCompiler.new.call(
+          technology_intent: "### / +++",
+          seniority_preset: "senior",
+          language_scope: "both",
+          required_remote: true,
+          region_scope: "brazil_latam",
+          include_women_only: false
+        )
+      end
+
+      assert_equal "Informe ao menos a stack principal do perfil.", error.message
+    end
   end
 end

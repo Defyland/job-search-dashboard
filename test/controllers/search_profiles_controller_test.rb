@@ -119,6 +119,48 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     assert profile.job_matches.exists?
   end
 
+  test "creates a duplicate generated profile with an automatic suffix" do
+    users(:one).search_profiles.create!(
+      SearchProfiles::ProfileBuilder.from_compiled(
+        simple_input: compiled_form_params.stringify_keys,
+        compiled_payload: salesforce_compiled_payload,
+        active: true
+      )
+    )
+
+    with_fake_intent_compiler(FakeIntentCompiler.new) do
+      post search_profiles_path, params: { search_profile: compiled_form_params, preview_compile: "1" }
+    end
+
+    compiled_payload = extract_compiled_payload(response.body)
+
+    assert_difference("SearchProfile.count", 1) do
+      post search_profiles_path, params: {
+        search_profile: compiled_form_params.merge(compiled_profile_payload: compiled_payload)
+      }
+    end
+
+    profile = SearchProfile.order(:created_at).last
+    assert_redirected_to jobs_path(search_profile_id: profile.id)
+    assert_equal "Senior Salesforce Remote BR/LatAm 2", profile.name
+    assert_equal "senior-salesforce-remote-br-latam-2", profile.slug
+  end
+
+  test "renders a field-level validation state when stack is empty" do
+    assert_no_difference("SearchProfile.count") do
+      post search_profiles_path, params: {
+        search_profile: simple_creation_params(technology_intent: "   ", scan_window_days: "20"),
+        preview_compile: "1"
+      }
+    end
+
+    assert_response :unprocessable_entity
+    assert_match "Informe ao menos a stack principal do perfil.", response.body
+    assert_match 'aria-invalid="true"', response.body
+    assert_match 'id="search_profile_technology_intent_error"', response.body
+    assert_no_match "Preview gerado", response.body
+  end
+
   test "rejects saving with stale compiled payload when the simple intent changes" do
     with_fake_intent_compiler(FakeIntentCompiler.new) do
       post search_profiles_path, params: { search_profile: compiled_form_params, preview_compile: "1" }
@@ -387,6 +429,21 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
         region_scope: "brazil_latam",
         include_women_only: "0",
         scan_window_days: "30"
+      }
+    end
+
+    def salesforce_compiled_payload
+      {
+        "profile_name_suggestion" => "Senior Salesforce Remote BR/LatAm",
+        "canonical_stacks" => [ "salesforce" ],
+        "title_variants_pt" => [ "desenvolvedor salesforce", "consultor salesforce" ],
+        "title_variants_en" => [ "salesforce developer", "salesforce engineer" ],
+        "stack_aliases" => [
+          { "canonical_stack" => "salesforce", "aliases" => [ "apex", "lightning", "sales cloud" ] }
+        ],
+        "model" => "claude-sonnet-4-20250514",
+        "provider" => "anthropic",
+        "request_fingerprint" => SearchProfiles::ProfileBuilder.intent_fingerprint(compiled_form_params.stringify_keys)
       }
     end
 

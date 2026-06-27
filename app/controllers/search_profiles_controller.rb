@@ -104,7 +104,7 @@ class SearchProfilesController < ApplicationController
       hydrate_form_state(search_profile, form_attributes)
       render template, status: :unprocessable_entity
     rescue SearchProfiles::IntentCompiler::Error => error
-      search_profile.errors.add(:base, error.message)
+      add_intent_error(search_profile, error)
       restore_compiled_preview(form_attributes["compiled_profile_payload"])
       hydrate_form_state(search_profile, form_attributes)
       render template, status: :unprocessable_entity
@@ -217,7 +217,7 @@ class SearchProfilesController < ApplicationController
           active_default: form_state.active_default
         )
       )
-      search_profile.errors.add(:base, error.message)
+      add_intent_error(search_profile, error)
       hydrate_form_state(search_profile, form_attributes)
       @advanced_open = true
       render search_profile.persisted? ? :edit : :new, status: :unprocessable_entity
@@ -246,5 +246,10 @@ class SearchProfilesController < ApplicationController
 
     def request_profile_sync!(search_profile, prune_stale:)
       SearchProfiles::SyncRequest.new(search_profile:, prune_stale:).call
+    end
+
+    def add_intent_error(search_profile, error)
+      search_profile.errors.add(:base, error.message)
+      @technology_intent_error = error.message if error.message.include?("stack principal")
     end
 end

@@ -9,15 +9,26 @@ class NavigationTest < ApplicationSystemTestCase
     visit jobs_path(search_profile_id: search_profiles(:default).id)
 
     assert_text "Radar de vagas"
-    assert_selector "summary", text: "Menu"
+    assert_selector "button[aria-controls='primary-mobile-menu'][aria-expanded='false']", text: "Menu"
 
-    find("summary", text: "Menu").click
+    find("button", text: "Menu").click
 
-    within "details[open]" do
+    assert_selector "button[aria-controls='primary-mobile-menu'][aria-expanded='true']", text: "Menu"
+
+    within "#primary-mobile-menu" do
       assert_link "Vagas", href: jobs_path
       assert_link "Perfis", href: search_profiles_path
       assert_link "Runs", href: search_runs_path
       assert_link "Fontes", href: sources_path
+    end
+
+    find("h1", text: "Radar de vagas").click
+    assert_selector "button[aria-controls='primary-mobile-menu'][aria-expanded='false']", text: "Menu"
+    assert_no_selector "#primary-mobile-menu", visible: true
+
+    find("button", text: "Menu").click
+
+    within "#primary-mobile-menu" do
       click_link "Perfis"
     end
 

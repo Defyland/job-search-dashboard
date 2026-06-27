@@ -48,16 +48,16 @@
             </nav>
 
             <div class="flex items-center gap-3">
-              <details class="relative md:hidden">
-                <summary class="cursor-pointer list-none rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/5 [&::-webkit-details-marker]:hidden">
+              <div class="relative md:hidden" data-controller="mobile-menu">
+                <button type="button" class="rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/5" aria-controls="primary-mobile-menu" aria-expanded="false" data-mobile-menu-target="button" data-action="mobile-menu#toggle">
                   Menu
-                </summary>
-                <nav class="absolute right-0 mt-3 grid w-48 gap-1 rounded-2xl border border-white/10 bg-slate-950 p-2 shadow-2xl shadow-slate-950/40">
+                </button>
+                <nav id="primary-mobile-menu" class="absolute right-0 mt-3 grid w-48 gap-1 rounded-2xl border border-white/10 bg-slate-950 p-2 shadow-2xl shadow-slate-950/40" data-mobile-menu-target="panel" hidden>
                   <% nav_items.each do |label, path, active| %>
-                    <%= link_to label, path, class: "rounded-xl px-3 py-2 text-sm font-semibold #{active ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'}" %>
+                    <%= link_to label, path, class: "rounded-xl px-3 py-2 text-sm font-semibold #{active ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'}", data: { action: "mobile-menu#close" } %>
                   <% end %>
                 </nav>
-              </details>
+              </div>
               <div class="hidden text-right md:block">
                 <p class="text-sm font-semibold text-white"><%= current_user.email_address %></p>
                 <p class="text-xs text-slate-400">Acesso privado</p>
