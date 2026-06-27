@@ -44,6 +44,16 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     assert_match "Senior Ruby/Rails/React", response.body
   end
 
+  test "new profile form starts without default ruby profile terms" do
+    get new_search_profile_path
+
+    assert_response :success
+    assert_match "Linguagem / stack", response.body
+    assert_no_match "Senior Ruby/Rails/React Remote BR/LatAm", response.body
+    assert_no_match "search_profile_target_stacks_text", response.body
+    assert_no_match "Senioridade", response.body
+  end
+
   test "compiles intent preview and saves an intent-backed profile" do
     Job.create!(
       job_source: job_sources(:gupy),
@@ -130,24 +140,16 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "rolls back profile creation when sync enqueue fails" do
+    with_fake_intent_compiler(FakeIntentCompiler.new) do
+      post search_profiles_path, params: { search_profile: compiled_form_params, preview_compile: "1" }
+    end
+
+    compiled_payload = extract_compiled_payload(response.body)
+
     assert_no_difference("SearchProfile.count") do
       with_fake_sync_request(RaisingSyncRequest.new) do
         post search_profiles_path, params: {
-          search_profile: {
-            name: "Senior Java Remote",
-            active: "1",
-            required_remote: "1",
-            include_women_only: "0",
-            language_scope: "both",
-            technology_intent: "",
-            seniority_preset: "senior",
-            region_scope: "brazil_latam",
-            target_stacks_text: "java",
-            target_titles_text: "developer, engineer",
-            seniority_terms_text: "senior, sênior, sr",
-            location_terms_text: "remote, remoto, brasil, brazil",
-            negative_terms_text: SearchProfile::DEFAULT_NEGATIVE_TERMS.join(", ")
-          }
+          search_profile: compiled_form_params.merge(compiled_profile_payload: compiled_payload)
         }
       end
     end
@@ -156,19 +158,34 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     assert_match "fila indisponivel", response.body
   end
 
-  test "creates first profile from onboarding fields with heuristic fallback" do
+  test "rejects new profile creation until variations are generated" do
+    assert_no_difference("SearchProfile.count") do
+      post search_profiles_path, params: {
+        search_profile: simple_creation_params(technology_intent: "java", scan_window_days: "20")
+      }
+    end
+
+    assert_response :unprocessable_entity
+    assert_match "Gere as variacoes antes de criar o perfil", response.body
+  end
+
+  test "creates first profile from generated local variations" do
     sign_out
     sign_in_as(users(:three))
+
+    form_params = simple_creation_params(technology_intent: ".net, react", scan_window_days: "45")
+
+    post search_profiles_path(onboarding: 1), params: { search_profile: form_params, preview_compile: "1" }
+
+    assert_response :success
+    assert_match "Preview gerado", response.body
+
+    compiled_payload = extract_compiled_payload(response.body)
 
     assert_difference("SearchProfile.count", 1) do
       perform_enqueued_jobs(only: SearchProfileSyncJob) do
         post search_profiles_path(onboarding: 1), params: {
-          search_profile: {
-            stack_presets: [ ".net", "react" ],
-            seniority_preset: "senior",
-            language_scope: "english",
-            scan_window_days: "45"
-          }
+          search_profile: form_params.merge(compiled_profile_payload: compiled_payload)
         }
       end
     end
@@ -176,29 +193,29 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     profile = SearchProfile.order(:created_at).last
     assert_redirected_to jobs_path(search_profile_id: profile.id)
     assert_equal [ ".net", "react" ], profile.target_stacks
-    assert_equal "english", profile.language_scope
+    assert_equal "both", profile.language_scope
     assert_equal 45, profile.scan_window_days
     assert_equal "heuristic", profile.compiler_settings["provider"]
     assert_equal ".net developer", profile.compiler_settings.dig("generated_titles", "en").first
   end
 
-  test "onboarding rerender preserves the optional complement when sync fails" do
+  test "new profile rerender preserves the stack when sync fails" do
     sign_out
     sign_in_as(users(:three))
 
+    form_params = simple_creation_params(technology_intent: "React, Next.js", scan_window_days: "30")
+
+    post search_profiles_path(onboarding: 1), params: { search_profile: form_params, preview_compile: "1" }
+    compiled_payload = extract_compiled_payload(response.body)
+
     with_fake_sync_request(RaisingSyncRequest.new) do
       post search_profiles_path(onboarding: 1), params: {
-        search_profile: {
-          stack_presets: [ "react" ],
-          technology_intent: "Next.js",
-          seniority_preset: "senior",
-          language_scope: "both"
-        }
+        search_profile: form_params.merge(compiled_profile_payload: compiled_payload)
       }
     end
 
     assert_response :service_unavailable
-    assert_match(/id="search_profile_technology_intent".*value="Next\.js"/m, response.body)
+    assert_match(/id="search_profile_technology_intent".*value="react, next\.js"/m, response.body)
   end
 
   test "updates women only preference manually while preserving profile settings" do
@@ -373,6 +390,18 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
       }
     end
 
+    def simple_creation_params(technology_intent:, scan_window_days:)
+      {
+        technology_intent:,
+        seniority_preset: "senior",
+        language_scope: "both",
+        required_remote: "1",
+        region_scope: "brazil_latam",
+        include_women_only: "0",
+        scan_window_days:
+      }
+    end
+
     def extract_compiled_payload(body)
       escaped = body[/name="search_profile\[compiled_profile_payload\]".*?value="([^"]+)"/m, 1]
       CGI.unescapeHTML(escaped.to_s)
@@ -380,9 +409,15 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
 
     def with_fake_intent_compiler(fake_compiler)
       original_new = SearchProfiles::IntentCompiler.method(:new)
+      original_available = SearchProfiles::CompilerClient.method(:available?)
+
+      SearchProfiles::CompilerClient.singleton_class.send(:define_method, :available?) { true }
       SearchProfiles::IntentCompiler.singleton_class.send(:define_method, :new) { |_args = nil, **_kwargs| fake_compiler }
       yield
     ensure
+      SearchProfiles::CompilerClient.singleton_class.send(:define_method, :available?) do |*args, **kwargs|
+        original_available.call(*args, **kwargs)
+      end
       SearchProfiles::IntentCompiler.singleton_class.send(:define_method, :new) do |*args, **kwargs|
         original_new.call(*args, **kwargs)
       end

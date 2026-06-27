@@ -37,7 +37,7 @@ class SubmitStateTest < ApplicationSystemTestCase
         sign_in_as(users(:one))
 
         visit new_search_profile_path
-        fill_in "Tecnologia / stack", with: "ServiceNow"
+        fill_in "Linguagem / stack", with: "ServiceNow"
 
         capture_submit_snapshot("profile-compile") do
           <<~JS
@@ -50,7 +50,7 @@ class SubmitStateTest < ApplicationSystemTestCase
                   text: button.textContent.trim(),
                   disabled: button.disabled,
                   ariaDisabled: button.getAttribute("aria-disabled"),
-                  nameDisabled: document.querySelector("#search_profile_name")?.disabled
+                  technologyDisabled: document.querySelector("#search_profile_technology_intent")?.disabled
                 }))
               })
             }, { once: true })
@@ -67,7 +67,7 @@ class SubmitStateTest < ApplicationSystemTestCase
         assert_equal "Gerando...", snapshot.fetch("text")
         assert_equal true, snapshot.fetch("disabled")
         assert_equal "true", snapshot.fetch("ariaDisabled")
-        assert_equal true, snapshot.fetch("nameDisabled")
+        assert_equal true, snapshot.fetch("technologyDisabled")
       end
     end
   end
@@ -182,14 +182,11 @@ class SubmitStateTest < ApplicationSystemTestCase
 
     def with_compiler_available
       original_available = SearchProfiles::CompilerClient.method(:available?)
-      original_setup_hint = SearchProfiles::CompilerClient.method(:setup_hint)
 
       SearchProfiles::CompilerClient.singleton_class.send(:define_method, :available?) { true }
-      SearchProfiles::CompilerClient.singleton_class.send(:define_method, :setup_hint) { "Compiler disponível no teste" }
       yield
     ensure
       SearchProfiles::CompilerClient.singleton_class.send(:define_method, :available?) { |*args, **kwargs| original_available.call(*args, **kwargs) }
-      SearchProfiles::CompilerClient.singleton_class.send(:define_method, :setup_hint) { |*args, **kwargs| original_setup_hint.call(*args, **kwargs) }
     end
 
     def with_slow_action(controller_class, action_name, delay: 0.5)

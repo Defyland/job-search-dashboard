@@ -59,18 +59,6 @@ module SearchProfiles
       "portuguese" => [ "engenheiro de software", "desenvolvedor", "frontend", "backend", "fullstack" ],
       "english" => [ "software engineer", "developer", "frontend", "backend", "fullstack" ]
     }.freeze
-    ONBOARDING_STACK_PRESETS = [
-      { "value" => "ruby", "label" => "Ruby", "hint" => "Backend Ruby" },
-      { "value" => "ruby on rails", "label" => "Ruby on Rails", "hint" => "Rails / fullstack" },
-      { "value" => "react", "label" => "React", "hint" => "Frontend web" },
-      { "value" => "react native", "label" => "React Native", "hint" => "Mobile" },
-      { "value" => "java", "label" => "Java", "hint" => "JVM / Spring" },
-      { "value" => ".net", "label" => ".NET", "hint" => "C# / ASP.NET" },
-      { "value" => "node", "label" => "Node.js", "hint" => "Node / Nest" },
-      { "value" => "python", "label" => "Python", "hint" => "Django / FastAPI" },
-      { "value" => "salesforce", "label" => "Salesforce", "hint" => "Apex / Lightning" },
-      { "value" => "servicenow", "label" => "ServiceNow", "hint" => "ITSM / Flow" }
-    ].freeze
     MANUAL_OVERRIDE_FIELDS = {
       target_stacks: "target_stacks_text",
       target_titles: "target_titles_text",

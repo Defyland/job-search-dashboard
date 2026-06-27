@@ -11,6 +11,8 @@ module SearchProfiles
       region_scope = SearchProfiles::Vocabulary.normalize_region_scope(simple_input["region_scope"])
       seniority_preset = SearchProfiles::Vocabulary.normalize_seniority_preset(simple_input["seniority_preset"])
       compiled_payload = compiled_payload.deep_stringify_keys
+      target_stacks = SearchProfiles::Vocabulary.normalize_list(compiled_payload["canonical_stacks"])
+      raise SearchProfiles::IntentCompiler::Error, "Informe ao menos a stack principal do perfil." if target_stacks.blank?
 
       attributes = {
         name: simple_input["name"].presence || compiled_payload["profile_name_suggestion"],
@@ -19,7 +21,7 @@ module SearchProfiles
         include_women_only: BOOLEAN.cast(simple_input["include_women_only"]),
         language_scope: language_scope,
         scan_window_days: SearchProfiles::Vocabulary.normalize_scan_window_days(simple_input["scan_window_days"]),
-        target_stacks: SearchProfiles::Vocabulary.normalize_list(compiled_payload["canonical_stacks"]),
+        target_stacks: target_stacks,
         target_titles: SearchProfiles::Vocabulary.normalize_list(
           generated_titles_for(compiled_payload, language_scope) + SearchProfiles::Vocabulary.role_titles_for(language_scope)
         ),

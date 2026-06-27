@@ -13,7 +13,6 @@ class SearchProfilesController < ApplicationController
   end
 
   def create
-    return persist_onboarding_profile(@search_profile) if onboarding_mode?
     return render_compiled_preview(@search_profile) if preview_compile_requested?
 
     persist_profile(
@@ -52,7 +51,13 @@ class SearchProfilesController < ApplicationController
 
   private
     def build_new_search_profile
-      @search_profile = current_user.search_profiles.new(SearchProfile.default_attributes)
+      @search_profile = current_user.search_profiles.new(
+        active: true,
+        required_remote: true,
+        include_women_only: false,
+        language_scope: SearchProfiles::Vocabulary::DEFAULT_LANGUAGE_SCOPE,
+        scan_window_days: SearchProfiles::Vocabulary::DEFAULT_SCAN_WINDOW_DAYS
+      )
     end
 
     def set_search_profile
@@ -61,7 +66,6 @@ class SearchProfilesController < ApplicationController
 
     def set_intent_compiler_availability
       @intent_compiler_available = SearchProfiles::CompilerClient.available?
-      @intent_compiler_setup_hint = SearchProfiles::CompilerClient.setup_hint
     end
 
     def set_onboarding_mode
@@ -78,39 +82,6 @@ class SearchProfilesController < ApplicationController
 
     def compiled_payload_token
       @compiled_payload_token ||= SearchProfiles::CompiledPayloadToken.new
-    end
-
-    def persist_onboarding_profile(search_profile)
-      form_attributes = profile_form_params.to_h
-      form_state = SearchProfiles::FormState.new(search_profile:, submitted_attributes: form_attributes)
-      simple_input = form_state.simple_input
-
-      search_profile.assign_attributes(
-        SearchProfiles::ProfileBuilder.from_compiled(
-          simple_input:,
-          compiled_payload: compile_with_fallback(simple_input),
-          active: form_state.active_default
-        )
-      )
-
-      if search_profile.valid?
-        SearchProfile.transaction do
-          search_profile.save!
-          request_profile_sync!(search_profile, prune_stale: false)
-        end
-        redirect_to jobs_path(search_profile_id: search_profile.id), notice: "Perfil criado. Busca inicial enfileirada."
-      else
-        hydrate_form_state(search_profile, form_attributes)
-        render :new, status: :unprocessable_entity
-      end
-    rescue SearchProfiles::IntentCompiler::Error => error
-      search_profile.errors.add(:base, error.message)
-      hydrate_form_state(search_profile, form_attributes)
-      render :new, status: :unprocessable_entity
-    rescue SearchProfiles::SyncRequest::Error => error
-      search_profile.errors.add(:base, error.message)
-      hydrate_form_state(search_profile, form_attributes)
-      render :new, status: :service_unavailable
     end
 
     def persist_profile(search_profile, template:, success_path:, success_notice:, after_save: nil)
@@ -158,6 +129,8 @@ class SearchProfilesController < ApplicationController
           active: form_state.active_default
         )
       else
+        raise SearchProfiles::IntentCompiler::Error, "Gere as variacoes antes de criar o perfil." if search_profile.new_record?
+
         SearchProfiles::ProfileBuilder.from_manual(
           form_attributes:,
           existing_settings: search_profile.settings,
@@ -220,7 +193,7 @@ class SearchProfilesController < ApplicationController
       form_attributes = profile_form_params.to_h
       form_state = SearchProfiles::FormState.new(search_profile:, submitted_attributes: form_attributes)
       simple_input = form_state.simple_input
-      compiled_payload = intent_compiler.call(**compiler_input_from(simple_input))
+      compiled_payload = compile_with_fallback(simple_input)
       compiled_payload["request_fingerprint"] = SearchProfiles::ProfileBuilder.intent_fingerprint(simple_input)
 
       @compiled_preview = compiled_payload
@@ -267,8 +240,7 @@ class SearchProfilesController < ApplicationController
         :target_titles_text,
         :seniority_terms_text,
         :location_terms_text,
-        :negative_terms_text,
-        stack_presets: []
+        :negative_terms_text
       )
     end
 

@@ -1,7 +1,10 @@
 <% simple_input = @simple_profile_input || search_profile.simple_form_state %>
-<% advanced_open = @advanced_open %>
+<% creation_mode = search_profile.new_record? %>
+<% advanced_open = @advanced_open && !creation_mode %>
+<% form_options = submit_state_form_options(default_loading_text: "Processando...", class: "grid gap-6", data: { turbo: false }) %>
+<% form_options[:url] = search_profiles_path(onboarding: 1) if @onboarding_mode %>
 
-<%= form_with model: search_profile, **submit_state_form_options(default_loading_text: "Processando...", class: "grid gap-6", data: { turbo: false }) do |form| %>
+<%= form_with model: search_profile, **form_options do |form| %>
   <% if search_profile.errors.any? %>
     <div class="rounded-2xl border border-rose-400/30 bg-rose-500/10 p-4 text-sm text-rose-100">
       <p class="font-bold">Revise o perfil antes de salvar.</p>
@@ -17,68 +20,79 @@
     <%= hidden_field_tag "search_profile[compiled_profile_payload]", @compiled_profile_payload %>
   <% end %>
 
+  <% if creation_mode %>
+    <%= hidden_field_tag "search_profile[seniority_preset]", SearchProfiles::Vocabulary::DEFAULT_SENIORITY_PRESET %>
+    <%= hidden_field_tag "search_profile[language_scope]", SearchProfiles::Vocabulary::DEFAULT_LANGUAGE_SCOPE %>
+    <%= hidden_field_tag "search_profile[required_remote]", "1" %>
+    <%= hidden_field_tag "search_profile[region_scope]", SearchProfiles::Vocabulary::DEFAULT_REGION_SCOPE %>
+    <%= hidden_field_tag "search_profile[include_women_only]", "0" %>
+  <% end %>
+
   <section class="grid gap-5 rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-5">
     <div class="space-y-1">
       <p class="text-xs font-semibold uppercase tracking-[0.18em] text-sky-200/70">Modo simples</p>
-      <h2 class="text-xl font-bold text-white">Descreva a intencao do perfil</h2>
-      <p class="text-sm text-slate-400">Informe a stack e as restricoes. O app gera titulos e aliases para o motor de match.</p>
+      <h2 class="text-xl font-bold text-white"><%= creation_mode ? "Crie o radar pela stack" : "Descreva a intencao do perfil" %></h2>
+      <p class="text-sm text-slate-400">
+        <%= creation_mode ? "Informe a linguagem/stack e a janela inicial." : "Informe a stack e as restricoes. O app gera titulos e aliases para o motor de match." %>
+      </p>
     </div>
 
-    <div class="grid gap-4 md:grid-cols-2">
-      <div>
-        <%= form.label :name, "Nome do perfil", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
-        <%= form.text_field :name, value: simple_input["name"], class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white", placeholder: "Ex.: Senior Salesforce Remote BR/LatAm" %>
+    <% if creation_mode %>
+      <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_220px]">
+        <div>
+          <%= label_tag "search_profile_technology_intent", "Linguagem / stack", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+          <%= text_field_tag "search_profile[technology_intent]", simple_input["technology_intent"], id: "search_profile_technology_intent", class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white", placeholder: "Java, Ruby, .NET, Salesforce, React..." %>
+        </div>
+        <div>
+          <%= form.label :scan_window_days, "Buscar vagas desde", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+          <%= form.select :scan_window_days, options_for_select(SearchProfiles::Vocabulary::SCAN_WINDOW_DAY_OPTIONS, simple_input["scan_window_days"]), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
+        </div>
       </div>
-      <div>
-        <%= label_tag "search_profile_technology_intent", "Tecnologia / stack", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
-        <%= text_field_tag "search_profile[technology_intent]", simple_input["technology_intent"], id: "search_profile_technology_intent", class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white", placeholder: "Java, ServiceNow, .NET, Salesforce, Ruby on Rails..." %>
+    <% else %>
+      <div class="grid gap-4 md:grid-cols-2">
+        <div>
+          <%= form.label :name, "Nome do perfil", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+          <%= form.text_field :name, value: simple_input["name"], class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white", placeholder: "Ex.: Senior Salesforce Remote BR/LatAm" %>
+        </div>
+        <div>
+          <%= label_tag "search_profile_technology_intent", "Tecnologia / stack", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+          <%= text_field_tag "search_profile[technology_intent]", simple_input["technology_intent"], id: "search_profile_technology_intent", class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white", placeholder: "Java, ServiceNow, .NET, Salesforce, Ruby on Rails..." %>
+        </div>
       </div>
-    </div>
 
-    <div class="grid gap-4 md:grid-cols-4">
-      <div>
-        <%= label_tag "search_profile_seniority_preset", "Senioridade", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
-        <%= select_tag "search_profile[seniority_preset]", options_for_select(SearchProfiles::Vocabulary::SENIORITY_PRESET_LABELS.map { |value, label| [ label, value ] }, simple_input["seniority_preset"]), id: "search_profile_seniority_preset", class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
+      <div class="grid gap-4 md:grid-cols-4">
+        <div>
+          <%= label_tag "search_profile_seniority_preset", "Senioridade", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+          <%= select_tag "search_profile[seniority_preset]", options_for_select(SearchProfiles::Vocabulary::SENIORITY_PRESET_LABELS.map { |value, label| [ label, value ] }, simple_input["seniority_preset"]), id: "search_profile_seniority_preset", class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
+        </div>
+        <div>
+          <%= form.label :language_scope, "Idioma dos titulos", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+          <%= form.select :language_scope, options_for_select(SearchProfiles::Vocabulary::LANGUAGE_SCOPE_LABELS.map { |value, label| [ label, value ] }, simple_input["language_scope"]), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
+        </div>
+        <div>
+          <%= label_tag "search_profile_region_scope", "Regiao alvo", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+          <%= select_tag "search_profile[region_scope]", options_for_select(SearchProfiles::Vocabulary::REGION_SCOPE_LABELS.map { |value, label| [ label, value ] }, simple_input["region_scope"]), id: "search_profile_region_scope", class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
+        </div>
+        <div>
+          <%= form.label :scan_window_days, "Buscar vagas desde", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+          <%= form.select :scan_window_days, options_for_select(SearchProfiles::Vocabulary::SCAN_WINDOW_DAY_OPTIONS, simple_input["scan_window_days"]), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
+        </div>
       </div>
-      <div>
-        <%= form.label :language_scope, "Idioma dos titulos", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
-        <%= form.select :language_scope, options_for_select(SearchProfiles::Vocabulary::LANGUAGE_SCOPE_LABELS.map { |value, label| [ label, value ] }, simple_input["language_scope"]), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
-      </div>
-      <div>
-        <%= label_tag "search_profile_region_scope", "Regiao alvo", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
-        <%= select_tag "search_profile[region_scope]", options_for_select(SearchProfiles::Vocabulary::REGION_SCOPE_LABELS.map { |value, label| [ label, value ] }, simple_input["region_scope"]), id: "search_profile_region_scope", class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
-      </div>
-      <div>
-        <%= form.label :scan_window_days, "Buscar vagas desde", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
-        <%= form.select :scan_window_days, options_for_select(SearchProfiles::Vocabulary::SCAN_WINDOW_DAY_OPTIONS, simple_input["scan_window_days"]), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
-      </div>
-    </div>
 
-    <div class="grid gap-4 md:grid-cols-2">
-      <label class="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
-        <%= form.check_box :required_remote, { checked: ActiveModel::Type::Boolean.new.cast(simple_input["required_remote"]) , class: "h-4 w-4 rounded border-white/20 bg-slate-950 text-sky-400" }, "1", "0" %>
-        Exigir remoto
-      </label>
-      <label class="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
-        <%= form.check_box :include_women_only, { checked: ActiveModel::Type::Boolean.new.cast(simple_input["include_women_only"]) , class: "h-4 w-4 rounded border-white/20 bg-slate-950 text-sky-400" }, "1", "0" %>
-        Incluir vagas exclusivas para mulheres
-      </label>
-    </div>
-
-    <% unless @intent_compiler_available %>
-      <div class="rounded-2xl border border-amber-300/30 bg-amber-400/10 p-4 text-sm text-amber-100">
-        <%= @intent_compiler_setup_hint %> O modo avancado continua disponivel abaixo.
+      <div class="grid gap-4 md:grid-cols-2">
+        <label class="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+          <%= form.check_box :required_remote, { checked: ActiveModel::Type::Boolean.new.cast(simple_input["required_remote"]) , class: "h-4 w-4 rounded border-white/20 bg-slate-950 text-sky-400" }, "1", "0" %>
+          Exigir remoto
+        </label>
+        <label class="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+          <%= form.check_box :include_women_only, { checked: ActiveModel::Type::Boolean.new.cast(simple_input["include_women_only"]) , class: "h-4 w-4 rounded border-white/20 bg-slate-950 text-sky-400" }, "1", "0" %>
+          Incluir vagas exclusivas para mulheres
+        </label>
       </div>
     <% end %>
 
     <div class="flex flex-wrap items-center gap-3">
-      <% compile_button_class = if @intent_compiler_available
-        "rounded-2xl bg-sky-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-sky-300"
-      else
-        "rounded-2xl cursor-not-allowed bg-slate-700 px-5 py-3 text-sm font-bold text-slate-400"
-      end %>
-      <%= form.button "Gerar variacoes", name: "preview_compile", value: "1", **submit_state_submit_options(loading_text: "Gerando...", class: compile_button_class, disabled: !@intent_compiler_available) %>
-      <p class="text-sm text-slate-400">Gera stacks canonicas, aliases e titulos mais provaveis para o stack informado.</p>
+      <%= form.button "Gerar variacoes", name: "preview_compile", value: "1", **submit_state_submit_options(loading_text: "Gerando...", class: "rounded-2xl bg-sky-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-sky-300") %>
     </div>
   </section>
 
@@ -140,6 +154,14 @@
     </section>
   <% end %>
 
+  <% if creation_mode && @compiled_preview.present? %>
+    <div class="flex flex-wrap gap-3">
+      <%= form.submit "Criar perfil e iniciar busca", **submit_state_submit_options(loading_text: "Salvando...", class: "rounded-2xl bg-sky-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-sky-300") %>
+      <%= link_to "Cancelar", search_profiles_path, class: "rounded-2xl border border-white/10 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/5" %>
+    </div>
+  <% end %>
+
+  <% unless creation_mode %>
   <details class="rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-5" <%= advanced_open ? "open" : nil %>>
     <summary class="cursor-pointer list-none">
       <div class="flex flex-wrap items-center justify-between gap-3">
@@ -192,4 +214,5 @@
       </div>
     </div>
   </details>
+  <% end %>
 <% end %>

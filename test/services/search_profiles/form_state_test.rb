@@ -26,18 +26,25 @@ module SearchProfiles
       assert state.advanced_open?
     end
 
-    test "merges onboarding stack presets with optional freeform text" do
-      profile = SearchProfile.new(SearchProfile.default_attributes)
+    test "keeps new profile technology blank until the user types it" do
+      profile = SearchProfile.new(scan_window_days: SearchProfiles::Vocabulary::DEFAULT_SCAN_WINDOW_DAYS)
+
+      state = FormState.new(search_profile: profile)
+
+      assert_equal "", state.hydrated_simple_input["technology_intent"]
+      assert_not state.simple_input.key?("stack_presets")
+    end
+
+    test "normalizes freeform technology intent" do
+      profile = SearchProfile.new(scan_window_days: SearchProfiles::Vocabulary::DEFAULT_SCAN_WINDOW_DAYS)
 
       state = FormState.new(
         search_profile: profile,
         submitted_attributes: {
-          "stack_presets" => [ "react", ".net" ],
-          "technology_intent" => "Next.js"
+          "technology_intent" => " React; .NET\nNext.js "
         }
       )
 
-      assert_equal [ "react", ".net" ], state.simple_input["stack_presets"]
       assert_equal "react, .net, next.js", state.simple_input["technology_intent"]
     end
   end

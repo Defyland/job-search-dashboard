@@ -31,7 +31,7 @@ class SearchProfilesTest < ApplicationSystemTestCase
       sign_in_as(users(:one))
 
       visit new_search_profile_path
-      fill_in "Tecnologia / stack", with: "ServiceNow"
+      fill_in "Linguagem / stack", with: "ServiceNow"
       select "45 dias", from: "Buscar vagas desde"
       click_button "Gerar variacoes"
 
@@ -39,7 +39,7 @@ class SearchProfilesTest < ApplicationSystemTestCase
       assert_text "servicenow developer"
       assert_selector "input[name='search_profile[compiled_profile_payload]']", visible: false
 
-      click_button "Salvar manualmente"
+      click_button "Criar perfil e iniciar busca"
 
       assert_current_path jobs_path, ignore_query: true
       assert_text "Radar de vagas"
@@ -54,18 +54,20 @@ class SearchProfilesTest < ApplicationSystemTestCase
     end
   end
 
-  test "first access onboarding creates a profile from three fields" do
+  test "first access onboarding creates a profile from stack and scan window" do
     visit new_session_path
     sign_in_as(users(:three))
 
     visit root_path
 
-    assert_text "Monte seu primeiro radar"
-    check "search_profile_stack_preset_salesforce"
-    check "search_profile_stack_preset_react"
-    select "Senior", from: "Senioridade"
-    select "Português", from: "Idioma alvo"
+    assert_text "Crie o radar pela stack"
+    fill_in "Linguagem / stack", with: "Salesforce, React"
     select "30 dias", from: "Buscar vagas desde"
+    click_button "Gerar variacoes"
+
+    assert_text(/preview gerado/i)
+    assert_text "salesforce developer"
+
     click_button "Criar perfil e iniciar busca"
 
     assert_current_path jobs_path, ignore_query: true
@@ -73,7 +75,7 @@ class SearchProfilesTest < ApplicationSystemTestCase
 
     profile = SearchProfile.order(:created_at).last
     assert_equal [ "react", "salesforce" ], profile.target_stacks.sort
-    assert_equal "portuguese", profile.language_scope
+    assert_equal "both", profile.language_scope
     assert_equal 30, profile.scan_window_days
   end
 
@@ -97,13 +99,10 @@ class SearchProfilesTest < ApplicationSystemTestCase
 
     def with_compiler_available
       original_available = SearchProfiles::CompilerClient.method(:available?)
-      original_setup_hint = SearchProfiles::CompilerClient.method(:setup_hint)
 
       SearchProfiles::CompilerClient.singleton_class.send(:define_method, :available?) { true }
-      SearchProfiles::CompilerClient.singleton_class.send(:define_method, :setup_hint) { "Compiler disponível no teste" }
       yield
     ensure
       SearchProfiles::CompilerClient.singleton_class.send(:define_method, :available?) { |*args, **kwargs| original_available.call(*args, **kwargs) }
-      SearchProfiles::CompilerClient.singleton_class.send(:define_method, :setup_hint) { |*args, **kwargs| original_setup_hint.call(*args, **kwargs) }
     end
 end

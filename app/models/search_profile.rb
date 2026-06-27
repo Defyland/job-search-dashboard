@@ -128,7 +128,7 @@ class SearchProfile < ApplicationRecord
 
   %i[target_stacks target_titles seniority_terms location_terms negative_terms].each do |field|
     define_method("#{field}_text") do
-      public_send(field).join(", ")
+      Array(public_send(field)).join(", ")
     end
 
     define_method("#{field}_text=") do |value|

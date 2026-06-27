@@ -4,9 +4,9 @@
   <div class="mb-6">
     <h1 class="text-3xl font-extrabold tracking-tight text-white"><%= @onboarding_mode ? "Comece pelo essencial" : "Novo perfil" %></h1>
     <p class="mt-2 text-sm text-slate-400">
-      <%= @onboarding_mode ? "O primeiro acesso precisa de poucos dados para o radar sair do zero." : "Configure a busca pelo que voce quer receber no radar." %>
+      <%= @onboarding_mode ? "Crie o primeiro radar com a stack e a janela de busca." : "Crie o radar com a stack e a janela de busca." %>
     </p>
   </div>
 
-  <%= render(@onboarding_mode ? "onboarding_form" : "form", search_profile: @search_profile) %>
+  <%= render "form", search_profile: @search_profile %>
 </section>
