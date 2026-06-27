@@ -35,14 +35,29 @@
           </div>
 
           <% if current_user %>
+            <% nav_items = [
+              [ "Vagas", jobs_path, current_page?(jobs_path) ],
+              [ "Perfis", search_profiles_path, current_page?(search_profiles_path) ],
+              [ "Runs", search_runs_path, current_page?(search_runs_path) ],
+              [ "Fontes", sources_path, current_page?(sources_path) ]
+            ] %>
             <nav class="hidden items-center gap-2 md:flex">
-              <%= link_to "Vagas", jobs_path, class: "rounded-full px-4 py-2 text-sm font-medium #{current_page?(jobs_path) ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'}" %>
-              <%= link_to "Perfis", search_profiles_path, class: "rounded-full px-4 py-2 text-sm font-medium #{current_page?(search_profiles_path) ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'}" %>
-              <%= link_to "Runs", search_runs_path, class: "rounded-full px-4 py-2 text-sm font-medium #{current_page?(search_runs_path) ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'}" %>
-              <%= link_to "Fontes", sources_path, class: "rounded-full px-4 py-2 text-sm font-medium #{current_page?(sources_path) ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'}" %>
+              <% nav_items.each do |label, path, active| %>
+                <%= link_to label, path, class: "rounded-full px-4 py-2 text-sm font-medium #{active ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'}" %>
+              <% end %>
             </nav>
 
             <div class="flex items-center gap-3">
+              <details class="relative md:hidden">
+                <summary class="cursor-pointer list-none rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/5 [&::-webkit-details-marker]:hidden">
+                  Menu
+                </summary>
+                <nav class="absolute right-0 mt-3 grid w-48 gap-1 rounded-2xl border border-white/10 bg-slate-950 p-2 shadow-2xl shadow-slate-950/40">
+                  <% nav_items.each do |label, path, active| %>
+                    <%= link_to label, path, class: "rounded-xl px-3 py-2 text-sm font-semibold #{active ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'}" %>
+                  <% end %>
+                </nav>
+              </details>
               <div class="hidden text-right md:block">
                 <p class="text-sm font-semibold text-white"><%= current_user.email_address %></p>
                 <p class="text-xs text-slate-400">Acesso privado</p>
