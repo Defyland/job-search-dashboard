@@ -50,6 +50,7 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match "Linguagem / stack", response.body
     assert_match "Nivel", response.body
+    assert_match "Idioma dos titulos", response.body
     assert_no_match "Senior Ruby/Rails/React Remote BR/LatAm", response.body
     assert_no_match "search_profile_target_stacks_text", response.body
     assert_no_match "Senioridade", response.body
@@ -269,6 +270,35 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     assert_includes profile.negative_terms, "junior"
     assert_includes profile.negative_terms, "senior"
     assert_equal "mid", profile.intent_settings["seniority_preset"]
+  end
+
+  test "creates portuguese-only profile from simple flow" do
+    form_params = simple_creation_params(
+      technology_intent: "java",
+      language_scope: "portuguese",
+      scan_window_days: "14"
+    )
+
+    post search_profiles_path, params: { search_profile: form_params, preview_compile: "1" }
+
+    assert_response :success
+    assert_match "Titulos PT", response.body
+    assert_no_match "Titulos EN", response.body
+
+    compiled_payload = extract_compiled_payload(response.body)
+
+    assert_difference("SearchProfile.count", 1) do
+      post search_profiles_path, params: {
+        search_profile: form_params.merge(compiled_profile_payload: compiled_payload)
+      }
+    end
+
+    profile = SearchProfile.order(:created_at).last
+    assert_redirected_to jobs_path(search_profile_id: profile.id)
+    assert_equal "portuguese", profile.language_scope
+    assert_equal "portuguese", profile.intent_settings["language_scope"]
+    assert_includes profile.target_titles, "desenvolvedor java"
+    refute_includes profile.target_titles, "java developer"
   end
 
   test "creates first profile from generated local variations" do
@@ -507,11 +537,11 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
       }
     end
 
-    def simple_creation_params(technology_intent:, scan_window_days:, seniority_preset: "senior")
+    def simple_creation_params(technology_intent:, scan_window_days:, seniority_preset: "senior", language_scope: "both")
       {
         technology_intent:,
         seniority_preset:,
-        language_scope: "both",
+        language_scope:,
         required_remote: "1",
         region_scope: "brazil_latam",
         include_women_only: "0",

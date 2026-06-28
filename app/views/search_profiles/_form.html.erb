@@ -29,7 +29,6 @@
   <% end %>
 
   <% if creation_mode %>
-    <%= hidden_field_tag "search_profile[language_scope]", SearchProfiles::Vocabulary::DEFAULT_LANGUAGE_SCOPE %>
     <%= hidden_field_tag "search_profile[required_remote]", "1" %>
     <%= hidden_field_tag "search_profile[region_scope]", SearchProfiles::Vocabulary::DEFAULT_REGION_SCOPE %>
     <%= hidden_field_tag "search_profile[include_women_only]", "0" %>
@@ -40,13 +39,13 @@
       <p class="text-xs font-semibold uppercase tracking-[0.18em] text-sky-200/70">Modo simples</p>
       <h2 class="text-xl font-bold text-white"><%= creation_mode ? "Crie o radar pela stack" : "Descreva a intencao do perfil" %></h2>
       <p class="text-sm text-slate-400">
-        <%= creation_mode ? "Informe a linguagem/stack e a janela inicial." : "Informe a stack e as restricoes. O app gera titulos e aliases para o motor de match." %>
+        <%= creation_mode ? "Informe a linguagem/stack, nivel, idioma e janela inicial." : "Informe a stack e as restricoes. O app gera titulos e aliases para o motor de match." %>
       </p>
     </div>
 
     <% if creation_mode %>
-      <div class="grid gap-4 md:grid-cols-4">
-        <div class="md:col-span-2">
+      <div class="grid gap-4 md:grid-cols-2">
+        <div>
           <%= label_tag "search_profile_technology_intent", "Linguagem / stack", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
           <%= text_field_tag "search_profile[technology_intent]", simple_input["technology_intent"], **technology_intent_field_options.merge(placeholder: "Java, Ruby, .NET, Salesforce, React...") %>
           <% if technology_intent_error %>
@@ -56,6 +55,10 @@
         <div>
           <%= label_tag "search_profile_seniority_preset", "Nivel", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
           <%= select_tag "search_profile[seniority_preset]", options_for_select(SearchProfiles::Vocabulary::SENIORITY_PRESET_LABELS.map { |value, label| [ label, value ] }, simple_input["seniority_preset"]), id: "search_profile_seniority_preset", class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
+        </div>
+        <div>
+          <%= form.label :language_scope, "Idioma dos titulos", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+          <%= form.select :language_scope, options_for_select(SearchProfiles::Vocabulary::LANGUAGE_SCOPE_LABELS.map { |value, label| [ label, value ] }, simple_input["language_scope"]), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
         </div>
         <div>
           <%= form.label :scan_window_days, "Buscar vagas desde", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
@@ -114,6 +117,9 @@
   </section>
 
   <% if @compiled_preview.present? %>
+    <% preview_language_scope = SearchProfiles::Vocabulary.normalize_language_scope(simple_input["language_scope"]) %>
+    <% show_preview_pt = preview_language_scope != "english" %>
+    <% show_preview_en = preview_language_scope != "portuguese" %>
     <section class="grid gap-4 rounded-[1.75rem] border border-sky-300/20 bg-sky-400/10 p-5">
       <div class="space-y-1">
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-sky-100/80">Preview gerado</p>
@@ -149,23 +155,28 @@
           </div>
         </div>
 
-        <div class="grid gap-4 md:grid-cols-2">
-          <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Titulos PT</p>
-            <ul class="mt-3 space-y-2 text-sm text-slate-200">
-              <% Array(@compiled_preview["title_variants_pt"]).each do |title| %>
-                <li><%= title %></li>
-              <% end %>
-            </ul>
-          </div>
-          <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Titulos EN</p>
-            <ul class="mt-3 space-y-2 text-sm text-slate-200">
-              <% Array(@compiled_preview["title_variants_en"]).each do |title| %>
-                <li><%= title %></li>
-              <% end %>
-            </ul>
-          </div>
+        <div class="grid gap-4 <%= show_preview_pt && show_preview_en ? "md:grid-cols-2" : nil %>">
+          <% if show_preview_pt %>
+            <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Titulos PT</p>
+              <ul class="mt-3 space-y-2 text-sm text-slate-200">
+                <% Array(@compiled_preview["title_variants_pt"]).each do |title| %>
+                  <li><%= title %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <% if show_preview_en %>
+            <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Titulos EN</p>
+              <ul class="mt-3 space-y-2 text-sm text-slate-200">
+                <% Array(@compiled_preview["title_variants_en"]).each do |title| %>
+                  <li><%= title %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
         </div>
       </div>
     </section>

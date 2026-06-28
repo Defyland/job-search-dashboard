@@ -66,11 +66,13 @@ class SearchProfilesTest < ApplicationSystemTestCase
 
     assert_text "Crie o radar pela stack"
     fill_in "Linguagem / stack", with: "Salesforce, React"
+    select "Português", from: "Idioma dos titulos"
     select "30 dias", from: "Buscar vagas desde"
     click_button "Gerar variacoes"
 
     assert_text(/preview gerado/i)
-    assert_text "salesforce developer"
+    assert_text "desenvolvedor salesforce"
+    assert_no_text "salesforce developer"
 
     click_button "Criar perfil e iniciar busca"
 
@@ -79,7 +81,7 @@ class SearchProfilesTest < ApplicationSystemTestCase
 
     profile = SearchProfile.order(:created_at).last
     assert_equal [ "react", "salesforce" ], profile.target_stacks.sort
-    assert_equal "both", profile.language_scope
+    assert_equal "portuguese", profile.language_scope
     assert_equal 30, profile.scan_window_days
   end
 
@@ -93,16 +95,19 @@ class SearchProfilesTest < ApplicationSystemTestCase
     assert_text "Crie o radar pela stack"
     assert_field "Linguagem / stack"
     assert_field "Nivel"
+    assert_field "Idioma dos titulos"
     assert_no_text "Modo avancado"
 
     fill_in "Linguagem / stack", with: "Java"
     select "Pleno", from: "Nivel"
+    select "Inglês", from: "Idioma dos titulos"
     select "14 dias", from: "Buscar vagas desde"
     click_button "Gerar variacoes"
 
     assert_text(/preview gerado/i)
     assert_text "Pleno Java Remote Brasil e LatAm"
     assert_text "java developer"
+    assert_no_text "desenvolvedor java"
     assert_button "Criar perfil e iniciar busca"
   end
 
