@@ -49,6 +49,7 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_match "Linguagem / stack", response.body
+    assert_match "Nivel", response.body
     assert_no_match "Senior Ruby/Rails/React Remote BR/LatAm", response.body
     assert_no_match "search_profile_target_stacks_text", response.body
     assert_no_match "Senioridade", response.body
@@ -209,6 +210,65 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :unprocessable_entity
     assert_match "Gere as variacoes antes de criar o perfil", response.body
+  end
+
+  test "creates junior profile from simple flow without excluding junior titles" do
+    form_params = simple_creation_params(
+      technology_intent: "java",
+      seniority_preset: "junior",
+      scan_window_days: "14"
+    )
+
+    post search_profiles_path, params: { search_profile: form_params, preview_compile: "1" }
+
+    assert_response :success
+    assert_match "Junior Java Remote Brasil e LatAm", response.body
+
+    compiled_payload = extract_compiled_payload(response.body)
+
+    assert_difference("SearchProfile.count", 1) do
+      post search_profiles_path, params: {
+        search_profile: form_params.merge(compiled_profile_payload: compiled_payload)
+      }
+    end
+
+    profile = SearchProfile.order(:created_at).last
+    assert_redirected_to jobs_path(search_profile_id: profile.id)
+    assert_includes profile.seniority_terms, "junior"
+    refute_includes profile.negative_terms, "junior"
+    refute_includes profile.negative_terms, "júnior"
+    assert_includes profile.negative_terms, "senior"
+    assert_equal "junior", profile.intent_settings["seniority_preset"]
+  end
+
+  test "creates pleno profile from simple flow without excluding pleno titles" do
+    form_params = simple_creation_params(
+      technology_intent: "java",
+      seniority_preset: "mid",
+      scan_window_days: "14"
+    )
+
+    post search_profiles_path, params: { search_profile: form_params, preview_compile: "1" }
+
+    assert_response :success
+    assert_match "Pleno Java Remote Brasil e LatAm", response.body
+
+    compiled_payload = extract_compiled_payload(response.body)
+
+    assert_difference("SearchProfile.count", 1) do
+      post search_profiles_path, params: {
+        search_profile: form_params.merge(compiled_profile_payload: compiled_payload)
+      }
+    end
+
+    profile = SearchProfile.order(:created_at).last
+    assert_redirected_to jobs_path(search_profile_id: profile.id)
+    assert_includes profile.seniority_terms, "pleno"
+    refute_includes profile.negative_terms, "pleno"
+    refute_includes profile.negative_terms, "mid-level"
+    assert_includes profile.negative_terms, "junior"
+    assert_includes profile.negative_terms, "senior"
+    assert_equal "mid", profile.intent_settings["seniority_preset"]
   end
 
   test "creates first profile from generated local variations" do
@@ -447,10 +507,10 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
       }
     end
 
-    def simple_creation_params(technology_intent:, scan_window_days:)
+    def simple_creation_params(technology_intent:, scan_window_days:, seniority_preset: "senior")
       {
         technology_intent:,
-        seniority_preset: "senior",
+        seniority_preset:,
         language_scope: "both",
         required_remote: "1",
         region_scope: "brazil_latam",

@@ -33,14 +33,31 @@ module SearchProfiles
       "english" => "Inglês"
     }.freeze
     SENIORITY_PRESETS = {
+      "junior" => [ "junior", "júnior", "jr", "entry level" ],
+      "mid" => [ "pleno", "mid-level", "mid level", "mid", "intermediate" ],
       "senior" => [ "senior", "sênior", "sr", "staff" ],
       "staff" => [ "staff", "senior staff", "sr staff" ],
       "principal" => [ "principal", "staff", "senior staff" ]
     }.freeze
     SENIORITY_PRESET_LABELS = {
+      "junior" => "Junior",
+      "mid" => "Pleno",
       "senior" => "Senior",
       "staff" => "Staff",
       "principal" => "Principal"
+    }.freeze
+    NEGATIVE_TERMS_BY_SENIORITY = {
+      "junior" => [
+        "senior", "sênior", "sr", "staff", "principal", "pleno",
+        "mid-level", "mid level", "trainee", "intern", "internship", "estágio"
+      ],
+      "mid" => [
+        "junior", "júnior", "jr", "senior", "sênior", "sr",
+        "staff", "principal", "trainee", "intern", "internship", "estágio"
+      ],
+      "senior" => DEFAULT_NEGATIVE_TERMS,
+      "staff" => DEFAULT_NEGATIVE_TERMS,
+      "principal" => DEFAULT_NEGATIVE_TERMS
     }.freeze
     REGION_TERMS = {
       "brazil_latam" => [ "brasil", "brazil", "latam" ],
@@ -127,14 +144,27 @@ module SearchProfiles
       normalize_list(remote_terms + REGION_TERMS.fetch(normalize_region_scope(region_scope)))
     end
 
+    def negative_terms_for(seniority_preset)
+      NEGATIVE_TERMS_BY_SENIORITY.fetch(
+        normalize_seniority_preset(seniority_preset),
+        DEFAULT_NEGATIVE_TERMS
+      )
+    end
+
     def infer_seniority_preset(terms)
       normalized_terms = normalize_list(terms)
 
       if normalized_terms.any? { |term| term.include?("principal") }
         "principal"
       elsif normalized_terms.any? { |term| term.include?("staff") } &&
-          normalized_terms.none? { |term| term.include?("senior") || term.include?("sênior") }
+          normalized_terms.none? { |term| term.include?("senior") || term.include?("sênior") || term == "sr" }
         "staff"
+      elsif normalized_terms.any? { |term| term.include?("senior") || term.include?("sênior") || term == "sr" }
+        "senior"
+      elsif normalized_terms.any? { |term| term.include?("pleno") || term.include?("mid") || term.include?("intermediate") }
+        "mid"
+      elsif normalized_terms.any? { |term| term.include?("junior") || term.include?("júnior") || term == "jr" || term.include?("entry level") }
+        "junior"
       else
         DEFAULT_SENIORITY_PRESET
       end

@@ -37,6 +37,7 @@ class JobDiscovery::Adapters::LeverCompanyBoardsAdapterTest < ActiveSupport::Tes
 
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "20d", started_at: Time.current)
     source_scan = search_run.source_scans.create!(job_source: source, status: :running, started_at: Time.current)
+    created_at_ms = 1.day.ago.to_i * 1000
 
     response_body = [
       {
@@ -44,7 +45,7 @@ class JobDiscovery::Adapters::LeverCompanyBoardsAdapterTest < ActiveSupport::Tes
         "text" => "[Job-29313] Senior Fullstack (React/Node) Developer, Brazil",
         "descriptionPlain" => "Remote role for Brazil with React and Node",
         "descriptionBodyPlain" => "React in title and backend collaboration",
-        "createdAt" => 1_780_814_400_000,
+        "createdAt" => created_at_ms,
         "hostedUrl" => "https://jobs.lever.co/ciandt/a1baffc5-29e1-42bd-a34c-d231ae9416d7",
         "applyUrl" => "https://jobs.lever.co/ciandt/a1baffc5-29e1-42bd-a34c-d231ae9416d7/apply",
         "workplaceType" => "remote",
@@ -58,7 +59,7 @@ class JobDiscovery::Adapters::LeverCompanyBoardsAdapterTest < ActiveSupport::Tes
         "id" => "other",
         "text" => "Product Designer",
         "descriptionPlain" => "Hybrid in Portugal",
-        "createdAt" => 1_780_814_400_000,
+        "createdAt" => created_at_ms,
         "hostedUrl" => "https://jobs.lever.co/ciandt/other",
         "applyUrl" => "https://jobs.lever.co/ciandt/other/apply",
         "workplaceType" => "hybrid",
@@ -94,13 +95,14 @@ class JobDiscovery::Adapters::LeverCompanyBoardsAdapterTest < ActiveSupport::Tes
     )
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "20d", started_at: Time.current)
     source_scan = search_run.source_scans.create!(job_source: source, status: :running, started_at: Time.current)
+    created_at_ms = 1.day.ago.to_i * 1000
 
     response_body = [
       {
         "id" => "generic-java",
         "text" => "Senior Backend Engineer",
         "descriptionPlain" => "Java and Kafka for a core backend platform",
-        "createdAt" => 1_780_814_400_000,
+        "createdAt" => created_at_ms,
         "hostedUrl" => "https://jobs.lever.co/jobgether/generic-java",
         "applyUrl" => "https://jobs.lever.co/jobgether/generic-java/apply",
         "workplaceType" => "remote",
@@ -114,7 +116,7 @@ class JobDiscovery::Adapters::LeverCompanyBoardsAdapterTest < ActiveSupport::Tes
         "id" => "borderline-react",
         "text" => "Senior Fullstack Developer",
         "descriptionPlain" => "Remote role focused on React and frontend collaboration",
-        "createdAt" => 1_780_814_400_000,
+        "createdAt" => created_at_ms,
         "hostedUrl" => "https://jobs.lever.co/jobgether/borderline-react",
         "applyUrl" => "https://jobs.lever.co/jobgether/borderline-react/apply",
         "workplaceType" => "remote",

@@ -27,7 +27,7 @@ module SearchProfiles
         ),
         seniority_terms: SearchProfiles::Vocabulary.normalize_list(SearchProfiles::Vocabulary::SENIORITY_PRESETS.fetch(seniority_preset)),
         location_terms: SearchProfiles::Vocabulary.location_terms_for(required_remote:, region_scope:),
-        negative_terms: SearchProfiles::Vocabulary.normalize_list(SearchProfiles::Vocabulary::DEFAULT_NEGATIVE_TERMS),
+        negative_terms: SearchProfiles::Vocabulary.normalize_list(SearchProfiles::Vocabulary.negative_terms_for(seniority_preset)),
         settings: compiled_settings(simple_input:, compiled_payload:, language_scope:, required_remote:, region_scope:, seniority_preset:)
       }
 

@@ -29,7 +29,6 @@
   <% end %>
 
   <% if creation_mode %>
-    <%= hidden_field_tag "search_profile[seniority_preset]", SearchProfiles::Vocabulary::DEFAULT_SENIORITY_PRESET %>
     <%= hidden_field_tag "search_profile[language_scope]", SearchProfiles::Vocabulary::DEFAULT_LANGUAGE_SCOPE %>
     <%= hidden_field_tag "search_profile[required_remote]", "1" %>
     <%= hidden_field_tag "search_profile[region_scope]", SearchProfiles::Vocabulary::DEFAULT_REGION_SCOPE %>
@@ -46,13 +45,17 @@
     </div>
 
     <% if creation_mode %>
-      <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_220px]">
-        <div>
+      <div class="grid gap-4 md:grid-cols-4">
+        <div class="md:col-span-2">
           <%= label_tag "search_profile_technology_intent", "Linguagem / stack", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
           <%= text_field_tag "search_profile[technology_intent]", simple_input["technology_intent"], **technology_intent_field_options.merge(placeholder: "Java, Ruby, .NET, Salesforce, React...") %>
           <% if technology_intent_error %>
             <p id="<%= technology_intent_error_id %>" class="mt-2 text-sm font-semibold text-rose-100"><%= technology_intent_error %></p>
           <% end %>
+        </div>
+        <div>
+          <%= label_tag "search_profile_seniority_preset", "Nivel", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
+          <%= select_tag "search_profile[seniority_preset]", options_for_select(SearchProfiles::Vocabulary::SENIORITY_PRESET_LABELS.map { |value, label| [ label, value ] }, simple_input["seniority_preset"]), id: "search_profile_seniority_preset", class: "mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white" %>
         </div>
         <div>
           <%= form.label :scan_window_days, "Buscar vagas desde", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>

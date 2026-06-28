@@ -92,13 +92,16 @@ class SearchProfilesTest < ApplicationSystemTestCase
 
     assert_text "Crie o radar pela stack"
     assert_field "Linguagem / stack"
+    assert_field "Nivel"
     assert_no_text "Modo avancado"
 
     fill_in "Linguagem / stack", with: "Java"
+    select "Pleno", from: "Nivel"
     select "14 dias", from: "Buscar vagas desde"
     click_button "Gerar variacoes"
 
     assert_text(/preview gerado/i)
+    assert_text "Pleno Java Remote Brasil e LatAm"
     assert_text "java developer"
     assert_button "Criar perfil e iniciar busca"
   end
