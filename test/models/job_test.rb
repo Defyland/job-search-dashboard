@@ -31,6 +31,18 @@ class JobTest < ActiveSupport::TestCase
     assert_nil job.safe_apply_url
   end
 
+  test "safe canonical url only keeps http urls" do
+    job = jobs(:react_role)
+    job.canonical_url = "https://example.com/jobs/123"
+    assert_equal "https://example.com/jobs/123", job.safe_canonical_url
+
+    job.canonical_url = "javascript:alert(1)"
+    assert_nil job.safe_canonical_url
+
+    job.canonical_url = "not a url"
+    assert_nil job.safe_canonical_url
+  end
+
   test "infers contract type from raw payload" do
     job = jobs(:react_role)
     job.raw_payload = { employmentType: "contractor" }

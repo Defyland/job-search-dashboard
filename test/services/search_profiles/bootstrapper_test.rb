@@ -44,7 +44,7 @@ module SearchProfiles
       )
 
       assert_difference("JobMatch.for_profile(profile).count", 1) do
-        count = Bootstrapper.new(search_profile: profile).call
+        count = Bootstrapper.new(search_profile: profile, job_scope: Job.where(id: job.id).includes(:job_source)).call
         assert_equal 1, count
       end
 

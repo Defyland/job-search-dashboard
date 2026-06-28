@@ -30,6 +30,7 @@ class JobsController < ApplicationController
 
   def show
     @job_match = @job.job_matches.find_by!(search_profile: @search_profile)
+    @detail_snapshot = Jobs::DetailSnapshot.new(job: @job, job_match: @job_match, search_profile: @search_profile)
     @history = @job.search_run_items.includes(:search_run).order(created_at: :desc).limit(20)
   end
 

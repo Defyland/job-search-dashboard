@@ -19,6 +19,18 @@ react_role:
   raw_payload:
     title: Frontend Engineer Senior
     company: Memed
+    description: |
+      Responsabilidades:
+      Desenvolver interfaces React e TypeScript para produto de saude.
+      Colaborar com backend e produto.
+
+      Requisitos:
+      Experiencia com React, TypeScript e testes.
+      Conhecimento em acessibilidade.
+
+      Beneficios:
+      Trabalho remoto no Brasil.
+      Plano de saude.
 
 ruby_role:
   job_source: workable

@@ -17,11 +17,29 @@ class JobsTest < ApplicationSystemTestCase
       assert_text "Memed"
       assert_text "Trabalho remoto"
       assert_text "Gupy"
+      assert_link "Detalhes"
       assert_button "Abrir"
       assert_button "Vista"
       assert_button "Aplicada"
       assert_button "Ignorar"
     end
+  end
+
+  test "mobile job details show captured description and match context" do
+    visit new_session_path
+    sign_in_as(users(:one))
+    page.driver.browser.manage.window.resize_to(390, 844)
+
+    visit job_path(jobs(:react_role), search_profile_id: search_profiles(:default).id)
+
+    assert_text "Frontend Engineer Senior"
+    assert_text "Leia a vaga sem sair do radar"
+    assert_text(/por que deu match/i)
+    assert_text "Desenvolver interfaces React"
+    assert_text "Experiencia com React"
+    assert_text "Trabalho remoto no Brasil"
+    assert_text(/link original/i)
+    assert_button "Abrir candidatura"
   end
 
   private

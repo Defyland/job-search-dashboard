@@ -29,6 +29,14 @@ class JobsControllerTest < ActionDispatch::IntegrationTest
     get job_path(jobs(:react_role))
     assert_response :success
     assert_match("Frontend Engineer Senior", response.body)
+    assert_match("Descricao capturada", response.body)
+    assert_match("Leia a vaga sem sair do radar", response.body)
+    assert_match("Por que deu match", response.body)
+    assert_match("Desenvolver interfaces React", response.body)
+    assert_match("Experiencia com React", response.body)
+    assert_match("Trabalho remoto no Brasil", response.body)
+    assert_match("Link original", response.body)
+    assert_match(ERB::Util.html_escape(jobs(:react_role).canonical_url), response.body)
   end
 
   test "marks job as applied" do
