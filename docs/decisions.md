@@ -5,6 +5,23 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-06-29 - Publish the operator repo under the MIT License
+
+**Decision:** Added `LICENSE.txt` and a README license section so the dashboard,
+its case study, and its operational notes are intentionally reusable.
+
+**Why:** The repo is now public and already carries architecture notes, CI/CD
+guidance, and learning-oriented decisions. Leaving it under default copyright
+would keep the study value visible but the reuse boundary ambiguous.
+
+**Tradeoffs accepted:** A permissive license allows downstream forks to diverge
+without upstream contribution. That is acceptable here because the goal is to
+maximize learning and portfolio utility, not enforce reciprocal publication.
+
+**Refs:** `LICENSE.txt`, `README.md`.
+
+---
+
 ## 2026-06-29 — Prove the ingestion rejection contract at the request boundary
 
 **Decision:** Added request-level proof for the two `POST /api/v1/job_ingestions` rejection paths that

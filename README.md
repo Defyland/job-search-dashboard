@@ -262,3 +262,11 @@ The short engineering case study lives in [docs/engineering-case-study.md](docs/
 The QDSAA + thermo review requested for this project lives in [docs/qdsaa-thermo-review.md](docs/qdsaa-thermo-review.md).
 
 The CI/CD process for GitHub Actions and Railway lives in [docs/ci-cd.md](docs/ci-cd.md).
+
+## License
+
+This repository is published under the MIT License. See
+[LICENSE.txt](LICENSE.txt).
+
+That keeps the operator workflows, ingestion patterns, and documentation
+reusable for study and internal tooling experiments.
