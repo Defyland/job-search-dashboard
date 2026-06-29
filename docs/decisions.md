@@ -5,6 +5,30 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-06-29 — Prove the ingestion rejection contract at the request boundary
+
+**Decision:** Added request-level proof for the two `POST /api/v1/job_ingestions` rejection paths that
+matter most to the trust boundary: invalid bearer auth returns `401`, and malformed job payloads return
+the controller's `422 invalid_ingestion_payload` response instead of blowing up inside the importer.
+
+**Why:** The repo already had happy-path ingestion proof and service-level coverage, but a reviewer still
+had to infer that the HTTP edge rejected bad callers cleanly. That was the narrow remaining gap in the
+public technical story.
+
+**Rejected:** broader auth/fallback test expansion, shared test helpers, or controller refactors. The
+smallest honest improvement was to harden the importer's payload validation and prove the resulting
+request contract directly.
+
+**Verification:** targeted request/importer tests, full `bin/rails test`, focused system-test rerun after
+one flaky Selenium failure in `bin/ci`, and the rest of the repo-standard quality gates.
+
+**Refs:** `app/services/job_ingestions/importer.rb`,
+`test/controllers/api/v1/job_ingestions_controller_test.rb`,
+`test/services/job_ingestions/importer_test.rb`,
+`docs/architecture.md`, `docs/engineering-case-study.md`.
+
+---
+
 ## 2026-06-29 - Publish canonical architecture and case-study docs for the current product surface
 
 **Decision:** Added `docs/architecture.md` and `docs/engineering-case-study.md`, linked them from the

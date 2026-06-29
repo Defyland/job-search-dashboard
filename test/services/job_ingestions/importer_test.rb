@@ -58,6 +58,19 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
     assert_predicate Job.order(:created_at).last, :contract_type_pj?
   end
 
+  test "rejects payloads whose jobs are not objects" do
+    payload = {
+      run: { window_label: "24h", trigger_source: "codex_automation" },
+      jobs: [ "not-a-job-object" ]
+    }
+
+    result = JobIngestions::Importer.new(payload:).call
+
+    refute result.success?
+    assert_nil result.search_run
+    assert_equal [ "jobs must contain objects" ], result.errors
+  end
+
   test "updates an existing job without resetting profile user state" do
     job_matches(:ruby_default).update!(user_state: :applied)
 

@@ -56,6 +56,7 @@ module JobIngestions
       def validation_errors
         errors = []
         errors << "jobs must be an array" unless normalized_jobs.is_a?(Array)
+        errors << "jobs must contain objects" unless normalized_jobs.all? { |item| item.is_a?(Hash) }
         errors << "run window must be present" if normalize_window_label.blank?
         errors
       end

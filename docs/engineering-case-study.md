@@ -26,6 +26,8 @@ The repo leans on Rails for delivery speed, but the important logic stays inspec
 
 Native adapters and Codex fallback both write through the same ingestion boundary. That prevents external automation from becoming the source of truth for `score`, `reason`, or `match_strength`.
 
+The controller contract now proves the negative path too: invalid bearer auth is rejected at the HTTP boundary, and malformed job payloads stop at `422` before they can reach canonical writes.
+
 ### Match jobs per profile, not globally
 
 `Job` is global, `SearchProfile` expresses operator intent, and `JobMatch` stores the per-profile decision plus workflow state. This turns the app into a configurable radar instead of a flat inbox.
@@ -54,8 +56,9 @@ A reviewer can validate the main technical claims quickly by reading:
 6. `app/controllers/sources_controller.rb`
 7. `test/services/job_discovery/orchestrator_test.rb`
 8. `test/services/job_ingestions/importer_test.rb`
-9. `test/controllers/sources_controller_test.rb`
-10. `test/controllers/waitlist_entries_controller_test.rb`
+9. `test/controllers/api/v1/job_ingestions_controller_test.rb`
+10. `test/controllers/sources_controller_test.rb`
+11. `test/controllers/waitlist_entries_controller_test.rb`
 
 Then run:
 

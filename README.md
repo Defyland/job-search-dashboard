@@ -143,6 +143,7 @@ Useful focused tests:
 bin/rails test test/jobs/discover_jobs_run_job_test.rb
 bin/rails test test/services/job_discovery/orchestrator_test.rb
 bin/rails test test/services/job_ingestions/importer_test.rb
+bin/rails test test/controllers/api/v1/job_ingestions_controller_test.rb
 bin/rails test test/controllers/sources_controller_test.rb
 bin/rails test test/controllers/waitlist_entries_controller_test.rb
 ```

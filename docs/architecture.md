@@ -29,6 +29,10 @@ The most important architecture choice is that Rails revalidates every job befor
 
 That means external payloads can suggest `reason`, `score`, `stack_tags`, or `match_strength`, but they do not own final state.
 
+The request-level proof for the rejection side of that boundary lives in
+`test/controllers/api/v1/job_ingestions_controller_test.rb`, while
+`test/services/job_ingestions/importer_test.rb` locks the same malformed-payload contract one layer lower.
+
 ## Discovery Boundary
 
 Native discovery is Rails-owned and operationally explicit:
@@ -100,7 +104,8 @@ If you want the shortest technically honest read:
 5. `app/controllers/sources_controller.rb`
 6. `test/services/job_discovery/orchestrator_test.rb`
 7. `test/services/job_ingestions/importer_test.rb`
-8. `test/controllers/sources_controller_test.rb`
+8. `test/controllers/api/v1/job_ingestions_controller_test.rb`
+9. `test/controllers/sources_controller_test.rb`
 
 ## Non-Goals
 
