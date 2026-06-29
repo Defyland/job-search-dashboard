@@ -9,8 +9,13 @@ class JobsTest < ApplicationSystemTestCase
     visit jobs_path(search_profile_id: search_profiles(:default).id, user_state: :all)
 
     assert_text "Radar de vagas"
+    assert_selector "[data-testid='filtered-results-summary']", text: "2 vagas retornadas"
     assert_selector "[data-testid='mobile-job-list']", visible: true
     assert_no_selector "[data-testid='desktop-job-table']", visible: true
+
+    summary_top = page.evaluate_script("document.querySelector('[data-testid=\"filtered-results-summary\"]').getBoundingClientRect().top")
+    list_top = page.evaluate_script("document.querySelector('[data-testid=\"mobile-job-list\"]').getBoundingClientRect().top")
+    assert_operator summary_top, :<, list_top
 
     within "[data-testid='mobile-job-list']" do
       assert_link "Frontend Engineer Senior"

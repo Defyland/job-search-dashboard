@@ -29,7 +29,6 @@
         <span class="text-xs text-slate-500"><%= @search_profile.sync_status_detail %></span>
       </div>
     </div>
-    <p class="text-sm text-slate-500"><%= @total_matches %> resultado(s)</p>
   </div>
 
   <div data-testid="active-profile-summary" class="mt-5 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:grid-cols-3">
@@ -106,6 +105,22 @@
       <%= link_to "Limpar", jobs_path, class: "rounded-2xl border border-white/10 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/5" %>
     </div>
   <% end %>
+
+  <% first_visible_result = @total_matches.zero? ? 0 : ((@page - 1) * @per_page) + 1 %>
+  <% last_visible_result = [ @page * @per_page, @total_matches ].min %>
+  <div data-testid="filtered-results-summary" class="mt-6 flex flex-col gap-3 rounded-2xl border border-sky-300/20 bg-sky-400/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-[0.18em] text-sky-100/70">Resultado do filtro</p>
+      <p class="mt-1 text-2xl font-extrabold text-white"><%= pluralize(@total_matches, "vaga retornada", "vagas retornadas") %></p>
+    </div>
+    <p class="text-sm font-semibold text-sky-50">
+      <% if @total_matches.positive? %>
+        Mostrando <span class="text-white"><%= first_visible_result %>-<%= last_visible_result %></span> nesta pagina.
+      <% else %>
+        Nenhum item para este recorte.
+      <% end %>
+    </p>
+  </div>
 </section>
 
 <section class="overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950/65 shadow-2xl shadow-slate-950/25">

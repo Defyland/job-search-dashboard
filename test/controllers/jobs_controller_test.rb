@@ -11,6 +11,7 @@ class JobsControllerTest < ActionDispatch::IntegrationTest
     assert_match("Radar de vagas", response.body)
     assert_no_match("Codex + Rails", response.body)
     assert_match("Idioma", response.body)
+    assert_match("1 vaga retornada", response.body)
     assert_match("Frontend Engineer Senior", response.body)
     assert_match('rel="noopener"', response.body)
     assert_no_match('rel="noreferrer"', response.body)
@@ -21,6 +22,7 @@ class JobsControllerTest < ActionDispatch::IntegrationTest
     get jobs_path(user_state: :all)
 
     assert_response :success
+    assert_match("2 vagas retornadas", response.body)
     assert_match("Frontend Engineer Senior", response.body)
     assert_match("Senior Ruby on Rails Developer", response.body)
   end
