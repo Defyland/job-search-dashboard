@@ -11,7 +11,7 @@ The production flows are:
 
 What Rails owns:
 
-- private authenticated UI
+- public Farol landing, persisted waitlist capture, and private authenticated UI
 - canonical `Job`, `JobSource`, `SearchRun`, `SearchRunItem`, `SourceScan`, and `DiscoveredJob` records
 - configurable `SearchProfile` records and per-profile `JobMatch` records
 - dedupe by canonical URL and fingerprint
@@ -54,6 +54,7 @@ The rest of the catalog is still present for normalization/filtering. Sources th
 ## Main Features
 
 - Rails 8, PostgreSQL, Turbo, Stimulus, Tailwind
+- public Farol landing with persisted waitlist capture, request throttling, and optional Resend notification
 - session-based private login
 - configurable search profiles for stack, title terms, seniority, locality, remote requirement, and women-only affirmative-role eligibility
 - filterable and paginated job radar
@@ -120,6 +121,30 @@ Manual deterministic backfill:
 
 ```bash
 bin/rails "dashboard:discover[20]"
+```
+
+## Evaluate In 5 Minutes
+
+1. Read [docs/architecture.md](docs/architecture.md) for the current system boundaries.
+2. Read [docs/engineering-case-study.md](docs/engineering-case-study.md) for the product tradeoffs and why Rails owns the canonical flow.
+3. Inspect the shared write boundary in `app/services/job_ingestions/recorder.rb`, the native discovery flow in `app/services/job_discovery/orchestrator.rb`, and the profile policy in `app/services/job_discovery/policy.rb`.
+4. Inspect the operational UI boundary in `app/controllers/search_runs_controller.rb` and `app/controllers/sources_controller.rb`.
+5. Run the repo-standard verification commands:
+
+```bash
+bin/rails test
+bin/rubocop
+bin/brakeman -q -w2
+```
+
+Useful focused tests:
+
+```bash
+bin/rails test test/jobs/discover_jobs_run_job_test.rb
+bin/rails test test/services/job_discovery/orchestrator_test.rb
+bin/rails test test/services/job_ingestions/importer_test.rb
+bin/rails test test/controllers/sources_controller_test.rb
+bin/rails test test/controllers/waitlist_entries_controller_test.rb
 ```
 
 ## Ingestion API
@@ -220,7 +245,18 @@ Run status semantics for native Rails discovery are:
 - `partial`: at least one source scan failed, but the run still imported or updated jobs
 - `failed`: every scanned source failed and nothing was imported or updated
 
+## Known Limits
+
+- The dashboard is still a private operator product, not a public multi-tenant job platform.
+- Native Rails discovery does not cover every source in the catalog; some boards still rely on explicit `codex_fallback_enabled` handling or curated `settings`.
+- Waitlist capture is a real persisted lead flow, but notification delivery depends on optional Resend configuration.
+- The product does not automate applications; it surfaces directly apply-able links and keeps workflow state inside the dashboard.
+
 ## Review Notes
+
+Canonical architecture documentation lives in [docs/architecture.md](docs/architecture.md).
+
+The short engineering case study lives in [docs/engineering-case-study.md](docs/engineering-case-study.md).
 
 The QDSAA + thermo review requested for this project lives in [docs/qdsaa-thermo-review.md](docs/qdsaa-thermo-review.md).
 

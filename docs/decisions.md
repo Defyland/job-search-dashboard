@@ -5,6 +5,29 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-06-29 - Publish canonical architecture and case-study docs for the current product surface
+
+**Decision:** Added `docs/architecture.md` and `docs/engineering-case-study.md`, linked them from the
+README, and documented the current public/product surface as "public Farol landing plus real waitlist
+capture, private operator dashboard, Rails-native discovery, Codex fallback by contract" instead of
+leaving that story spread across the README, tests, and older historical notes.
+
+**Why:** The repo already had strong operational detail, but not in the canonical file names that human
+reviewers and AI readiness tooling expect. The absence of dedicated architecture/case-study docs made the
+technical story harder to validate in under five minutes, and older notes no longer described the current
+landing surface precisely.
+
+**Rejected:** A broader doc rewrite or code churn. The code already proves the boundaries through
+`JobDiscovery::Orchestrator`, `JobIngestions::Recorder`, `SearchRunsController`, `SourcesController`, and
+the waitlist flow. The right change here is packaging and truthfulness, not new abstractions.
+
+**Verification:** reran full Rails tests, RuboCop, Brakeman, and the local AI-readiness eval after adding
+the docs and README fast path.
+
+**Refs:** `README.md`, `docs/architecture.md`, `docs/engineering-case-study.md`.
+
+---
+
 ## 2026-06-12 — Split JobDiscovery::Policy by responsibility, not by pattern
 
 **Decision:** Kept `JobDiscovery::Policy` as the public entrypoint, but moved its two internal
