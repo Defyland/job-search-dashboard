@@ -112,9 +112,7 @@ module JobDiscovery
       end
 
       def borderline_title_match?(text)
-        return role_title?(text) if @criteria.compiled_title_patterns.blank?
-
-        matches_any?(text, @criteria.compiled_title_patterns)
+        role_title?(text) || matches_any?(text, @criteria.compiled_title_patterns)
       end
 
       def title_language_match?(text)

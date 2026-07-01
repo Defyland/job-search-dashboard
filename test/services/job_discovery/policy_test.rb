@@ -153,7 +153,7 @@ class JobDiscovery::PolicyTest < ActiveSupport::TestCase
     assert_match(/stack alvo|match suficiente/, result.reason)
   end
 
-  test "intent-backed profiles require generated title fit for borderline body-only matches" do
+  test "intent-backed profiles keep generic role titles for body-only stack matches" do
     profile = users(:one).search_profiles.create!(
       name: "Senior Java React",
       target_stacks: [ "java", "react" ],
@@ -174,6 +174,15 @@ class JobDiscovery::PolicyTest < ActiveSupport::TestCase
       }
     )
 
+    accepted = JobDiscovery::Policy.new(search_profile: profile).classify(
+      title: "Senior Software Engineer",
+      remote_text: "Remote Brazil",
+      location_text: "Brazil",
+      description: "React and Java stack in the product team.",
+      source_slug: "lever",
+      posted_text: "today",
+      published_at: nil
+    )
     result = JobDiscovery::Policy.new(search_profile: profile).classify(
       title: "Senior Python Developer",
       remote_text: "Remote Brazil",
@@ -184,6 +193,10 @@ class JobDiscovery::PolicyTest < ActiveSupport::TestCase
       published_at: nil
     )
 
+    assert accepted.accepted?
+    assert_equal :borderline, accepted.classification
+    assert_includes accepted.stack_tags, "java"
+    assert_includes accepted.stack_tags, "react"
     assert_equal :rejected, result.classification
     assert_match(/stack fora do perfil/, result.reason)
   end
