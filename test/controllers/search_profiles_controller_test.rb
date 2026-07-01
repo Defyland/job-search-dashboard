@@ -407,6 +407,78 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "synced", profile.sync_state
   end
 
+  test "compiled update adds a stack without pruning existing matches" do
+    ruby_job = create_profile_test_job(
+      title: "Senior Ruby Engineer",
+      slug: "ruby-additive-controller",
+      source: job_sources(:workable),
+      description: "Ruby, Rails, remote Brazil"
+    )
+    java_job = create_profile_test_job(
+      title: "Senior Java Engineer",
+      slug: "java-additive-controller",
+      source: job_sources(:gupy),
+      description: "Java, Spring Boot, remote Brazil"
+    )
+
+    profile = users(:one).search_profiles.create!(
+      name: "Senior Ruby Remote",
+      slug: "senior-ruby-additive-refresh",
+      active: true,
+      required_remote: true,
+      include_women_only: false,
+      language_scope: :both,
+      target_stacks: [ "ruby" ],
+      target_titles: [ "developer", "engineer" ],
+      seniority_terms: [ "senior", "sênior", "sr" ],
+      location_terms: [ "remote", "remoto", "brasil", "brazil" ],
+      negative_terms: SearchProfile::DEFAULT_NEGATIVE_TERMS,
+      scan_window_days: 20
+    )
+
+    SearchProfiles::Bootstrapper.new(search_profile: profile, job_scope: Job.where(id: [ ruby_job.id, java_job.id ]).includes(:job_source)).call
+    assert_equal [ ruby_job.id ], JobMatch.for_profile(profile).pluck(:job_id)
+
+    form_params = {
+      name: profile.name,
+      active: "1",
+      required_remote: "1",
+      include_women_only: "0",
+      language_scope: "both",
+      technology_intent: "java",
+      seniority_preset: "senior",
+      region_scope: "brazil_latam",
+      scan_window_days: "20"
+    }
+
+    with_compiler_unavailable do
+      patch search_profile_path(profile), params: { search_profile: form_params, preview_compile: "1" }
+    end
+
+    assert_response :success
+    assert_match "java developer", response.body
+
+    compiled_payload = extract_compiled_payload(response.body)
+
+    perform_enqueued_jobs(only: SearchProfileSyncJob) do
+      assert_performed_with(
+        job: SearchProfileSyncJob,
+        args: ->(args) { args == [ { search_profile_id: profile.id, prune_stale: true } ] }
+      ) do
+        patch search_profile_path(profile), params: {
+          search_profile: form_params.merge(compiled_profile_payload: compiled_payload)
+        }
+      end
+    end
+
+    match_job_ids = JobMatch.for_profile(profile).pluck(:job_id)
+    assert_includes match_job_ids, ruby_job.id
+    assert_includes match_job_ids, java_job.id
+    assert_includes profile.reload.target_stacks, "ruby"
+    assert_includes profile.target_stacks, "java"
+    assert_equal "synced", profile.sync_state
+  end
+
   test "updates manual profile and refreshes stored matches" do
     ruby_job = Job.create!(
       job_source: job_sources(:workable),
@@ -509,6 +581,33 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
   end
 
   private
+    def create_profile_test_job(title:, slug:, source:, description:)
+      Job.create!(
+        job_source: source,
+        title:,
+        company_name: "Profile Test #{slug}",
+        apply_url: "https://#{source.host}/jobs/#{slug}",
+        canonical_url: "https://#{source.host}/jobs/#{slug}",
+        source_url: "https://#{source.host}/jobs/#{slug}",
+        ats_name: source.name,
+        external_job_id: slug,
+        remote_text: "Remote Brazil",
+        location_text: "Brazil",
+        lifecycle_state: :active,
+        posted_text: "today",
+        published_at: 1.day.ago,
+        first_seen_at: 1.day.ago,
+        last_seen_at: 1.day.ago,
+        last_validated_at: 1.day.ago,
+        fingerprint: "profile-test::#{slug}",
+        raw_payload: {
+          title:,
+          company: "Profile Test #{slug}",
+          description:
+        }
+      )
+    end
+
     def compiled_form_params
       {
         name: "Senior Salesforce Remote BR/LatAm",
@@ -577,6 +676,16 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     ensure
       SearchProfiles::SyncRequest.singleton_class.send(:define_method, :new) do |*args, **kwargs|
         original_new.call(*args, **kwargs)
+      end
+    end
+
+    def with_compiler_unavailable
+      original_available = SearchProfiles::CompilerClient.method(:available?)
+      SearchProfiles::CompilerClient.singleton_class.send(:define_method, :available?) { false }
+      yield
+    ensure
+      SearchProfiles::CompilerClient.singleton_class.send(:define_method, :available?) do |*args, **kwargs|
+        original_available.call(*args, **kwargs)
       end
     end
 end

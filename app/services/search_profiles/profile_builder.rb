@@ -5,7 +5,7 @@ module SearchProfiles
   class ProfileBuilder
     BOOLEAN = ActiveModel::Type::Boolean.new
 
-    def self.from_compiled(simple_input:, compiled_payload:, manual_overrides: {}, active: true)
+    def self.from_compiled(simple_input:, compiled_payload:, manual_overrides: {}, active: true, existing_profile: nil)
       language_scope = SearchProfiles::Vocabulary.normalize_language_scope(simple_input["language_scope"])
       required_remote = BOOLEAN.cast(simple_input["required_remote"])
       region_scope = SearchProfiles::Vocabulary.normalize_region_scope(simple_input["region_scope"])
@@ -31,6 +31,7 @@ module SearchProfiles
         settings: compiled_settings(simple_input:, compiled_payload:, language_scope:, required_remote:, region_scope:, seniority_preset:)
       }
 
+      merge_existing_profile_terms(attributes, existing_profile) if existing_profile&.persisted?
       apply_manual_overrides(attributes, manual_overrides)
     end
 
@@ -126,6 +127,46 @@ module SearchProfiles
       attributes
     end
     private_class_method :apply_manual_overrides
+
+    def self.merge_existing_profile_terms(attributes, existing_profile)
+      attributes[:target_stacks] = SearchProfiles::Vocabulary.normalize_list(
+        existing_profile.target_stacks + attributes.fetch(:target_stacks)
+      )
+      attributes[:target_titles] = SearchProfiles::Vocabulary.normalize_list(
+        existing_profile.target_titles + attributes.fetch(:target_titles)
+      )
+      attributes[:settings] = merged_settings(attributes.fetch(:settings), existing_profile)
+      attributes
+    end
+    private_class_method :merge_existing_profile_terms
+
+    def self.merged_settings(new_settings, existing_profile)
+      existing_settings = (existing_profile.settings || {}).deep_stringify_keys
+      new_settings = new_settings.deep_stringify_keys
+      merged_settings = existing_settings.deep_merge(new_settings)
+      existing_intent_settings = existing_profile.intent_settings.is_a?(Hash) ? existing_profile.intent_settings : {}
+      existing_intent = SearchProfiles::Vocabulary.normalize_list(
+        existing_intent_settings["technology_intent"].presence || existing_profile.target_stacks
+      )
+      new_intent = SearchProfiles::Vocabulary.normalize_list(new_settings.dig("intent", "technology_intent"))
+      merged_settings["intent"] ||= {}
+      merged_settings["intent"]["technology_intent"] = SearchProfiles::Vocabulary.normalize_list(existing_intent + new_intent).join(", ")
+
+      existing_compiler = existing_settings["compiler"].is_a?(Hash) ? existing_settings["compiler"] : {}
+      new_compiler = new_settings["compiler"].is_a?(Hash) ? new_settings["compiler"] : {}
+      merged_compiler = merged_settings["compiler"] ||= {}
+      existing_aliases = existing_compiler["stack_aliases"].is_a?(Hash) ? existing_compiler["stack_aliases"] : {}
+      new_aliases = new_compiler["stack_aliases"].is_a?(Hash) ? new_compiler["stack_aliases"] : {}
+      merged_compiler["stack_aliases"] = existing_aliases.merge(new_aliases)
+      merged_compiler["generated_titles"] = %w[pt en].index_with do |language|
+        SearchProfiles::Vocabulary.normalize_list(
+          Array(existing_compiler.dig("generated_titles", language)) + Array(new_compiler.dig("generated_titles", language))
+        )
+      end
+
+      merged_settings
+    end
+    private_class_method :merged_settings
 
     def self.boolean_or_default(value, default)
       return default if value.nil?

@@ -126,7 +126,8 @@ class SearchProfilesController < ApplicationController
           simple_input:,
           compiled_payload:,
           manual_overrides: form_state.manual_overrides,
-          active: form_state.active_default
+          active: form_state.active_default,
+          existing_profile: search_profile
         )
       else
         raise SearchProfiles::IntentCompiler::Error, "Gere as variacoes antes de criar o perfil." if search_profile.new_record?
@@ -202,7 +203,8 @@ class SearchProfilesController < ApplicationController
         SearchProfiles::ProfileBuilder.from_compiled(
           simple_input: simple_input,
           compiled_payload: compiled_payload,
-          active: form_state.active_default
+          active: form_state.active_default,
+          existing_profile: search_profile
         )
       )
 

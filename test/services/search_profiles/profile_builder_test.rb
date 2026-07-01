@@ -44,6 +44,50 @@ module SearchProfiles
       assert_includes attributes[:negative_terms], "senior"
     end
 
+    test "compiled updates add generated stacks to existing profile terms" do
+      profile = users(:one).search_profiles.create!(
+        name: "Senior Salesforce Remote",
+        target_stacks: [ "salesforce" ],
+        target_titles: [ "salesforce developer" ],
+        seniority_terms: [ "senior", "sênior", "sr" ],
+        location_terms: [ "remote", "remoto", "brasil", "brazil" ],
+        negative_terms: SearchProfile::DEFAULT_NEGATIVE_TERMS,
+        settings: {
+          "intent" => {
+            "technology_intent" => "salesforce"
+          },
+          "compiler" => {
+            "stack_aliases" => {
+              "salesforce" => [ "apex", "lightning" ]
+            },
+            "generated_titles" => {
+              "pt" => [ "desenvolvedor salesforce" ],
+              "en" => [ "salesforce developer" ]
+            }
+          }
+        }
+      )
+
+      attributes = ProfileBuilder.from_compiled(
+        simple_input: simple_input.merge("name" => profile.name, "technology_intent" => "java"),
+        compiled_payload: compiled_payload.merge(
+          "stack_aliases" => [
+            { "canonical_stack" => "java", "aliases" => [ "java", "spring boot" ] }
+          ]
+        ),
+        existing_profile: profile
+      )
+
+      assert_equal [ "salesforce", "java" ], attributes[:target_stacks]
+      assert_includes attributes[:target_titles], "salesforce developer"
+      assert_includes attributes[:target_titles], "java developer"
+      assert_equal "salesforce, java", attributes[:settings]["intent"]["technology_intent"]
+      assert_includes attributes[:settings]["compiler"]["stack_aliases"]["salesforce"], "apex"
+      assert_includes attributes[:settings]["compiler"]["stack_aliases"]["java"], "java"
+      assert_includes attributes[:settings]["compiler"]["generated_titles"]["en"], "salesforce developer"
+      assert_includes attributes[:settings]["compiler"]["generated_titles"]["en"], "java developer"
+    end
+
     private
       def simple_input
         {
