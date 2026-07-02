@@ -116,6 +116,7 @@ class JobSourceTest < ActiveSupport::TestCase
     remotely_works = JobSource.find_by!(slug: "remotely-works")
     rubyonremote = JobSource.find_by!(slug: "rubyonremote")
     get_great_careers = JobSource.find_by!(slug: "get-great-careers")
+    indeed = JobSource.find_by!(slug: "indeed")
 
     assert apinfo.codex_fallback_enabled?
     assert_match "rate-limited", apinfo.codex_fallback_reason
@@ -143,6 +144,10 @@ class JobSourceTest < ActiveSupport::TestCase
     assert_match "Cloudflare", rubyonremote.codex_fallback_reason
     assert get_great_careers.codex_fallback_enabled?
     assert_match "SPA orientada por query", get_great_careers.codex_fallback_reason
+    assert indeed.codex_fallback_enabled?
+    assert_match "Cloudflare", indeed.codex_fallback_reason
+    assert_equal [ "br.indeed.com" ], indeed.settings["search_hosts"]
+    assert_includes indeed.settings["seed_queries"], "desenvolvedor ruby rails"
   end
 
   test "backfillable sources require a supported adapter key" do

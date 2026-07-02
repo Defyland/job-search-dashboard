@@ -41,4 +41,15 @@ class JobDiscovery::SearchIndex::QueryBuilderTest < ActiveSupport::TestCase
     assert_includes query, '"desenvolvedor salesforce senior"'
     assert_not_includes query, "developer"
   end
+
+  test "includes indeed in default fallback search targets" do
+    query = JobDiscovery::SearchIndex::QueryBuilder.new(search_profiles: [ search_profiles(:default) ])
+                                                    .queries
+                                                    .find { |candidate| candidate.source_slug == "indeed" }
+
+    assert query
+    assert_equal "br.indeed.com", query.host
+    assert_includes query.query, "site:br.indeed.com"
+    assert_includes query.query, '"senior ruby"'
+  end
 end

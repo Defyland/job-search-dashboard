@@ -23,6 +23,7 @@ class Api::V1::CodexFallbackSourcesControllerTest < ActionDispatch::IntegrationT
     assert_includes slugs, "bamboohr"
     assert_includes slugs, "get-great-careers"
     assert_includes slugs, "icims"
+    assert_includes slugs, "indeed"
     assert_includes slugs, "jazzhr"
     assert_includes slugs, "jobvite"
     assert_includes slugs, "landor-ats"
@@ -34,6 +35,7 @@ class Api::V1::CodexFallbackSourcesControllerTest < ActionDispatch::IntegrationT
     assert_equal "/api/v1/job_ingestions", body.fetch("ingestion_endpoint")
     assert_equal false, body.dig("search_index", "rails_native_enabled")
     assert_includes body.dig("search_index", "queries").map { |query| query.fetch("query") }.join("\n"), "site:jobs.ashbyhq.com"
+    assert_includes body.dig("search_index", "queries").map { |query| query.fetch("query") }.join("\n"), "site:br.indeed.com"
     default_policy = body.dig("policy", "profiles").find { |profile| profile.fetch("profile_name").include?("Ruby/Rails") }
     inclusive_policy = body.dig("policy", "profiles").find { |profile| profile.fetch("profile_name").include?("afirmativas") }
 

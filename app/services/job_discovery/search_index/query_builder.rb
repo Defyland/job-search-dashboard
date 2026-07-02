@@ -19,7 +19,8 @@ module JobDiscovery
         { source_slug: "workday", host: "wd1.myworkdayjobs.com", setting_key: nil },
         { source_slug: "workday", host: "myworkdayjobs.com", setting_key: nil },
         { source_slug: "bamboohr", host: "jobs.bamboohr.com", setting_key: nil },
-        { source_slug: "jazzhr", host: "apply.jazz.co", setting_key: nil }
+        { source_slug: "jazzhr", host: "apply.jazz.co", setting_key: nil },
+        { source_slug: "indeed", host: "br.indeed.com", setting_key: nil }
       ].freeze
 
       Query = Struct.new(

@@ -146,6 +146,30 @@ module JobSources
       { name: "Coodesh", slug: "coodesh", source_kind: :platform, base_url: "https://coodesh.com", host: "coodesh.com", priority: 30, adapter_key: "coodesh_jobs_sitemap", supports_backfill: true, scan_window_days: 20 },
       { name: "Trampos", slug: "trampos", source_kind: :platform, base_url: "https://trampos.co", host: "trampos.co", priority: 30, adapter_key: "trampos_opportunities_api", supports_backfill: true, scan_window_days: 20 },
       {
+        name: "Indeed",
+        slug: "indeed",
+        source_kind: :aggregator,
+        base_url: "https://br.indeed.com",
+        host: "br.indeed.com",
+        priority: 35,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: "Busca publica protegida por Cloudflare para o worker Rails; usar Codex fallback com navegacao assistida, validar vaga ativa e postar pelo ingestion API.",
+        scan_window_days: 20,
+        settings: {
+          search_hosts: [ "br.indeed.com" ],
+          search_paths: [ "/jobs" ],
+          default_location: "remoto",
+          default_sort: "date",
+          seed_queries: [
+            "desenvolvedor ruby rails",
+            "ruby on rails remoto",
+            "desenvolvedor react remoto"
+          ]
+        }
+      },
+      {
         name: "APInfo",
         slug: "apinfo",
         source_kind: :platform,
