@@ -73,6 +73,11 @@ class JobDiscovery::Adapters::QuickinCompanyBoardsAdapterTest < ActiveSupport::T
     empty_page = <<~HTML
       <html><body><table><tbody></tbody></table></body></html>
     HTML
+    active_posted_at = 2.days.ago.iso8601
+    active_valid_through = 8.days.from_now.iso8601
+    expired_posted_at = 3.days.ago.iso8601
+    expired_valid_through = 1.day.ago.iso8601
+
     active_detail = <<~HTML
       <html>
         <head>
@@ -82,8 +87,8 @@ class JobDiscovery::Adapters::QuickinCompanyBoardsAdapterTest < ActiveSupport::T
               "@type": "JobPosting",
               "title": "Senior Frontend Engineer (React)",
               "description": "<p>React remoto para produto B2B.</p>",
-              "datePosted": "2026-06-14T10:00:00Z",
-              "validThrough": "2026-07-14T10:00:00Z",
+              "datePosted": "#{active_posted_at}",
+              "validThrough": "#{active_valid_through}",
               "employmentType": "PJ",
               "hiringOrganization": { "@type": "Organization", "name": "EVT" },
               "jobLocation": {
@@ -116,8 +121,8 @@ class JobDiscovery::Adapters::QuickinCompanyBoardsAdapterTest < ActiveSupport::T
               "@type": "JobPosting",
               "title": "Senior Ruby on Rails Engineer",
               "description": "<p>Ruby on Rails remoto para LATAM.</p>",
-              "datePosted": "2026-06-13T10:00:00Z",
-              "validThrough": "2026-06-14T10:00:00Z",
+              "datePosted": "#{expired_posted_at}",
+              "validThrough": "#{expired_valid_through}",
               "employmentType": "CLT",
               "hiringOrganization": { "@type": "Organization", "name": "EVT" },
               "identifier": { "@type": "PropertyValue", "value": "6a0000000000000000000001" }
