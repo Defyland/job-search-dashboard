@@ -32,10 +32,24 @@ class Api::V1::CodexFallbackSourcesControllerTest < ActionDispatch::IntegrationT
     assert_includes slugs, "remotely-works"
     assert_includes slugs, "rubyonremote"
     assert_includes slugs, "workday"
+    assert_includes slugs, "itjobs-pt"
+    assert_includes slugs, "teamlyzer-jobs"
+    assert_includes slugs, "landing-jobs"
+    assert_includes slugs, "englishjobs-pt"
+    assert_includes slugs, "net-empregos-pt"
+    assert_includes slugs, "sapo-emprego"
+    assert_includes slugs, "eurotechjobs"
+    assert_includes slugs, "hays-portugal"
     assert_equal "/api/v1/job_ingestions", body.fetch("ingestion_endpoint")
     assert_equal false, body.dig("search_index", "rails_native_enabled")
-    assert_includes body.dig("search_index", "queries").map { |query| query.fetch("query") }.join("\n"), "site:jobs.ashbyhq.com"
-    assert_includes body.dig("search_index", "queries").map { |query| query.fetch("query") }.join("\n"), "site:br.indeed.com"
+    query_text = body.dig("search_index", "queries").map { |query| query.fetch("query") }.join("\n")
+
+    assert_includes query_text, "site:jobs.ashbyhq.com"
+    assert_includes query_text, "site:br.indeed.com"
+    assert_includes query_text, "site:pt.indeed.com"
+    assert_includes query_text, "site:www.itjobs.pt"
+    assert_includes query_text, "site:pt.teamlyzer.com/companies/jobs"
+    assert_includes query_text, "site:www.hays.pt"
     default_policy = body.dig("policy", "profiles").find { |profile| profile.fetch("profile_name").include?("Ruby/Rails") }
     inclusive_policy = body.dig("policy", "profiles").find { |profile| profile.fetch("profile_name").include?("afirmativas") }
 

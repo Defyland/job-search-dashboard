@@ -1,7 +1,7 @@
 module JobDiscovery
   module SearchIndex
     class QueryBuilder
-      DEFAULT_LIMIT = 120
+      DEFAULT_LIMIT = 600
       MAX_PHRASES_PER_QUERY = 6
       MAX_NEGATIVE_TERMS = 6
 
@@ -20,7 +20,39 @@ module JobDiscovery
         { source_slug: "workday", host: "myworkdayjobs.com", setting_key: nil },
         { source_slug: "bamboohr", host: "jobs.bamboohr.com", setting_key: nil },
         { source_slug: "jazzhr", host: "apply.jazz.co", setting_key: nil },
-        { source_slug: "indeed", host: "br.indeed.com", setting_key: nil }
+        { source_slug: "indeed", host: "br.indeed.com", setting_key: nil },
+        { source_slug: "indeed", host: "pt.indeed.com", setting_key: nil },
+        { source_slug: "linkedin", host: "pt.linkedin.com", setting_key: nil },
+        { source_slug: "itjobs-pt", host: "www.itjobs.pt", setting_key: nil },
+        { source_slug: "teamlyzer-jobs", host: "pt.teamlyzer.com/companies/jobs", setting_key: nil },
+        { source_slug: "landing-jobs", host: "landing.jobs/jobs", setting_key: nil },
+        { source_slug: "englishjobs-pt", host: "englishjobs.pt/jobs", setting_key: nil },
+        { source_slug: "net-empregos-pt", host: "www.net-empregos.com", setting_key: nil },
+        { source_slug: "sapo-emprego", host: "emprego.sapo.pt", setting_key: nil },
+        { source_slug: "expresso-emprego", host: "expressoemprego.pt", setting_key: nil },
+        { source_slug: "alerta-emprego", host: "www.alertaemprego.pt", setting_key: nil },
+        { source_slug: "eures", host: "europa.eu/eures/portal/jv-se/search", setting_key: nil },
+        { source_slug: "eurotechjobs", host: "www.eurotechjobs.com/jobs/portugal", setting_key: nil },
+        { source_slug: "builtin-portugal", host: "builtin.com/jobs/eu/portugal", setting_key: nil },
+        { source_slug: "working-nomads-portugal", host: "www.workingnomads.com/remote-portugal-jobs", setting_key: nil },
+        { source_slug: "we-are-distributed-portugal", host: "wearedistributed.org/remote-jobs/portugal", setting_key: nil },
+        { source_slug: "remote-rocketship-portugal", host: "www.remoterocketship.com/country/portugal/jobs/software-engineer", setting_key: nil },
+        { source_slug: "next-level-jobs-portugal", host: "nextleveljobs.eu/country/pt", setting_key: nil },
+        { source_slug: "wearedevelopers-portugal", host: "www.wearedevelopers.com/en/jobs/l/remote/portugal", setting_key: nil },
+        { source_slug: "talent-com-portugal", host: "pt.talent.com", setting_key: nil },
+        { source_slug: "jobted-portugal", host: "www.jobted.pt", setting_key: nil },
+        { source_slug: "jooble-portugal", host: "pt.jooble.org", setting_key: nil },
+        { source_slug: "glassdoor-portugal", host: "www.glassdoor.com/Job/portugal", setting_key: nil },
+        { source_slug: "crossover-portugal", host: "www.crossover.com/jobs/software-engineer/pt", setting_key: nil },
+        { source_slug: "arc-portugal", host: "arc.dev/en-pt/remote-jobs", setting_key: nil },
+        { source_slug: "startup-jobs-lisbon", host: "startup.jobs/locations/lisbon", setting_key: nil },
+        { source_slug: "randstad-portugal", host: "www.randstad.pt/empregos", setting_key: nil },
+        { source_slug: "randstad-digital-portugal", host: "www.randstaddigital.pt/pt/carreiras", setting_key: nil },
+        { source_slug: "hays-portugal", host: "www.hays.pt", setting_key: nil },
+        { source_slug: "adecco-portugal", host: "www.adecco.com/pt-pt/ofertas-emprego", setting_key: nil },
+        { source_slug: "michael-page-portugal", host: "www.michaelpage.pt/jobs/information-technology", setting_key: nil },
+        { source_slug: "robert-walters-portugal", host: "www.robertwalters.pt/ofertas-emprego.html", setting_key: nil },
+        { source_slug: "talent-portugal", host: "talentportugal.com", setting_key: nil }
       ].freeze
 
       Query = Struct.new(

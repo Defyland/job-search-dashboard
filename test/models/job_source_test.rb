@@ -125,7 +125,7 @@ class JobSourceTest < ActiveSupport::TestCase
     assert_equal [ "https://ats.landor.com.br/vaga-candidatura/51b51917-ffd9-4485-8239-8a986498d109" ], landor.settings["seed_urls"]
     assert linkedin.codex_fallback_enabled?
     assert_match "anti-bot", linkedin.codex_fallback_reason
-    assert_equal [ "www.linkedin.com", "br.linkedin.com" ], linkedin.settings["search_hosts"]
+    assert_equal [ "www.linkedin.com", "br.linkedin.com", "pt.linkedin.com" ], linkedin.settings["search_hosts"]
     assert icims.codex_fallback_enabled?
     assert_equal [ "careers.icims.com" ], icims.settings["search_hosts"]
     assert jobvite.codex_fallback_enabled?
@@ -146,8 +146,53 @@ class JobSourceTest < ActiveSupport::TestCase
     assert_match "SPA orientada por query", get_great_careers.codex_fallback_reason
     assert indeed.codex_fallback_enabled?
     assert_match "Cloudflare", indeed.codex_fallback_reason
-    assert_equal [ "br.indeed.com" ], indeed.settings["search_hosts"]
+    assert_equal [ "br.indeed.com", "pt.indeed.com" ], indeed.settings["search_hosts"]
     assert_includes indeed.settings["seed_queries"], "desenvolvedor ruby rails"
+    assert_includes indeed.settings["seed_queries"], "ruby on rails portugal"
+
+    portugal_fallback_slugs = %w[
+      itjobs-pt
+      teamlyzer-jobs
+      landing-jobs
+      englishjobs-pt
+      net-empregos-pt
+      sapo-emprego
+      expresso-emprego
+      alerta-emprego
+      eures
+      eurotechjobs
+      builtin-portugal
+      working-nomads-portugal
+      we-are-distributed-portugal
+      remote-rocketship-portugal
+      next-level-jobs-portugal
+      wearedevelopers-portugal
+      talent-com-portugal
+      jobted-portugal
+      jooble-portugal
+      glassdoor-portugal
+      crossover-portugal
+      arc-portugal
+      startup-jobs-lisbon
+      randstad-portugal
+      randstad-digital-portugal
+      hays-portugal
+      adecco-portugal
+      michael-page-portugal
+      robert-walters-portugal
+      talent-portugal
+    ]
+
+    portugal_fallback_slugs.each do |slug|
+      source = JobSource.find_by!(slug:)
+
+      assert source.codex_fallback_enabled?, "#{slug} should use codex fallback"
+      assert_equal "manual_only", source.adapter_key
+      assert_not source.supports_backfill?
+      assert_match "Portugal", source.codex_fallback_reason
+      assert_includes source.settings["regions"], "portugal"
+      assert_includes source.settings["seed_queries"], "ruby on rails portugal"
+    end
   end
 
   test "backfillable sources require a supported adapter key" do

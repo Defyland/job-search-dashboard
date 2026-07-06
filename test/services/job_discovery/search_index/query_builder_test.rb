@@ -42,14 +42,25 @@ class JobDiscovery::SearchIndex::QueryBuilderTest < ActiveSupport::TestCase
     assert_not_includes query, "developer"
   end
 
-  test "includes indeed in default fallback search targets" do
-    query = JobDiscovery::SearchIndex::QueryBuilder.new(search_profiles: [ search_profiles(:default) ])
-                                                    .queries
-                                                    .find { |candidate| candidate.source_slug == "indeed" }
+  test "includes portugal fallback search targets" do
+    queries = JobDiscovery::SearchIndex::QueryBuilder.new(search_profiles: [ search_profiles(:default) ]).queries
 
-    assert query
-    assert_equal "br.indeed.com", query.host
-    assert_includes query.query, "site:br.indeed.com"
-    assert_includes query.query, '"senior ruby"'
+    indeed_br = queries.find { |candidate| candidate.source_slug == "indeed" && candidate.host == "br.indeed.com" }
+    indeed_pt = queries.find { |candidate| candidate.source_slug == "indeed" && candidate.host == "pt.indeed.com" }
+    itjobs = queries.find { |candidate| candidate.source_slug == "itjobs-pt" }
+    teamlyzer = queries.find { |candidate| candidate.source_slug == "teamlyzer-jobs" }
+    hays = queries.find { |candidate| candidate.source_slug == "hays-portugal" }
+
+    assert indeed_br
+    assert_includes indeed_br.query, "site:br.indeed.com"
+    assert_includes indeed_br.query, '"senior ruby"'
+    assert indeed_pt
+    assert_includes indeed_pt.query, "site:pt.indeed.com"
+    assert itjobs
+    assert_includes itjobs.query, "site:www.itjobs.pt"
+    assert teamlyzer
+    assert_includes teamlyzer.query, "site:pt.teamlyzer.com/companies/jobs"
+    assert hays
+    assert_includes hays.query, "site:www.hays.pt"
   end
 end
