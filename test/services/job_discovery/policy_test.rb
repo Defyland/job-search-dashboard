@@ -17,6 +17,22 @@ class JobDiscovery::PolicyTest < ActiveSupport::TestCase
     assert_includes result.stack_tags, "react"
   end
 
+  test "accepts gender-neutral frontend title with react context" do
+    result = JobDiscovery::Policy.new(search_profile: search_profiles(:default)).classify(
+      title: "Desenvolvedor(a) Frontend Sênior",
+      remote_text: "Remoto",
+      location_text: "Brasil",
+      description: "Boa experiencia com arquitetura de aplicacoes React e componentizacao. React e Next.js.",
+      source_slug: "recrutei",
+      posted_text: "publicada hoje",
+      published_at: Time.zone.parse("2026-07-07 10:00:00")
+    )
+
+    assert result.accepted?
+    assert_equal :borderline, result.classification
+    assert_includes result.stack_tags, "react"
+  end
+
   test "rejects women only roles" do
     [
       "Vaga afirmativa para mulheres na engenharia",

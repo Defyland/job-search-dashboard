@@ -39,7 +39,33 @@ class JobDiscovery::SearchIndex::QueryBuilderTest < ActiveSupport::TestCase
     query = JobDiscovery::SearchIndex::QueryBuilder.new(search_profiles: [ profile ], targets: TARGETS).queries.first.query
 
     assert_includes query, '"desenvolvedor salesforce senior"'
+    assert_includes query, '"desenvolvedora salesforce senior"'
+    assert_includes query, '"frontend salesforce senior"'
     assert_not_includes query, "developer"
+  end
+
+  test "includes feminine and neutral role variants for bilingual searches" do
+    profile = users(:one).search_profiles.create!(
+      name: "Senior React BR",
+      slug: "senior-react-br-query-builder",
+      active: true,
+      language_scope: :both,
+      target_stacks: [ "react" ],
+      target_titles: [ "desenvolvedor", "developer", "frontend" ],
+      seniority_terms: [ "senior" ],
+      location_terms: [ "remoto" ],
+      negative_terms: [],
+      required_remote: true,
+      include_women_only: false,
+      scan_window_days: 20
+    )
+
+    query = JobDiscovery::SearchIndex::QueryBuilder.new(search_profiles: [ profile ], targets: TARGETS).queries.first.query
+
+    assert_includes query, '"desenvolvedora react senior"'
+    assert_includes query, '"engenheira de software react senior"'
+    assert_includes query, '"frontend react senior"'
+    assert_includes query, '"developer react senior"'
   end
 
   test "includes portugal fallback search targets" do

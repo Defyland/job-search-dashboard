@@ -41,9 +41,10 @@ module JobSources
         supports_backfill: true,
         scan_window_days: 20,
         settings: {
-          company_labels: [ "maxxi" ],
+          company_labels: [ "maxxi", "thera-consulting" ],
           vacancy_urls: [
-            "https://jobs.recrutei.com.br/maxxi/vacancy/145107-desenvolvedora-front-end-reactnextjs-senior"
+            "https://jobs.recrutei.com.br/maxxi/vacancy/145107-desenvolvedora-front-end-reactnextjs-senior",
+            "https://jobs.recrutei.com.br/thera-consulting/vacancy/149473-desenvolvedora-frontend-senior"
           ]
         }
       },

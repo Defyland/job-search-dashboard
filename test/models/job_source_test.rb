@@ -96,8 +96,11 @@ class JobSourceTest < ActiveSupport::TestCase
     assert_equal %w[ciandt jobgether decilegroup toptal], source.settings["company_slugs"]
     assert_equal %w[evtit botcity reply qintess], quickin.settings["company_slugs"]
     assert_equal 6, quickin.settings["max_pages"]
-    assert_equal [ "maxxi" ], recrutei.settings["company_labels"]
-    assert_equal [ "https://jobs.recrutei.com.br/maxxi/vacancy/145107-desenvolvedora-front-end-reactnextjs-senior" ], recrutei.settings["vacancy_urls"]
+    assert_equal %w[maxxi thera-consulting], recrutei.settings["company_labels"]
+    assert_equal [
+      "https://jobs.recrutei.com.br/maxxi/vacancy/145107-desenvolvedora-front-end-reactnextjs-senior",
+      "https://jobs.recrutei.com.br/thera-consulting/vacancy/149473-desenvolvedora-frontend-senior"
+    ], recrutei.settings["vacancy_urls"]
     assert_equal [ "smartrecruiters" ], smartrecruiters.settings["company_identifiers"]
   end
 

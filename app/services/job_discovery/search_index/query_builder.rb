@@ -2,7 +2,8 @@ module JobDiscovery
   module SearchIndex
     class QueryBuilder
       DEFAULT_LIMIT = 600
-      MAX_PHRASES_PER_QUERY = 6
+      MAX_PHRASES_PER_QUERY = 10
+      MAX_ROLE_TERMS_PER_QUERY = 8
       MAX_NEGATIVE_TERMS = 6
 
       TARGETS = [
@@ -115,7 +116,7 @@ module JobDiscovery
           seniority_terms = normalize_list(profile.seniority_terms).first(2)
           seniority_terms = [ "senior" ] if seniority_terms.blank?
           stack_terms = stack_terms_for(stack).first(3)
-          roles = role_terms_for(profile).first(4)
+          roles = role_terms_for(profile).first(MAX_ROLE_TERMS_PER_QUERY)
 
           phrases = stack_terms.flat_map do |stack_term|
             seniority_terms.flat_map do |seniority|
@@ -153,11 +154,47 @@ module JobDiscovery
         def role_terms_for(profile)
           case profile.language_scope.to_s
           when "portuguese"
-            %w[desenvolvedor engenheiro] + [ "engenheiro de software" ]
+            [
+              "desenvolvedor",
+              "desenvolvedora",
+              "engenheiro de software",
+              "engenheira de software",
+              "frontend",
+              "front-end",
+              "engenheiro",
+              "engenheira",
+              "backend",
+              "back-end",
+              "fullstack",
+              "full-stack"
+            ]
           when "english"
-            [ "developer", "engineer", "software engineer" ]
+            [
+              "developer",
+              "engineer",
+              "software engineer",
+              "frontend",
+              "front-end",
+              "backend",
+              "back-end",
+              "fullstack",
+              "full-stack"
+            ]
           else
-            [ "desenvolvedor", "engenheiro de software", "developer", "software engineer" ]
+            [
+              "desenvolvedor",
+              "desenvolvedora",
+              "engenheiro de software",
+              "engenheira de software",
+              "developer",
+              "software engineer",
+              "frontend",
+              "front-end",
+              "backend",
+              "back-end",
+              "fullstack",
+              "full-stack"
+            ]
           end
         end
 
