@@ -19,6 +19,8 @@ module JobDiscovery
           discovery("smartrecruiters", "company_identifiers", segments.first, url)
         when "jobs.quickin.io"
           discovery("quickin", "company_slugs", segments.first, url)
+        when "jobs.recrutei.com.br"
+          discovery("recrutei", "company_labels", segments.first, url)
         end
       rescue URI::InvalidURIError
         nil

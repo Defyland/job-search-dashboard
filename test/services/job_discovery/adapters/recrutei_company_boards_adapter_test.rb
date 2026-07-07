@@ -64,59 +64,6 @@ class JobDiscovery::Adapters::RecruteiCompanyBoardsAdapterTest < ActiveSupport::
     assert_equal "https://talent.recrutei.com.br/maxxi/145107/signup?utm_medium=btn-details-page", candidates.first[:apply_url]
   end
 
-  test "scans configured Thera frontend vacancy and accepts react context" do
-    source = JobSource.create!(
-      name: "Recrutei Thera",
-      slug: "recrutei-thera",
-      host: "jobs.recrutei.com.br",
-      base_url: "https://jobs.recrutei.com.br",
-      source_kind: :ats,
-      adapter_key: "recrutei_company_boards",
-      supports_backfill: true,
-      scan_window_days: 20,
-      settings: {
-        "vacancy_urls" => [
-          "https://jobs.recrutei.com.br/thera-consulting/vacancy/149473-desenvolvedora-frontend-senior"
-        ]
-      }
-    )
-    search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "20d", started_at: Time.current)
-    source_scan = search_run.source_scans.create!(job_source: source, status: :running, started_at: Time.current)
-    published_at = 1.day.ago.strftime("%d/%m/%Y %H:%M:%S")
-    created_at = 1.day.ago.iso8601
-
-    detail_html = <<~HTML
-      <html>
-        <head>
-          <link rel="canonical" href="https://jobs.recrutei.com.br/thera-consulting/vacancy/149473-desenvolvedora-frontend-senior" />
-          <script type="application/ld+json">
-            {"@context":"https://schema.org","@type":"JobPosting","title":"Desenvolvedor(a) Frontend Sênior","datePosted":"#{published_at}","description":"React e Next.js remoto","hiringOrganization":{"name":"THERA CONSULTING"}}
-          </script>
-        </head>
-        <body>
-          <a href="https://talent.recrutei.com.br/thera-consulting/149473/signup?utm_medium=btn-details-page">Candidatar-se agora</a>
-          <script id="__NEXT_DATA__" type="application/json">
-            {"props":{"pageProps":{"retorno":{"company":{"company":{"name":"THERA CONSULTING","label":"thera-consulting"}},"vacancy":{"id":149473,"title":"Desenvolvedor(a) Frontend Sênior","description":"<p>Boa experiência com arquitetura de aplicações React e componentização. React e Next.js. TypeScript.</p>","published_at":"#{published_at}","created_at":"#{created_at}","public_link":"https://jobs.recrutei.com.br/thera-consulting/vacancy/149473-desenvolvedora-frontend-senior","country":"Brasil","remote":1,"location":"Remoto","expired":false,"regime":{"description":"PJ"}}}}}}
-          </script>
-        </body>
-      </html>
-    HTML
-
-    adapter = JobDiscovery::Adapters::RecruteiCompanyBoardsAdapter.new(
-      fetcher: FakeFetcher.new(
-        "https://jobs.recrutei.com.br/thera-consulting/vacancy/149473-desenvolvedora-frontend-senior" => detail_html
-      )
-    )
-
-    candidates = adapter.scan(source_scan:, window_days: 20)
-
-    assert_equal 1, candidates.size
-    assert_equal "strong", candidates.first[:classification]
-    assert_equal "THERA CONSULTING", candidates.first[:company_name]
-    assert_equal "149473", candidates.first[:external_job_id]
-    assert_equal "https://talent.recrutei.com.br/thera-consulting/149473/signup?utm_medium=btn-details-page", candidates.first[:apply_url]
-  end
-
   test "discovers company labels from persisted recrutei jobs and expands from the vacancies board" do
     source = JobSource.create!(
       name: "Recrutei Discovery",

@@ -13,6 +13,7 @@ module JobDiscovery
         { source_slug: "lever", host: "jobs.lever.co", setting_key: "company_slugs" },
         { source_slug: "smartrecruiters", host: "jobs.smartrecruiters.com", setting_key: "company_identifiers" },
         { source_slug: "quickin", host: "jobs.quickin.io", setting_key: "company_slugs" },
+        { source_slug: "recrutei", host: "jobs.recrutei.com.br", setting_key: "company_labels" },
         { source_slug: "workable", host: "jobs.workable.com", setting_key: nil },
         { source_slug: "workable", host: "careers.workable.com", setting_key: nil },
         { source_slug: "icims", host: "careers.icims.com", setting_key: nil },

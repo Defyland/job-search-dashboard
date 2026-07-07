@@ -74,6 +74,7 @@ class JobDiscovery::SearchIndex::QueryBuilderTest < ActiveSupport::TestCase
     indeed_br = queries.find { |candidate| candidate.source_slug == "indeed" && candidate.host == "br.indeed.com" }
     indeed_pt = queries.find { |candidate| candidate.source_slug == "indeed" && candidate.host == "pt.indeed.com" }
     itjobs = queries.find { |candidate| candidate.source_slug == "itjobs-pt" }
+    recrutei = queries.find { |candidate| candidate.source_slug == "recrutei" && candidate.host == "jobs.recrutei.com.br" }
     teamlyzer = queries.find { |candidate| candidate.source_slug == "teamlyzer-jobs" }
     hays = queries.find { |candidate| candidate.source_slug == "hays-portugal" }
 
@@ -82,6 +83,9 @@ class JobDiscovery::SearchIndex::QueryBuilderTest < ActiveSupport::TestCase
     assert_includes indeed_br.query, '"senior ruby"'
     assert indeed_pt
     assert_includes indeed_pt.query, "site:pt.indeed.com"
+    assert recrutei
+    assert_includes recrutei.query, "site:jobs.recrutei.com.br"
+    assert_includes recrutei.query, '"desenvolvedora ruby senior"'
     assert itjobs
     assert_includes itjobs.query, "site:www.itjobs.pt"
     assert teamlyzer

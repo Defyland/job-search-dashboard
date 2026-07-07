@@ -16,6 +16,8 @@ class JobDiscovery::SearchIndex::BoardSeederTest < ActiveSupport::TestCase
       @queries << [ query, max_results ]
 
       case query
+      when /jobs\.recrutei\.com\.br/
+        [ JobDiscovery::SearchIndex::Client::Result.new(url: "https://jobs.recrutei.com.br/acme/vacancy/123-desenvolvedora-react-senior") ]
       when /jobs\.lever\.co/
         [ JobDiscovery::SearchIndex::Client::Result.new(url: "https://jobs.lever.co/acme/123-senior-ruby") ]
       when /jobs\.ashbyhq\.com/
@@ -67,5 +69,25 @@ class JobDiscovery::SearchIndex::BoardSeederTest < ActiveSupport::TestCase
     assert_not result.enabled
     assert_equal 0, result.query_count
     assert_equal 0, result.seeded_count
+  end
+
+  test "seeds Recrutei company labels from search results" do
+    JobSources::Catalog.seed!
+    recrutei = JobSource.find_by!(slug: "recrutei")
+    recrutei.update!(settings: { "company_labels" => [ "known" ] })
+
+    client = FakeClient.new
+    result = JobDiscovery::SearchIndex::BoardSeeder.new(
+      search_profiles: [ search_profiles(:default) ],
+      sources: JobSource.where(slug: "recrutei"),
+      client:,
+      max_queries: 1,
+      results_per_query: 3
+    ).call
+
+    assert result.enabled
+    assert_equal 1, result.seeded_count
+    assert_includes recrutei.reload.settings["company_labels"], "acme"
+    assert_includes recrutei.settings["company_labels"], "known"
   end
 end

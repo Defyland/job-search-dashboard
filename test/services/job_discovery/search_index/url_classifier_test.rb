@@ -10,6 +10,7 @@ class JobDiscovery::SearchIndex::UrlClassifierTest < ActiveSupport::TestCase
     assert_discovery classifier.call("https://jobs.lever.co/acme/123"), "lever", "company_slugs", "acme"
     assert_discovery classifier.call("https://jobs.smartrecruiters.com/Acme/123-dev"), "smartrecruiters", "company_identifiers", "Acme"
     assert_discovery classifier.call("https://jobs.quickin.io/evtit/jobs/abc"), "quickin", "company_slugs", "evtit"
+    assert_discovery classifier.call("https://jobs.recrutei.com.br/acme/vacancy/123-desenvolvedora-react-senior"), "recrutei", "company_labels", "acme"
   end
 
   test "ignores unsupported urls" do
