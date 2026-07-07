@@ -54,14 +54,20 @@ Current production values:
 
 This repository secret is required:
 
-- `RAILWAY_API_TOKEN`
+- `RAILWAY_TOKEN`
 
-Use an account/workspace-scoped Railway API token because the workflow links the
-project, environment, and service before deploying:
+Use a Railway project token scoped to the production environment. The workflow
+deploys directly with `railway up --project ... --environment ... --service ...`
+and does not run `railway link` in CI:
 
 ```bash
-gh secret set RAILWAY_API_TOKEN --repo Defyland/job-search-dashboard
+gh secret set RAILWAY_TOKEN --repo Defyland/job-search-dashboard
 ```
+
+The workflow also reads the legacy `RAILWAY_API_TOKEN` secret as a fallback so
+the existing repository secret can keep working if it already contains a project
+token. Prefer `RAILWAY_TOKEN` for new setup because that is the Railway CLI
+variable for project-level deploys.
 
 The application runtime secrets stay in Railway. Do not copy app variables such
 as database credentials, admin password, Rails master key, or provider API keys

@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     env:
-      RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN || secrets.RAILWAY_API_TOKEN }}
       RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
       RAILWAY_ENVIRONMENT: ${{ vars.RAILWAY_ENVIRONMENT }}
       RAILWAY_WEB_SERVICE: ${{ vars.RAILWAY_WEB_SERVICE }}
@@ -30,7 +30,7 @@ jobs:
     steps:
       - name: Validate deployment configuration
         run: |
-          test -n "$RAILWAY_API_TOKEN" || { echo "::error::Set the RAILWAY_API_TOKEN repository secret before deploying."; exit 1; }
+          test -n "$RAILWAY_TOKEN" || { echo "::error::Set the RAILWAY_TOKEN repository secret before deploying."; exit 1; }
           test -n "$RAILWAY_PROJECT_ID" || { echo "::error::Set the RAILWAY_PROJECT_ID repository variable."; exit 1; }
           test -n "$RAILWAY_ENVIRONMENT" || { echo "::error::Set the RAILWAY_ENVIRONMENT repository variable."; exit 1; }
           test -n "$RAILWAY_WEB_SERVICE" || { echo "::error::Set the RAILWAY_WEB_SERVICE repository variable."; exit 1; }
@@ -50,14 +50,11 @@ jobs:
       - name: Install Railway CLI
         run: npm install -g @railway/cli
 
-      - name: Link Railway project
-        run: railway link --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT" --service "$RAILWAY_WEB_SERVICE"
-
       - name: Deploy web
-        run: railway up --service "$RAILWAY_WEB_SERVICE" --environment "$RAILWAY_ENVIRONMENT" --ci
+        run: railway up --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT" --service "$RAILWAY_WEB_SERVICE" --ci
 
       - name: Deploy worker
-        run: railway up --service "$RAILWAY_WORKER_SERVICE" --environment "$RAILWAY_ENVIRONMENT" --ci
+        run: railway up --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT" --service "$RAILWAY_WORKER_SERVICE" --ci
 
       - name: Smoke production healthcheck
         run: |
