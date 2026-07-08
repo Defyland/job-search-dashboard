@@ -486,7 +486,7 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
       assert result.success?
       assert_equal 0, result.summary[:imported_count]
       assert_equal 1, result.summary[:rejected_count]
-      assert_equal "sem stack alvo no titulo ou contexto imediato", result.search_run.search_run_items.last.reason
+      assert_equal "sem area alvo no titulo ou contexto imediato", result.search_run.search_run_items.last.reason
     end
   end
 

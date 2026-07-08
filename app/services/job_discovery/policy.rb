@@ -47,6 +47,84 @@ module JobDiscovery
         "people operations",
         "people ops",
         "people partner"
+      ],
+      "product" => [
+        "product",
+        "produto",
+        "product manager",
+        "gerente de produto",
+        "gestor de produto",
+        "product owner"
+      ],
+      "marketing" => [
+        "marketing",
+        "growth",
+        "growth marketing",
+        "performance marketing",
+        "content marketing"
+      ],
+      "sales" => [
+        "sales",
+        "vendas",
+        "account executive",
+        "sales executive",
+        "sales representative",
+        "business development",
+        "sdr",
+        "bdr"
+      ],
+      "design" => [
+        "design",
+        "designer",
+        "product designer",
+        "ux designer",
+        "ui designer",
+        "user experience designer",
+        "user interface designer"
+      ],
+      "customer_success" => [
+        "customer success",
+        "customer support",
+        "client success",
+        "sucesso do cliente",
+        "support specialist"
+      ],
+      "finance" => [
+        "finance",
+        "financeiro",
+        "financial analyst",
+        "finance manager",
+        "controller",
+        "accounting",
+        "contabilidade"
+      ],
+      "operations" => [
+        "operations",
+        "operacoes",
+        "operações",
+        "business operations",
+        "strategy and operations",
+        "ops"
+      ],
+      "project_management" => [
+        "project manager",
+        "program manager",
+        "gerente de projetos",
+        "gestor de projetos",
+        "scrum master",
+        "delivery manager"
+      ],
+      "data" => [
+        "data",
+        "dados",
+        "data analyst",
+        "data scientist",
+        "data engineer",
+        "analista de dados",
+        "cientista de dados",
+        "engenheiro de dados",
+        "business intelligence",
+        "bi"
       ]
     }.freeze
     TITLE_STACK_SYNONYMS = STACK_SYNONYMS.merge(
@@ -69,7 +147,8 @@ module JobDiscovery
       "ruby on rails" => [ "rails", "ruby" ],
       "rails" => [ "ruby on rails", "ruby" ],
       ".net" => [ "c#" ],
-      "c#" => [ ".net" ]
+      "c#" => [ ".net" ],
+      "design" => [ "product" ]
     }.freeze
     DEFAULT_PROFILE_NAME = "Default senior Ruby/Rails/React".freeze
     PORTUGUESE_ROLE_TERMS = [

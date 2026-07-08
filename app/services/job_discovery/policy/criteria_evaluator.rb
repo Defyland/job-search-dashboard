@@ -37,8 +37,8 @@ module JobDiscovery
       return reject("titulo aponta para stack fora do perfil") if conflicting_title_tags.any?
 
       body_tags = title_tags.presence || context_stack_tags(normalized_haystack)
-      return reject("sem stack alvo no titulo ou contexto imediato") if title_tags.blank? && body_tags.blank?
-      return reject("sem foco tecnico compativel no titulo") unless role_title?(normalized_title) || title_tags.any?
+      return reject("sem area alvo no titulo ou contexto imediato") if title_tags.blank? && body_tags.blank?
+      return reject("sem foco compativel no titulo") unless role_title?(normalized_title) || title_tags.any?
 
       remote_signal = [ remote_text, location_text ].compact_blank.join(" ").presence || posted_text
       return reject("localidade sem sinal remoto compativel") if remote_blocked?(remote_signal, normalized_haystack, source_slug)
@@ -75,7 +75,7 @@ module JobDiscovery
       def build_reason(classification, stack_tags, remote_signal, published_at)
         [
           @criteria.profile.name,
-          classification == :strong ? "titulo forte" : "titulo tecnico com stack no contexto",
+          classification == :strong ? "titulo forte" : "titulo compativel com area no contexto",
           stack_tags.join(", "),
           remote_signal.presence || "sem sinal remoto explicito",
           published_at ? "publicada em #{I18n.l(published_at.to_date)}" : "sem data publica"

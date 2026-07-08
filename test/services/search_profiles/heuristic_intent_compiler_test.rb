@@ -31,7 +31,7 @@ module SearchProfiles
         )
       end
 
-      assert_equal "Informe ao menos a stack principal do perfil.", error.message
+      assert_equal "Informe ao menos a area, cargo ou stack principal do perfil.", error.message
     end
 
     test "rejects punctuation-only technology intents" do
@@ -46,7 +46,7 @@ module SearchProfiles
         )
       end
 
-      assert_equal "Informe ao menos a stack principal do perfil.", error.message
+      assert_equal "Informe ao menos a area, cargo ou stack principal do perfil.", error.message
     end
 
     test "uses selected junior and pleno labels in generated profile names" do
@@ -95,6 +95,35 @@ module SearchProfiles
       assert_equal [ "rh" ], hr_payload.fetch("canonical_stacks")
       assert_includes hr_payload.fetch("title_variants_pt"), "analista de rh"
       assert_includes hr_payload.fetch("title_variants_en"), "human resources specialist"
+    end
+
+    test "builds common non technical role profiles" do
+      cases = {
+        "product manager" => [ "product", "gerente de produto", "product manager" ],
+        "marketing" => [ "marketing", "analista de marketing", "marketing manager" ],
+        "account executive" => [ "sales", "executivo de contas", "account executive" ],
+        "designer" => [ "design", "product designer", "ux designer" ],
+        "customer success" => [ "customer_success", "analista de customer success", "customer success manager" ],
+        "finance" => [ "finance", "analista financeiro", "financial analyst" ],
+        "operations" => [ "operations", "analista de operacoes", "operations analyst" ],
+        "project manager" => [ "project_management", "gerente de projetos", "project manager" ],
+        "data analyst" => [ "data", "analista de dados", "data analyst" ]
+      }
+
+      cases.each do |intent, (canonical_stack, portuguese_title, english_title)|
+        payload = HeuristicIntentCompiler.new.call(
+          technology_intent: intent,
+          seniority_preset: "senior",
+          language_scope: "both",
+          required_remote: true,
+          region_scope: "brazil_latam",
+          include_women_only: false
+        )
+
+        assert_equal [ canonical_stack ], payload.fetch("canonical_stacks"), intent
+        assert_includes payload.fetch("title_variants_pt"), portuguese_title, intent
+        assert_includes payload.fetch("title_variants_en"), english_title, intent
+      end
     end
   end
 end

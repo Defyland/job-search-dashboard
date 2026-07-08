@@ -148,7 +148,7 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "senior-salesforce-remote-br-latam-2", profile.slug
   end
 
-  test "renders a field-level validation state when stack is empty" do
+  test "renders a field-level validation state when area is empty" do
     assert_no_difference("SearchProfile.count") do
       post search_profiles_path, params: {
         search_profile: simple_creation_params(technology_intent: "   ", scan_window_days: "20"),
@@ -157,7 +157,7 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_response :unprocessable_entity
-    assert_match "Informe ao menos a stack principal do perfil.", response.body
+    assert_match "Informe ao menos a area, cargo ou stack principal do perfil.", response.body
     assert_match 'aria-invalid="true"', response.body
     assert_match 'id="search_profile_technology_intent_error"', response.body
     assert_no_match "Preview gerado", response.body

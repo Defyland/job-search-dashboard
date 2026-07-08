@@ -13,7 +13,16 @@ module SearchProfiles
       "salesforce" => "Salesforce",
       "servicenow" => "ServiceNow",
       "recruiter" => "Recruiter",
-      "rh" => "RH"
+      "rh" => "RH",
+      "product" => "Product",
+      "marketing" => "Marketing",
+      "sales" => "Sales",
+      "design" => "Design",
+      "customer_success" => "Customer Success",
+      "finance" => "Finance",
+      "operations" => "Operations",
+      "project_management" => "Project Management",
+      "data" => "Data"
     }.freeze
 
     STACK_CANONICAL_ALIASES = {
@@ -42,7 +51,53 @@ module SearchProfiles
       "recursos humanos" => "rh",
       "people ops" => "rh",
       "people operations" => "rh",
-      "people partner" => "rh"
+      "people partner" => "rh",
+      "product manager" => "product",
+      "product owner" => "product",
+      "gestao de produto" => "product",
+      "gestão de produto" => "product",
+      "produto" => "product",
+      "growth" => "marketing",
+      "growth marketing" => "marketing",
+      "performance marketing" => "marketing",
+      "content marketing" => "marketing",
+      "vendas" => "sales",
+      "account executive" => "sales",
+      "sales executive" => "sales",
+      "sales representative" => "sales",
+      "business development" => "sales",
+      "business development representative" => "sales",
+      "sdr" => "sales",
+      "bdr" => "sales",
+      "designer" => "design",
+      "product designer" => "design",
+      "ux designer" => "design",
+      "ui designer" => "design",
+      "customer success" => "customer_success",
+      "customer support" => "customer_success",
+      "client success" => "customer_success",
+      "sucesso do cliente" => "customer_success",
+      "financeiro" => "finance",
+      "financial analyst" => "finance",
+      "finance manager" => "finance",
+      "contabilidade" => "finance",
+      "accounting" => "finance",
+      "operacoes" => "operations",
+      "operações" => "operations",
+      "business operations" => "operations",
+      "strategy and operations" => "operations",
+      "project manager" => "project_management",
+      "program manager" => "project_management",
+      "gerente de projetos" => "project_management",
+      "scrum master" => "project_management",
+      "data analyst" => "data",
+      "data scientist" => "data",
+      "data engineer" => "data",
+      "analista de dados" => "data",
+      "cientista de dados" => "data",
+      "engenheiro de dados" => "data",
+      "business intelligence" => "data",
+      "bi" => "data"
     }.freeze
 
     PROVIDER = "heuristic".freeze
@@ -50,7 +105,7 @@ module SearchProfiles
 
     def call(technology_intent:, seniority_preset:, language_scope:, required_remote:, region_scope:, include_women_only:)
       canonical_stacks = detect_canonical_stacks(technology_intent)
-      raise SearchProfiles::IntentCompiler::Error, "Informe ao menos a stack principal do perfil." if canonical_stacks.blank?
+      raise SearchProfiles::IntentCompiler::Error, "Informe ao menos a area, cargo ou stack principal do perfil." if canonical_stacks.blank?
 
       {
         "profile_name_suggestion" => profile_name_for(canonical_stacks, seniority_preset, required_remote, region_scope),

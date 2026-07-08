@@ -12,7 +12,7 @@ module SearchProfiles
       seniority_preset = SearchProfiles::Vocabulary.normalize_seniority_preset(simple_input["seniority_preset"])
       compiled_payload = compiled_payload.deep_stringify_keys
       target_stacks = SearchProfiles::Vocabulary.normalize_list(compiled_payload["canonical_stacks"])
-      raise SearchProfiles::IntentCompiler::Error, "Informe ao menos a stack principal do perfil." if target_stacks.blank?
+      raise SearchProfiles::IntentCompiler::Error, "Informe ao menos a area, cargo ou stack principal do perfil." if target_stacks.blank?
 
       attributes = {
         name: simple_input["name"].presence || compiled_payload["profile_name_suggestion"],

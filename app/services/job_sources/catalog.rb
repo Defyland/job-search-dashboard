@@ -2,14 +2,16 @@ module JobSources
   class Catalog
     PORTUGAL_LOCATION_TERMS = [ "Portugal", "Lisboa", "Porto", "remoto Portugal", "remote Portugal" ].freeze
     PORTUGAL_SEED_QUERIES = [
-      "ruby on rails portugal",
-      "desenvolvedor ruby portugal",
-      "software engineer portugal remote",
-      "backend developer portugal",
-      "full stack developer portugal",
-      "react developer portugal"
+      "remote jobs portugal",
+      "trabalho remoto portugal",
+      "product manager portugal remote",
+      "tech recruiter portugal remote",
+      "customer success portugal remote",
+      "marketing portugal remote",
+      "data analyst portugal remote",
+      "software engineer portugal remote"
     ].freeze
-    PORTUGAL_FALLBACK_REASON = "Fonte com cobertura de vagas em Portugal sem adapter Rails nativo; usar Codex fallback para busca por stack/localidade, validar vaga ativa e postar pelo ingestion API.".freeze
+    PORTUGAL_FALLBACK_REASON = "Fonte com cobertura de vagas em Portugal sem adapter Rails nativo; usar Codex fallback para busca por area/localidade, validar vaga ativa e postar pelo ingestion API.".freeze
 
     DEFAULTS = [
       {
@@ -174,10 +176,13 @@ module JobSources
           default_location: "remoto",
           default_sort: "date",
           seed_queries: [
-            "desenvolvedor ruby rails",
-            "ruby on rails remoto",
-            "desenvolvedor react remoto",
-            "ruby on rails portugal",
+            "remote jobs",
+            "vagas remotas",
+            "product manager remoto",
+            "tech recruiter remoto",
+            "customer success remoto",
+            "marketing remoto",
+            "data analyst remoto",
             "software engineer portugal remote"
           ]
         }
@@ -424,7 +429,7 @@ module JobSources
         scan_window_days: 20,
         settings: {
           search_hosts: [ "www.workingnomads.com", "workingnomads.com" ],
-          search_paths: [ "/remote-portugal-jobs", "/remote-software-engineering-jobs" ],
+          search_paths: [ "/remote-portugal-jobs" ],
           regions: [ "portugal", "remote" ],
           default_location: "Portugal",
           location_terms: PORTUGAL_LOCATION_TERMS,

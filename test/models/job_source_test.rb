@@ -147,8 +147,8 @@ class JobSourceTest < ActiveSupport::TestCase
     assert indeed.codex_fallback_enabled?
     assert_match "Cloudflare", indeed.codex_fallback_reason
     assert_equal [ "br.indeed.com", "pt.indeed.com" ], indeed.settings["search_hosts"]
-    assert_includes indeed.settings["seed_queries"], "desenvolvedor ruby rails"
-    assert_includes indeed.settings["seed_queries"], "ruby on rails portugal"
+    assert_includes indeed.settings["seed_queries"], "tech recruiter remoto"
+    assert_includes indeed.settings["seed_queries"], "software engineer portugal remote"
 
     portugal_fallback_slugs = %w[
       itjobs-pt
@@ -191,7 +191,8 @@ class JobSourceTest < ActiveSupport::TestCase
       assert_not source.supports_backfill?
       assert_match "Portugal", source.codex_fallback_reason
       assert_includes source.settings["regions"], "portugal"
-      assert_includes source.settings["seed_queries"], "ruby on rails portugal"
+      assert_includes source.settings["seed_queries"], "product manager portugal remote"
+      assert_includes source.settings["seed_queries"], "software engineer portugal remote"
     end
   end
 

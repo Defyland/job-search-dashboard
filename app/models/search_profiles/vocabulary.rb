@@ -76,7 +76,9 @@ module SearchProfiles
       "portuguese" => [ "engenheiro de software", "desenvolvedor", "frontend", "backend", "fullstack" ],
       "english" => [ "software engineer", "developer", "frontend", "backend", "fullstack" ]
     }.freeze
-    NON_TECH_ROLE_STACKS = %w[recruiter rh].freeze
+    NON_TECH_ROLE_STACKS = %w[
+      recruiter rh product marketing sales design customer_success finance operations project_management data
+    ].freeze
     NON_TECH_ROLE_TITLES = {
       "recruiter" => {
         "portuguese" => [
@@ -113,6 +115,169 @@ module SearchProfiles
           "people operations",
           "people ops",
           "people partner"
+        ]
+      },
+      "product" => {
+        "portuguese" => [
+          "product manager",
+          "gerente de produto",
+          "gestor de produto",
+          "product owner",
+          "analista de produto",
+          "especialista de produto"
+        ],
+        "english" => [
+          "product manager",
+          "senior product manager",
+          "product owner",
+          "product specialist",
+          "product lead"
+        ]
+      },
+      "marketing" => {
+        "portuguese" => [
+          "marketing",
+          "analista de marketing",
+          "especialista de marketing",
+          "coordenador de marketing",
+          "gerente de marketing",
+          "growth marketing"
+        ],
+        "english" => [
+          "marketing manager",
+          "marketing specialist",
+          "growth marketer",
+          "growth marketing manager",
+          "performance marketing",
+          "content marketing manager"
+        ]
+      },
+      "sales" => {
+        "portuguese" => [
+          "vendas",
+          "executivo de contas",
+          "executiva de contas",
+          "executivo comercial",
+          "consultor comercial",
+          "representante comercial",
+          "sales development representative"
+        ],
+        "english" => [
+          "sales",
+          "account executive",
+          "sales executive",
+          "sales representative",
+          "sales development representative",
+          "business development representative"
+        ]
+      },
+      "design" => {
+        "portuguese" => [
+          "designer",
+          "product designer",
+          "ux designer",
+          "ui designer",
+          "designer de produto",
+          "designer ux",
+          "designer ui"
+        ],
+        "english" => [
+          "designer",
+          "product designer",
+          "ux designer",
+          "ui designer",
+          "user experience designer",
+          "user interface designer"
+        ]
+      },
+      "customer_success" => {
+        "portuguese" => [
+          "customer success",
+          "analista de customer success",
+          "gerente de customer success",
+          "customer success manager",
+          "sucesso do cliente",
+          "especialista de atendimento"
+        ],
+        "english" => [
+          "customer success",
+          "customer success manager",
+          "customer support",
+          "support specialist",
+          "client success manager",
+          "implementation specialist"
+        ]
+      },
+      "finance" => {
+        "portuguese" => [
+          "financeiro",
+          "analista financeiro",
+          "controller",
+          "analista contabil",
+          "analista contábil",
+          "financial planning"
+        ],
+        "english" => [
+          "finance",
+          "financial analyst",
+          "finance manager",
+          "controller",
+          "accounting analyst",
+          "fp&a analyst"
+        ]
+      },
+      "operations" => {
+        "portuguese" => [
+          "operacoes",
+          "operações",
+          "analista de operacoes",
+          "analista de operações",
+          "coordenador de operacoes",
+          "coordenador de operações",
+          "business operations"
+        ],
+        "english" => [
+          "operations",
+          "operations analyst",
+          "operations manager",
+          "business operations",
+          "strategy and operations",
+          "ops manager"
+        ]
+      },
+      "project_management" => {
+        "portuguese" => [
+          "gerente de projetos",
+          "gestor de projetos",
+          "coordenador de projetos",
+          "project manager",
+          "scrum master",
+          "program manager"
+        ],
+        "english" => [
+          "project manager",
+          "program manager",
+          "project coordinator",
+          "scrum master",
+          "delivery manager"
+        ]
+      },
+      "data" => {
+        "portuguese" => [
+          "analista de dados",
+          "cientista de dados",
+          "engenheiro de dados",
+          "analytics engineer",
+          "business intelligence",
+          "analista de bi"
+        ],
+        "english" => [
+          "data analyst",
+          "data scientist",
+          "data engineer",
+          "analytics engineer",
+          "business intelligence analyst",
+          "bi analyst"
         ]
       }
     }.freeze

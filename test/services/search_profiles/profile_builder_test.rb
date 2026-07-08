@@ -16,7 +16,7 @@ module SearchProfiles
         )
       end
 
-      assert_equal "Informe ao menos a stack principal do perfil.", error.message
+      assert_equal "Informe ao menos a area, cargo ou stack principal do perfil.", error.message
     end
 
     test "builds junior profile terms without excluding junior titles" do

@@ -166,7 +166,7 @@ class JobDiscovery::PolicyTest < ActiveSupport::TestCase
     )
 
     assert_equal :rejected, result.classification
-    assert_match(/stack alvo|match suficiente/, result.reason)
+    assert_match(/area alvo|match suficiente/, result.reason)
   end
 
   test "intent-backed profiles keep generic role titles for body-only stack matches" do
@@ -349,6 +349,58 @@ class JobDiscovery::PolicyTest < ActiveSupport::TestCase
     assert_includes portuguese.stack_tags, "recruiter"
     assert_equal :rejected, false_positive.classification
     assert_match(/foco|match|stack/, false_positive.reason)
+  end
+
+  test "matches common non technical role families" do
+    cases = {
+      "product" => "Senior Product Manager",
+      "marketing" => "Senior Growth Marketing Manager",
+      "sales" => "Senior Account Executive",
+      "design" => "Senior Product Designer",
+      "customer_success" => "Senior Customer Success Manager",
+      "finance" => "Senior Financial Analyst",
+      "operations" => "Senior Operations Manager",
+      "project_management" => "Senior Project Manager",
+      "data" => "Senior Data Analyst"
+    }
+
+    cases.each do |family, title|
+      profile = users(:one).search_profiles.create!(
+        name: "Senior #{family}",
+        target_stacks: [ family ],
+        target_titles: SearchProfiles::Vocabulary.role_titles_for("both", target_stacks: [ family ]),
+        seniority_terms: [ "senior", "sênior", "sr" ],
+        location_terms: [ "remote", "remoto", "brazil", "brasil", "latam" ],
+        negative_terms: [ "junior", "pleno" ],
+        required_remote: true,
+        include_women_only: false,
+        language_scope: :both,
+        scan_window_days: 20,
+        active: true
+      )
+      result = JobDiscovery::Policy.new(search_profile: profile).classify(
+        title:,
+        remote_text: "Remote Brazil",
+        location_text: "Brazil",
+        description: "#{title} role in a distributed team",
+        source_slug: "manual",
+        posted_text: "today",
+        published_at: nil
+      )
+      false_positive = JobDiscovery::Policy.new(search_profile: profile).classify(
+        title: "Senior Software Engineer",
+        remote_text: "Remote Brazil",
+        location_text: "Brazil",
+        description: "#{title} can help explain the hiring process",
+        source_slug: "manual",
+        posted_text: "today",
+        published_at: nil
+      )
+
+      assert result.accepted?, "#{family} should accept #{title}"
+      assert_includes result.stack_tags, family
+      assert_equal :rejected, false_positive.classification, "#{family} should reject software false positive"
+    end
   end
 
   private

@@ -252,6 +252,6 @@ class SearchProfilesController < ApplicationController
 
     def add_intent_error(search_profile, error)
       search_profile.errors.add(:base, error.message)
-      @technology_intent_error = error.message if error.message.include?("stack principal")
+      @technology_intent_error = error.message if error.message.include?("principal do perfil")
     end
 end

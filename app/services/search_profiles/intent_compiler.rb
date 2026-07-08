@@ -49,7 +49,7 @@ module SearchProfiles
     end
 
     def call(technology_intent:, seniority_preset:, language_scope:, required_remote:, region_scope:, include_women_only:)
-      raise Error, "Informe ao menos a stack principal do perfil." if technology_intent.to_s.squish.blank?
+      raise Error, "Informe ao menos a area, cargo ou stack principal do perfil." if technology_intent.to_s.squish.blank?
 
       response = with_retry do
         @client.create_structured_output(
@@ -93,10 +93,11 @@ module SearchProfiles
           {
             role: "system",
             content: <<~PROMPT.squish
-              You compile job-search intents into canonical stacks, realistic hands-on job-title variants, and useful technical aliases.
-              Focus on software-engineering roles, not management-only roles. Keep outputs concise and market-realistic.
+              You compile job-search intents into canonical job families, areas, stacks, realistic job-title variants, and useful aliases.
+              Support software and non-software areas such as recruiting, HR, product, marketing, sales, design, customer success, finance, operations, projects, and data.
+              Keep outputs concise and market-realistic for the requested field.
               Do not include company names, location names, remote markers, salary, seniority adjectives beyond the requested level,
-              or generic soft-skill phrasing inside titles. Prefer titles that appear in Brazilian and international tech hiring markets.
+              or generic soft-skill phrasing inside titles. Prefer titles that appear in Brazilian and international hiring markets.
             PROMPT
           },
           {
@@ -109,11 +110,11 @@ module SearchProfiles
               region_scope: region_scope.to_s,
               include_women_only: ActiveModel::Type::Boolean.new.cast(include_women_only),
               instructions: [
-                "Return canonical stack labels in lowercase.",
+                "Return canonical area, job-family, or stack labels in lowercase.",
                 "Return title_variants_pt in Portuguese only.",
                 "Return title_variants_en in English only.",
-                "Include only hands-on titles that make sense for the requested stack.",
-                "Aliases must help identify the stack in titles or short descriptions."
+                "Include only titles that make sense for the requested area, job family, or stack.",
+                "Aliases must help identify the requested area, job family, or stack in titles or short descriptions."
               ]
             }.to_json
           }
@@ -122,7 +123,7 @@ module SearchProfiles
 
       def normalize_response(response)
         canonical_stacks = normalize_list(response["canonical_stacks"])
-        raise Error, "O Claude nao retornou stacks canonicas suficientes." if canonical_stacks.blank?
+        raise Error, "O Claude nao retornou areas ou stacks canonicas suficientes." if canonical_stacks.blank?
 
         stack_aliases =
           Array(response["stack_aliases"]).each_with_object([]) do |entry, result|
