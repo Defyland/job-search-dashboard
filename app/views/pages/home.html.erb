@@ -179,7 +179,10 @@
     <a href="#radar">No radar</a>
     <a href="#fontes">Fontes</a>
   </div>
-  <%= link_to "Entrar no painel", new_session_path, class: "btn btn-amber" %>
+  <div class="cta-row" style="margin:0">
+    <%= link_to "Criar conta", new_registration_path, class: "btn btn-amber" %>
+    <%= link_to "Entrar", new_session_path, class: "btn btn-ghost" %>
+  </div>
 </div></nav>
 
 <% if flash.any? %>
@@ -196,7 +199,7 @@
     <h1 class="serif">O farol que acende <em>só</em> nas vagas que são suas.</h1>
     <p class="lead">O Farol varre dezenas de boards — Gupy, Lever, Greenhouse, Ashby, Workable — e ignora o ruído. Você só vê as vagas que batem com a sua stack, senioridade e modelo remoto.</p>
     <div class="cta-row">
-      <a href="#entrar" class="btn btn-amber">Ver lista de espera</a>
+      <%= link_to "Criar conta", new_registration_path, class: "btn btn-amber" %>
       <a href="#como" class="btn btn-ghost">Ver como funciona</a>
     </div>
     <div class="trust">
@@ -302,9 +305,10 @@
 </div></section>
 
 <section id="entrar" class="closing"><div class="wrap">
-  <span class="eyebrow">Lista de espera</span>
+  <span class="eyebrow">Acesso</span>
   <h2 class="serif" style="margin-top:18px">Pare de caçar.<br>Deixe o farol acender.</h2>
-  <p>Deixe seu email. Quando a lista abrir, eu te aviso. O acesso atual continua privado para quem já tem login.</p>
+  <p>Crie sua conta para configurar seu perfil agora. Se preferir receber novidades por email, entre na lista abaixo.</p>
+  <p style="margin-top:-18px"><%= link_to "Criar conta", new_registration_path, class: "btn btn-amber" %></p>
   <%= form_with url: waitlist_entries_path, scope: :waitlist_entry, method: :post, local: true, html: { class: "capture", id: "capform", autocomplete: "off" } do |form| %>
     <%= form.email_field :email_address, id: "emailcap", placeholder: "seu@email.com", value: @waitlist_email, required: true, autocomplete: "email", inputmode: "email" %>
     <%= form.submit "Entrar na lista", class: "btn btn-amber" %>

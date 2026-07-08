@@ -1,0 +1,49 @@
+<% content_for :title, "Criar conta" %>
+
+<div class="mx-auto grid min-h-[70vh] w-full max-w-5xl items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+  <section class="space-y-5">
+    <p class="inline-flex rounded-full border border-emerald-300/20 bg-emerald-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-emerald-100">Comece agora</p>
+    <h1 class="max-w-xl text-5xl font-extrabold tracking-tight text-white">Crie sua conta e calibre seu radar.</h1>
+    <p class="max-w-xl text-lg leading-8 text-slate-300">
+      Depois do cadastro, voce configura stack, senioridade, titulos alvo e preferencia remota para receber so as vagas que encaixam no seu perfil.
+    </p>
+  </section>
+
+  <section class="rounded-[2rem] border border-white/10 bg-slate-950/70 p-8 shadow-2xl shadow-slate-950/30">
+    <h2 class="text-2xl font-bold text-white">Criar conta</h2>
+    <p class="mt-2 text-sm text-slate-400">Informe um email e uma senha com pelo menos 8 caracteres.</p>
+
+    <%= form_with model: @user, url: registration_path, **submit_state_form_options(default_loading_text: "Criando conta...", class: "mt-8 space-y-5") do |form| %>
+      <div>
+        <%= form.label :email_address, "Email", class: "text-sm font-semibold text-slate-200" %>
+        <%= form.email_field :email_address, required: true, autofocus: true, autocomplete: "username", placeholder: "voce@dominio.com", class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-300/50 focus:bg-white/10" %>
+        <% @user.errors.full_messages_for(:email_address).each do |message| %>
+          <p class="mt-2 text-sm text-rose-200"><%= message %></p>
+        <% end %>
+      </div>
+
+      <div>
+        <%= form.label :password, "Senha", class: "text-sm font-semibold text-slate-200" %>
+        <%= form.password_field :password, required: true, autocomplete: "new-password", placeholder: "Minimo de 8 caracteres", maxlength: 72, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-300/50 focus:bg-white/10" %>
+        <% @user.errors.full_messages_for(:password).each do |message| %>
+          <p class="mt-2 text-sm text-rose-200"><%= message %></p>
+        <% end %>
+      </div>
+
+      <div>
+        <%= form.label :password_confirmation, "Confirmar senha", class: "text-sm font-semibold text-slate-200" %>
+        <%= form.password_field :password_confirmation, required: true, autocomplete: "new-password", placeholder: "Repita sua senha", maxlength: 72, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-300/50 focus:bg-white/10" %>
+        <% @user.errors.full_messages_for(:password_confirmation).each do |message| %>
+          <p class="mt-2 text-sm text-rose-200"><%= message %></p>
+        <% end %>
+      </div>
+
+      <%= form.submit "Criar conta", **submit_state_submit_options(loading_text: "Criando conta...", class: "inline-flex w-full items-center justify-center rounded-2xl bg-emerald-400 px-5 py-3 text-sm font-extrabold uppercase tracking-[0.18em] text-slate-950 transition hover:bg-emerald-300") %>
+    <% end %>
+
+    <p class="mt-6 text-center text-sm text-slate-400">
+      Ja tem conta?
+      <%= link_to "Entrar", new_session_path, class: "font-semibold text-emerald-200 hover:text-white" %>
+    </p>
+  </section>
+</div>

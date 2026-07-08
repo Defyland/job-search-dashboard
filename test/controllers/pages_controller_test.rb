@@ -12,14 +12,15 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert_no_match "De hora em hora", response.body
     assert_no_match "25+ fontes", response.body
     assert_no_match "Pronto — você está na lista", response.body
-    assert_match "Deixe seu email. Quando a lista abrir, eu te aviso.", response.body
+    assert_match "Crie sua conta para configurar seu perfil agora.", response.body
     assert_select "form#capform[action=?]", waitlist_entries_path
     assert_select "form#capform input[type=email][required][placeholder=?]", "seu@email.com"
     assert_select "form#capform input[type=email][value=?]", ""
     assert_select "form#capform input[type=email]:not([disabled])"
     assert_select "form#capform input[name=?]", "waitlist_entry[email_address]"
     assert_select "form#capform input[type=submit][value=?]", "Entrar na lista"
-    assert_select "a[href=?]", new_session_path, text: "Entrar no painel", minimum: 1
+    assert_select "a[href=?]", new_registration_path, text: "Criar conta", minimum: 1
+    assert_select "a[href=?]", new_session_path, text: "Entrar", minimum: 1
   end
 
   test "home sends authenticated operators straight to the radar" do

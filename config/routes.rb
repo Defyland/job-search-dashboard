@@ -1,4 +1,8 @@
 Rails.application.routes.draw do
+  get "login", to: "sessions#new", as: :login
+  get "sign_up", to: "registrations#new", as: :new_registration
+  get "signup", to: redirect("/sign_up")
+  post "sign_up", to: "registrations#create", as: :registration
   resource :session, only: %i[new create destroy]
   resources :waitlist_entries, only: :create
   resources :jobs, only: %i[index show] do
