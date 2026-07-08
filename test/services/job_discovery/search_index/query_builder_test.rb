@@ -77,6 +77,9 @@ class JobDiscovery::SearchIndex::QueryBuilderTest < ActiveSupport::TestCase
     recrutei = queries.find { |candidate| candidate.source_slug == "recrutei" && candidate.host == "jobs.recrutei.com.br" }
     teamlyzer = queries.find { |candidate| candidate.source_slug == "teamlyzer-jobs" }
     hays = queries.find { |candidate| candidate.source_slug == "hays-portugal" }
+    remote_rocketship = queries.find { |candidate| candidate.source_slug == "remote-rocketship-portugal" }
+    crossover = queries.find { |candidate| candidate.source_slug == "crossover-portugal" }
+    michael_page = queries.find { |candidate| candidate.source_slug == "michael-page-portugal" }
 
     assert indeed_br
     assert_includes indeed_br.query, "site:br.indeed.com"
@@ -92,6 +95,15 @@ class JobDiscovery::SearchIndex::QueryBuilderTest < ActiveSupport::TestCase
     assert_includes teamlyzer.query, "site:pt.teamlyzer.com/companies/jobs"
     assert hays
     assert_includes hays.query, "site:www.hays.pt"
+    assert remote_rocketship
+    assert_includes remote_rocketship.query, "site:www.remoterocketship.com/country/portugal/jobs"
+    assert_not_includes remote_rocketship.query, "software-engineer"
+    assert crossover
+    assert_includes crossover.query, "site:www.crossover.com/jobs/pt"
+    assert_not_includes crossover.query, "full-stack-developer"
+    assert michael_page
+    assert_includes michael_page.query, "site:www.michaelpage.pt/jobs"
+    assert_not_includes michael_page.query, "information-technology"
   end
 
   test "builds recruiter queries without software role phrases" do

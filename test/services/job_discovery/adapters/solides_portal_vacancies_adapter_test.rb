@@ -1,4 +1,5 @@
 require "test_helper"
+require "cgi"
 
 class JobDiscovery::Adapters::SolidesPortalVacanciesAdapterTest < ActiveSupport::TestCase
   class FakeFetcher
@@ -86,6 +87,25 @@ class JobDiscovery::Adapters::SolidesPortalVacanciesAdapterTest < ActiveSupport:
 
     assert_equal 1, candidates.size
     assert_equal 1, fetcher.calls.count(detail_url)
+  end
+
+  test "default solides queries include non-technical role areas" do
+    source = build_source(settings: { "max_pages" => 1 })
+    source_scan = build_source_scan(source:)
+    responses = JobDiscovery::Adapters::SolidesPortalVacanciesAdapter::DEFAULT_SEARCH_QUERIES.index_with do |query|
+      search_response([])
+    end.transform_keys do |query|
+      "https://apigw.solides.com.br/jobs/v3/portal-vacancies-new/?title=#{CGI.escape(query)}&page=1"
+    end
+    fetcher = FakeFetcher.new(responses)
+
+    candidates = JobDiscovery::Adapters::SolidesPortalVacanciesAdapter.new(fetcher:).scan(source_scan:, window_days: 20)
+
+    assert_empty candidates
+    assert_includes fetcher.calls, "https://apigw.solides.com.br/jobs/v3/portal-vacancies-new/?title=produto&page=1"
+    assert_includes fetcher.calls, "https://apigw.solides.com.br/jobs/v3/portal-vacancies-new/?title=recrutador&page=1"
+    assert_includes fetcher.calls, "https://apigw.solides.com.br/jobs/v3/portal-vacancies-new/?title=marketing&page=1"
+    assert_includes fetcher.calls, "https://apigw.solides.com.br/jobs/v3/portal-vacancies-new/?title=vendas&page=1"
   end
 
   test "keeps women-only affirmative solides jobs when an active profile allows them" do

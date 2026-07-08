@@ -11,7 +11,16 @@ module JobDiscovery
         "react",
         "react native",
         "ruby",
-        "rails"
+        "rails",
+        "produto",
+        "recrutador",
+        "rh",
+        "marketing",
+        "vendas",
+        "customer success",
+        "financeiro",
+        "operacoes",
+        "dados"
       ].freeze
 
       def scan(source_scan:, window_days:)

@@ -148,7 +148,7 @@ class JobSourceTest < ActiveSupport::TestCase
     assert_match "Cloudflare", indeed.codex_fallback_reason
     assert_equal [ "br.indeed.com", "pt.indeed.com" ], indeed.settings["search_hosts"]
     assert_includes indeed.settings["seed_queries"], "tech recruiter remoto"
-    assert_includes indeed.settings["seed_queries"], "software engineer portugal remote"
+    assert_includes indeed.settings["seed_queries"], "marketing remoto"
 
     portugal_fallback_slugs = %w[
       itjobs-pt
@@ -192,7 +192,27 @@ class JobSourceTest < ActiveSupport::TestCase
       assert_match "Portugal", source.codex_fallback_reason
       assert_includes source.settings["regions"], "portugal"
       assert_includes source.settings["seed_queries"], "product manager portugal remote"
-      assert_includes source.settings["seed_queries"], "software engineer portugal remote"
+      assert_includes source.settings["seed_queries"], "sales portugal remote"
+    end
+  end
+
+  test "general portugal fallbacks do not pin search paths to software-only categories" do
+    JobSources::Catalog.seed!
+
+    %w[
+      englishjobs-pt
+      remote-rocketship-portugal
+      glassdoor-portugal
+      crossover-portugal
+      startup-jobs-lisbon
+      randstad-portugal
+      michael-page-portugal
+    ].each do |slug|
+      source = JobSource.find_by!(slug:)
+      paths = Array(source.settings["search_paths"])
+
+      refute paths.any? { |path| path.match?(/software|developer|full-stack|information-technology|programacao/) },
+        "#{slug} should not default to tech-only search paths"
     end
   end
 
