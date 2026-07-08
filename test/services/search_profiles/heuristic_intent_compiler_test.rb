@@ -70,5 +70,31 @@ module SearchProfiles
       assert_equal "Junior Java Remote Brasil e LatAm", junior_payload.fetch("profile_name_suggestion")
       assert_equal "Pleno Java Remote Brasil e LatAm", mid_payload.fetch("profile_name_suggestion")
     end
+
+    test "builds recruiter and hr role profiles" do
+      recruiter_payload = HeuristicIntentCompiler.new.call(
+        technology_intent: "tech recruiter",
+        seniority_preset: "senior",
+        language_scope: "both",
+        required_remote: true,
+        region_scope: "brazil_latam",
+        include_women_only: false
+      )
+      hr_payload = HeuristicIntentCompiler.new.call(
+        technology_intent: "recursos humanos",
+        seniority_preset: "senior",
+        language_scope: "both",
+        required_remote: true,
+        region_scope: "brazil_latam",
+        include_women_only: false
+      )
+
+      assert_equal [ "recruiter" ], recruiter_payload.fetch("canonical_stacks")
+      assert_includes recruiter_payload.fetch("title_variants_pt"), "recrutadora"
+      assert_includes recruiter_payload.fetch("title_variants_en"), "technical recruiter"
+      assert_equal [ "rh" ], hr_payload.fetch("canonical_stacks")
+      assert_includes hr_payload.fetch("title_variants_pt"), "analista de rh"
+      assert_includes hr_payload.fetch("title_variants_en"), "human resources specialist"
+    end
   end
 end

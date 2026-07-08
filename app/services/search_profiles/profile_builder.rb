@@ -23,7 +23,7 @@ module SearchProfiles
         scan_window_days: SearchProfiles::Vocabulary.normalize_scan_window_days(simple_input["scan_window_days"]),
         target_stacks: target_stacks,
         target_titles: SearchProfiles::Vocabulary.normalize_list(
-          generated_titles_for(compiled_payload, language_scope) + SearchProfiles::Vocabulary.role_titles_for(language_scope)
+          generated_titles_for(compiled_payload, language_scope) + SearchProfiles::Vocabulary.role_titles_for(language_scope, target_stacks:)
         ),
         seniority_terms: SearchProfiles::Vocabulary.normalize_list(SearchProfiles::Vocabulary::SENIORITY_PRESETS.fetch(seniority_preset)),
         location_terms: SearchProfiles::Vocabulary.location_terms_for(required_remote:, region_scope:),

@@ -26,7 +26,28 @@ module JobDiscovery
       "rails" => [ "rails", "ruby on rails" ],
       "react" => [ "react", "reactjs", "react.js" ],
       "react native" => [ "react native", "react-native" ],
-      "nextjs" => [ "nextjs", "next.js", "next js" ]
+      "nextjs" => [ "nextjs", "next.js", "next js" ],
+      "recruiter" => [
+        "recruiter",
+        "tech recruiter",
+        "technical recruiter",
+        "talent acquisition",
+        "recrutador",
+        "recrutadora",
+        "recrutamento",
+        "recrutamento e selecao",
+        "recrutamento e seleção"
+      ],
+      "rh" => [
+        "rh",
+        "recursos humanos",
+        "human resources",
+        "hr business partner",
+        "hrbp",
+        "people operations",
+        "people ops",
+        "people partner"
+      ]
     }.freeze
     TITLE_STACK_SYNONYMS = STACK_SYNONYMS.merge(
       "python" => [ "python", "django", "flask", "fastapi" ],

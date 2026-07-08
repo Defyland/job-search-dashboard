@@ -76,6 +76,46 @@ module SearchProfiles
       "portuguese" => [ "engenheiro de software", "desenvolvedor", "frontend", "backend", "fullstack" ],
       "english" => [ "software engineer", "developer", "frontend", "backend", "fullstack" ]
     }.freeze
+    NON_TECH_ROLE_STACKS = %w[recruiter rh].freeze
+    NON_TECH_ROLE_TITLES = {
+      "recruiter" => {
+        "portuguese" => [
+          "recruiter",
+          "recrutador",
+          "recrutadora",
+          "analista de recrutamento",
+          "analista de recrutamento e selecao",
+          "analista de recrutamento e seleção",
+          "talent acquisition"
+        ],
+        "english" => [
+          "recruiter",
+          "tech recruiter",
+          "technical recruiter",
+          "talent acquisition",
+          "talent acquisition specialist",
+          "talent acquisition partner"
+        ]
+      },
+      "rh" => {
+        "portuguese" => [
+          "rh",
+          "analista de rh",
+          "analista de recursos humanos",
+          "business partner de rh",
+          "coordenador de rh",
+          "people partner"
+        ],
+        "english" => [
+          "human resources",
+          "human resources specialist",
+          "hr business partner",
+          "people operations",
+          "people ops",
+          "people partner"
+        ]
+      }
+    }.freeze
     MANUAL_OVERRIDE_FIELDS = {
       target_stacks: "target_stacks_text",
       target_titles: "target_titles_text",
@@ -135,8 +175,33 @@ module SearchProfiles
       SCAN_WINDOW_DAY_LABELS.fetch(normalized_value, "#{normalized_value} dias")
     end
 
-    def role_titles_for(language_scope)
+    def role_titles_for(language_scope, target_stacks: [])
+      non_tech_titles = non_tech_role_titles_for(target_stacks, language_scope)
+      return non_tech_titles if non_tech_titles.present?
+
       ROLE_TITLES_BY_LANGUAGE.fetch(normalize_language_scope(language_scope), ROLE_TITLES_BY_LANGUAGE.fetch(DEFAULT_LANGUAGE_SCOPE))
+    end
+
+    def non_tech_role_stack?(target_stacks)
+      normalize_list(target_stacks).intersect?(NON_TECH_ROLE_STACKS)
+    end
+
+    def non_tech_role_titles_for(target_stacks, language_scope)
+      normalized_language_scope = normalize_language_scope(language_scope)
+
+      normalize_list(target_stacks).flat_map do |stack|
+        titles = NON_TECH_ROLE_TITLES[stack]
+        next [] unless titles
+
+        case normalized_language_scope
+        when "portuguese"
+          titles.fetch("portuguese")
+        when "english"
+          titles.fetch("english")
+        else
+          titles.fetch("portuguese") + titles.fetch("english")
+        end
+      end.then { |titles| normalize_list(titles) }
     end
 
     def location_terms_for(required_remote:, region_scope:)

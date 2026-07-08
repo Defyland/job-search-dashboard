@@ -88,6 +88,27 @@ module SearchProfiles
       assert_includes attributes[:settings]["compiler"]["generated_titles"]["en"], "java developer"
     end
 
+    test "compiled recruiter profiles do not inherit software role titles" do
+      attributes = ProfileBuilder.from_compiled(
+        simple_input: simple_input.merge("technology_intent" => "tech recruiter"),
+        compiled_payload: {
+          "profile_name_suggestion" => "Senior Recruiter Remote",
+          "canonical_stacks" => [ "recruiter" ],
+          "title_variants_pt" => [ "recrutadora", "analista de recrutamento" ],
+          "title_variants_en" => [ "technical recruiter", "talent acquisition specialist" ],
+          "stack_aliases" => [
+            { "canonical_stack" => "recruiter", "aliases" => [ "recruiter", "recrutadora" ] }
+          ]
+        }
+      )
+
+      assert_equal [ "recruiter" ], attributes.fetch(:target_stacks)
+      assert_includes attributes.fetch(:target_titles), "technical recruiter"
+      assert_includes attributes.fetch(:target_titles), "recrutadora"
+      assert_not_includes attributes.fetch(:target_titles), "software engineer"
+      assert_not_includes attributes.fetch(:target_titles), "developer"
+    end
+
     private
       def simple_input
         {

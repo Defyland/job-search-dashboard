@@ -31,7 +31,7 @@ class SearchProfilesTest < ApplicationSystemTestCase
       sign_in_as(users(:one))
 
       visit new_search_profile_path
-      fill_in "Linguagem / stack", with: "ServiceNow"
+      fill_in "Area / stack", with: "ServiceNow"
       select "45 dias", from: "Buscar vagas desde"
       click_button "Gerar variacoes"
 
@@ -64,8 +64,8 @@ class SearchProfilesTest < ApplicationSystemTestCase
 
     visit root_path
 
-    assert_text "Crie o radar pela stack"
-    fill_in "Linguagem / stack", with: "Salesforce, React"
+    assert_text "Crie o radar pela area ou stack"
+    fill_in "Area / stack", with: "Salesforce, React"
     select "Português", from: "Idioma dos titulos"
     select "30 dias", from: "Buscar vagas desde"
     click_button "Gerar variacoes"
@@ -92,13 +92,13 @@ class SearchProfilesTest < ApplicationSystemTestCase
 
     visit new_search_profile_path(onboarding: 1)
 
-    assert_text "Crie o radar pela stack"
-    assert_field "Linguagem / stack"
+    assert_text "Crie o radar pela area ou stack"
+    assert_field "Area / stack"
     assert_field "Nivel"
     assert_field "Idioma dos titulos"
     assert_no_text "Modo avancado"
 
-    fill_in "Linguagem / stack", with: "Java"
+    fill_in "Area / stack", with: "Java"
     select "Pleno", from: "Nivel"
     select "Inglês", from: "Idioma dos titulos"
     select "14 dias", from: "Buscar vagas desde"

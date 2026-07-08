@@ -12,7 +12,7 @@ class RegistrationsTest < ApplicationSystemTestCase
     click_button "Criar conta"
 
     assert_current_path new_search_profile_path, ignore_query: true
-    assert_text "Crie o radar pela stack"
+    assert_text "Crie o radar pela area ou stack"
     assert User.exists?(email_address: "browser-signup@example.com")
   end
 end

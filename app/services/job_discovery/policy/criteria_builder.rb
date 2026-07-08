@@ -50,6 +50,10 @@ module JobDiscovery
       end
 
       def role_terms_for(language_scope)
+        if SearchProfiles::Vocabulary.non_tech_role_stack?(@profile.target_stacks)
+          return SearchProfiles::Vocabulary.role_titles_for(language_scope, target_stacks: @profile.target_stacks)
+        end
+
         case language_scope
         when "portuguese"
           Policy::PORTUGUESE_ROLE_TERMS + Policy::NEUTRAL_ROLE_TERMS

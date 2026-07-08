@@ -48,7 +48,7 @@ class SearchProfilesControllerTest < ActionDispatch::IntegrationTest
     get new_search_profile_path
 
     assert_response :success
-    assert_match "Linguagem / stack", response.body
+    assert_match "Area / stack", response.body
     assert_match "Nivel", response.body
     assert_match "Idioma dos titulos", response.body
     assert_no_match "Senior Ruby/Rails/React Remote BR/LatAm", response.body

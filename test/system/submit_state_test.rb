@@ -37,7 +37,7 @@ class SubmitStateTest < ApplicationSystemTestCase
         sign_in_as(users(:one))
 
         visit new_search_profile_path
-        fill_in "Linguagem / stack", with: "ServiceNow"
+        fill_in "Area / stack", with: "ServiceNow"
 
         capture_submit_snapshot("profile-compile") do
           <<~JS

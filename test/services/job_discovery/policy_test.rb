@@ -300,6 +300,57 @@ class JobDiscovery::PolicyTest < ActiveSupport::TestCase
     assert_match(/remoto/i, result.reason)
   end
 
+  test "matches recruiter roles without accepting software roles that only mention recruiter in the body" do
+    profile = users(:one).search_profiles.create!(
+      name: "Senior Recruiter",
+      target_stacks: [ "recruiter" ],
+      target_titles: SearchProfiles::Vocabulary.role_titles_for("both", target_stacks: [ "recruiter" ]),
+      seniority_terms: [ "senior", "sênior", "sr" ],
+      location_terms: [ "remote", "remoto", "brazil", "brasil", "latam" ],
+      negative_terms: [ "junior", "pleno" ],
+      required_remote: true,
+      include_women_only: false,
+      language_scope: :both,
+      scan_window_days: 20,
+      active: true
+    )
+
+    english = JobDiscovery::Policy.new(search_profile: profile).classify(
+      title: "Senior Tech Recruiter",
+      remote_text: "Remote Brazil",
+      location_text: "Brazil",
+      description: "Talent acquisition for product teams",
+      source_slug: "manual",
+      posted_text: "today",
+      published_at: nil
+    )
+    portuguese = JobDiscovery::Policy.new(search_profile: profile).classify(
+      title: "Pessoa Recrutadora Sênior",
+      remote_text: "Remoto Brasil",
+      location_text: "Brasil",
+      description: "Recrutamento e selecao para tecnologia",
+      source_slug: "manual",
+      posted_text: "publicada hoje",
+      published_at: nil
+    )
+    false_positive = JobDiscovery::Policy.new(search_profile: profile).classify(
+      title: "Senior Software Engineer",
+      remote_text: "Remote Brazil",
+      location_text: "Brazil",
+      description: "You will talk to a recruiter during the hiring process",
+      source_slug: "manual",
+      posted_text: "today",
+      published_at: nil
+    )
+
+    assert english.accepted?
+    assert_includes english.stack_tags, "recruiter"
+    assert portuguese.accepted?
+    assert_includes portuguese.stack_tags, "recruiter"
+    assert_equal :rejected, false_positive.classification
+    assert_match(/foco|match|stack/, false_positive.reason)
+  end
+
   private
     def salesforce_profile(language_scope:)
       users(:one).search_profiles.create!(

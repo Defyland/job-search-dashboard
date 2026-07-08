@@ -11,7 +11,9 @@ module SearchProfiles
       "react native" => "React Native",
       "nextjs" => "Next.js",
       "salesforce" => "Salesforce",
-      "servicenow" => "ServiceNow"
+      "servicenow" => "ServiceNow",
+      "recruiter" => "Recruiter",
+      "rh" => "RH"
     }.freeze
 
     STACK_CANONICAL_ALIASES = {
@@ -25,7 +27,22 @@ module SearchProfiles
       "next.js" => "nextjs",
       "next js" => "nextjs",
       "ror" => "ruby on rails",
-      "service now" => "servicenow"
+      "service now" => "servicenow",
+      "tech recruiter" => "recruiter",
+      "technical recruiter" => "recruiter",
+      "talent acquisition" => "recruiter",
+      "recrutador" => "recruiter",
+      "recrutadora" => "recruiter",
+      "recrutamento" => "recruiter",
+      "recrutamento e selecao" => "recruiter",
+      "recrutamento e seleção" => "recruiter",
+      "hr" => "rh",
+      "hrbp" => "rh",
+      "human resources" => "rh",
+      "recursos humanos" => "rh",
+      "people ops" => "rh",
+      "people operations" => "rh",
+      "people partner" => "rh"
     }.freeze
 
     PROVIDER = "heuristic".freeze
@@ -147,6 +164,8 @@ module SearchProfiles
 
       def title_variants_for(canonical_stacks, language)
         canonical_stacks.flat_map do |stack|
+          next non_tech_title_variants_for(stack, language) if SearchProfiles::Vocabulary.non_tech_role_stack?([ stack ])
+
           stack_label = display_label_for(stack)
 
           case language
@@ -158,6 +177,12 @@ module SearchProfiles
         end.map { |title| SearchProfiles::Vocabulary.normalize(title) }
           .uniq
           .first(12)
+      end
+
+      def non_tech_title_variants_for(stack, language)
+        language_scope = language == :pt ? "portuguese" : "english"
+
+        SearchProfiles::Vocabulary.role_titles_for(language_scope, target_stacks: [ stack ])
       end
 
       def portuguese_titles_for(stack_label)

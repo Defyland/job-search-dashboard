@@ -117,17 +117,29 @@ module JobDiscovery
           seniority_terms = normalize_list(profile.seniority_terms).first(2)
           seniority_terms = [ "senior" ] if seniority_terms.blank?
           stack_terms = stack_terms_for(stack).first(3)
-          roles = role_terms_for(profile).first(MAX_ROLE_TERMS_PER_QUERY)
 
-          phrases = stack_terms.flat_map do |stack_term|
-            seniority_terms.flat_map do |seniority|
-              [
-                "#{seniority} #{stack_term}",
-                "#{stack_term} #{seniority}",
-                *roles.map { |role| "#{role} #{stack_term} #{seniority}" }
-              ]
+          phrases =
+            if SearchProfiles::Vocabulary.non_tech_role_stack?([ stack ])
+              stack_terms.flat_map do |stack_term|
+                seniority_terms.flat_map do |seniority|
+                  [
+                    "#{seniority} #{stack_term}",
+                    "#{stack_term} #{seniority}"
+                  ]
+                end
+              end
+            else
+              roles = role_terms_for(profile).first(MAX_ROLE_TERMS_PER_QUERY)
+              stack_terms.flat_map do |stack_term|
+                seniority_terms.flat_map do |seniority|
+                  [
+                    "#{seniority} #{stack_term}",
+                    "#{stack_term} #{seniority}",
+                    *roles.map { |role| "#{role} #{stack_term} #{seniority}" }
+                  ]
+                end
+              end
             end
-          end
 
           normalize_list(generated_titles_for(profile, stack) + phrases).first(MAX_PHRASES_PER_QUERY)
         end
@@ -153,6 +165,10 @@ module JobDiscovery
         end
 
         def role_terms_for(profile)
+          if SearchProfiles::Vocabulary.non_tech_role_stack?(profile.target_stacks)
+            return SearchProfiles::Vocabulary.role_titles_for(profile.language_scope.to_s, target_stacks: profile.target_stacks)
+          end
+
           case profile.language_scope.to_s
           when "portuguese"
             [

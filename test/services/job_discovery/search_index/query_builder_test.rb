@@ -93,4 +93,29 @@ class JobDiscovery::SearchIndex::QueryBuilderTest < ActiveSupport::TestCase
     assert hays
     assert_includes hays.query, "site:www.hays.pt"
   end
+
+  test "builds recruiter queries without software role phrases" do
+    profile = users(:one).search_profiles.create!(
+      name: "Senior Recruiter BR",
+      slug: "senior-recruiter-br-query-builder",
+      active: true,
+      language_scope: :both,
+      target_stacks: [ "recruiter" ],
+      target_titles: SearchProfiles::Vocabulary.role_titles_for("both", target_stacks: [ "recruiter" ]),
+      seniority_terms: [ "senior" ],
+      location_terms: [ "remoto" ],
+      negative_terms: [],
+      required_remote: true,
+      include_women_only: false,
+      scan_window_days: 20
+    )
+
+    query = JobDiscovery::SearchIndex::QueryBuilder.new(search_profiles: [ profile ], targets: TARGETS).queries.first.query
+
+    assert_includes query, '"senior recruiter"'
+    assert_includes query, '"senior tech recruiter"'
+    assert_includes query, '"senior technical recruiter"'
+    assert_not_includes query, "developer recruiter"
+    assert_not_includes query, "software engineer recruiter"
+  end
 end
