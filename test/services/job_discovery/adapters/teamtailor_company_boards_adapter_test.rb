@@ -70,6 +70,8 @@ class JobDiscovery::Adapters::TeamtailorCompanyBoardsAdapterTest < ActiveSupport
     assert_equal "7010130", candidates.first[:external_job_id]
     assert_equal "Remote", candidates.first[:remote_text]
     assert_equal "Brazil", candidates.first[:location_text]
+    assert_equal "Teamtailor Test", candidates.first[:source_name]
+    assert_equal "teamtailor-test", candidates.first[:source_slug]
   end
 
   test "rejects stale or inactive teamtailor jobs" do

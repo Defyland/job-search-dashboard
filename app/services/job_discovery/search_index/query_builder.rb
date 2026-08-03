@@ -54,7 +54,15 @@ module JobDiscovery
         { source_slug: "adecco-portugal", host: "www.adecco.com/pt-pt/ofertas-emprego", setting_key: nil },
         { source_slug: "michael-page-portugal", host: "www.michaelpage.pt/jobs", setting_key: nil },
         { source_slug: "robert-walters-portugal", host: "www.robertwalters.pt/ofertas-emprego.html", setting_key: nil },
-        { source_slug: "talent-portugal", host: "talentportugal.com", setting_key: nil }
+        { source_slug: "talent-portugal", host: "talentportugal.com", setting_key: nil },
+        { source_slug: "turnkey-staffing", host: "turnkeystaffing.com/career", setting_key: nil },
+        { source_slug: "clouddevs", host: "clouddevs.com/jobs", setting_key: nil },
+        { source_slug: "hire-with-near", host: "jobs.hirewithnear.com", setting_key: nil },
+        { source_slug: "weknow", host: "weknowinc.com/careers/work-at-weknow", setting_key: nil },
+        { source_slug: "revelo", host: "careers.revelo.com", setting_key: nil },
+        { source_slug: "awana", host: "www.awana.io/job-openings.html", setting_key: nil },
+        { source_slug: "tecla", host: "www.tecla.io/join", setting_key: nil },
+        { source_slug: "vanhack", host: "vanhack.com/get-hired", setting_key: nil }
       ].freeze
 
       Query = Struct.new(

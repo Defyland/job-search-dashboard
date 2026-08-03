@@ -196,6 +196,53 @@ class JobSourceTest < ActiveSupport::TestCase
     end
   end
 
+  test "seeds nearshore staffing and career sources" do
+    JobSources::Catalog.seed!
+
+    native_sources = {
+      "prometeo-talent" => {
+        adapter_key: "teamtailor_company_boards",
+        settings_key: "board_urls",
+        values: [ "https://jobs.prometeotalent.com" ]
+      },
+      "blue-coding" => {
+        adapter_key: "lever_company_boards",
+        settings_key: "company_slugs",
+        values: [ "bluecoding" ]
+      }
+    }
+
+    native_sources.each do |slug, config|
+      source = JobSource.find_by!(slug:)
+
+      assert source.supports_backfill?, "#{slug} should support native backfill"
+      assert_equal config.fetch(:adapter_key), source.adapter_key
+      assert_equal "platform", source.source_kind
+      assert_equal config.fetch(:values), source.settings.fetch(config.fetch(:settings_key))
+    end
+
+    fallback_slugs = %w[
+      turnkey-staffing
+      clouddevs
+      hire-with-near
+      weknow
+      revelo
+      awana
+      tecla
+      vanhack
+    ]
+
+    fallback_slugs.each do |slug|
+      source = JobSource.find_by!(slug:)
+
+      assert_equal "manual_only", source.adapter_key
+      assert_not source.supports_backfill?
+      assert source.codex_fallback_enabled?
+      assert_equal "Latin America", source.settings.fetch("default_location")
+      assert_includes source.settings.fetch("seed_queries"), "senior software engineer remote latin america"
+    end
+  end
+
   test "general portugal fallbacks do not pin search paths to software-only categories" do
     JobSources::Catalog.seed!
 

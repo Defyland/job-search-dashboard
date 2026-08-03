@@ -1,6 +1,20 @@
 module JobSources
   class Catalog
     PORTUGAL_LOCATION_TERMS = [ "Portugal", "Lisboa", "Porto", "remoto Portugal", "remote Portugal" ].freeze
+    LATAM_LOCATION_TERMS = [
+      "Latin America",
+      "LATAM",
+      "Argentina",
+      "Brazil",
+      "Colombia",
+      "Costa Rica",
+      "Ecuador",
+      "Mexico",
+      "Peru",
+      "Uruguay",
+      "remote",
+      "remoto"
+    ].freeze
     PORTUGAL_SEED_QUERIES = [
       "remote jobs portugal",
       "trabalho remoto portugal",
@@ -15,6 +29,19 @@ module JobSources
       "software engineer portugal remote"
     ].freeze
     PORTUGAL_FALLBACK_REASON = "Fonte com cobertura de vagas em Portugal sem adapter Rails nativo; usar Codex fallback para busca por area/localidade, validar vaga ativa e postar pelo ingestion API.".freeze
+    LATAM_FALLBACK_REASON = "Fonte de staffing ou carreira remota na America Latina; usar Codex fallback para descobrir vagas publicas, validar pagina ativa e postar pelo ingestion API.".freeze
+    LATAM_SEED_QUERIES = [
+      "senior software engineer remote latin america",
+      "senior frontend engineer remote latam",
+      "senior backend engineer remote latam",
+      "full stack developer remote latin america",
+      "react next.js developer remote latam",
+      "ruby on rails developer remote latam",
+      "technical recruiter remote latin america",
+      "data analyst remote latam",
+      "product manager remote latin america",
+      "customer success remote latam"
+    ].freeze
 
     DEFAULTS = [
       {
@@ -78,6 +105,35 @@ module JobSources
         scan_window_days: 20,
         settings: {
           company_slugs: %w[ciandt jobgether decilegroup toptal]
+        }
+      },
+      {
+        name: "Prometeo Talent",
+        slug: "prometeo-talent",
+        source_kind: :platform,
+        base_url: "https://jobs.prometeotalent.com",
+        host: "jobs.prometeotalent.com",
+        priority: 22,
+        adapter_key: "teamtailor_company_boards",
+        supports_backfill: true,
+        scan_window_days: 20,
+        settings: {
+          board_urls: [ "https://jobs.prometeotalent.com" ],
+          max_pages: 6
+        }
+      },
+      {
+        name: "Blue Coding",
+        slug: "blue-coding",
+        source_kind: :platform,
+        base_url: "https://jobs.lever.co/bluecoding",
+        host: "jobs.lever.co",
+        priority: 22,
+        adapter_key: "lever_company_boards",
+        supports_backfill: true,
+        scan_window_days: 20,
+        settings: {
+          company_slugs: [ "bluecoding" ]
         }
       },
       {
@@ -1001,6 +1057,185 @@ module JobSources
           seed_urls: [
             "https://platform.remotely.works/apply?utm_source=linkedin&utm_medium=admsg&utm_campaign=SeniorFullstackEngineer&li_fat_id=c2705c47-51c6-4e6e-ad60-e8f3d9ffb933"
           ]
+        }
+      },
+      {
+        name: "TurnKey Staffing",
+        slug: "turnkey-staffing",
+        source_kind: :company,
+        base_url: "https://turnkeystaffing.com/career",
+        host: "turnkeystaffing.com",
+        priority: 40,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: LATAM_FALLBACK_REASON,
+        scan_window_days: 20,
+        settings: {
+          seed_urls: [ "https://turnkeystaffing.com/career/" ],
+          search_hosts: [ "turnkeystaffing.com" ],
+          search_paths: [ "/career/" ],
+          regions: [ "latam", "remote" ],
+          default_location: "Latin America",
+          location_terms: LATAM_LOCATION_TERMS,
+          seed_queries: LATAM_SEED_QUERIES
+        }
+      },
+      {
+        name: "CloudDevs",
+        slug: "clouddevs",
+        source_kind: :platform,
+        base_url: "https://clouddevs.com/jobs",
+        host: "clouddevs.com",
+        priority: 40,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: LATAM_FALLBACK_REASON,
+        scan_window_days: 20,
+        settings: {
+          seed_urls: [ "https://clouddevs.com/jobs/" ],
+          search_hosts: [ "clouddevs.com" ],
+          search_paths: [ "/jobs/", "/job/" ],
+          regions: [ "latam", "remote" ],
+          default_location: "Latin America",
+          location_terms: LATAM_LOCATION_TERMS,
+          seed_queries: LATAM_SEED_QUERIES
+        }
+      },
+      {
+        name: "Hire With Near",
+        slug: "hire-with-near",
+        source_kind: :platform,
+        base_url: "https://jobs.hirewithnear.com",
+        host: "jobs.hirewithnear.com",
+        priority: 40,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: LATAM_FALLBACK_REASON,
+        scan_window_days: 20,
+        settings: {
+          seed_urls: [ "https://jobs.hirewithnear.com/" ],
+          search_hosts: [ "jobs.hirewithnear.com", "www.hirewithnear.com" ],
+          search_paths: [ "/", "/job/" ],
+          regions: [ "latam", "remote" ],
+          default_location: "Latin America",
+          location_terms: LATAM_LOCATION_TERMS,
+          seed_queries: LATAM_SEED_QUERIES
+        }
+      },
+      {
+        name: "weKnow",
+        slug: "weknow",
+        source_kind: :company,
+        base_url: "https://weknowinc.com/careers/work-at-weknow",
+        host: "weknowinc.com",
+        priority: 40,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: LATAM_FALLBACK_REASON,
+        scan_window_days: 20,
+        settings: {
+          seed_urls: [ "https://weknowinc.com/careers/work-at-weknow/" ],
+          search_hosts: [ "weknowinc.com" ],
+          search_paths: [ "/careers/work-at-weknow/" ],
+          regions: [ "latam", "remote" ],
+          default_location: "Latin America",
+          location_terms: LATAM_LOCATION_TERMS,
+          seed_queries: LATAM_SEED_QUERIES
+        }
+      },
+      {
+        name: "Revelo",
+        slug: "revelo",
+        source_kind: :platform,
+        base_url: "https://careers.revelo.com",
+        host: "careers.revelo.com",
+        priority: 40,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: LATAM_FALLBACK_REASON,
+        scan_window_days: 20,
+        settings: {
+          seed_urls: [
+            "https://careers.revelo.com/jobs/full-stack-developer",
+            "https://careers.revelo.com/oportunidade/front-end-developer-remote-us-latam-sp-9000-200"
+          ],
+          search_hosts: [ "careers.revelo.com" ],
+          search_paths: [ "/jobs/", "/vaga/", "/oportunidade/" ],
+          regions: [ "latam", "remote" ],
+          default_location: "Latin America",
+          location_terms: LATAM_LOCATION_TERMS,
+          seed_queries: LATAM_SEED_QUERIES
+        }
+      },
+      {
+        name: "Awana",
+        slug: "awana",
+        source_kind: :platform,
+        base_url: "https://www.awana.io/job-openings.html",
+        host: "awana.io",
+        priority: 41,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: LATAM_FALLBACK_REASON,
+        scan_window_days: 20,
+        settings: {
+          seed_urls: [ "https://www.awana.io/job-openings.html" ],
+          search_hosts: [ "www.awana.io", "awana.io" ],
+          search_paths: [ "/job-openings.html", "/latam-careers" ],
+          regions: [ "latam", "remote" ],
+          default_location: "Latin America",
+          location_terms: LATAM_LOCATION_TERMS,
+          seed_queries: LATAM_SEED_QUERIES
+        }
+      },
+      {
+        name: "Tecla",
+        slug: "tecla",
+        source_kind: :platform,
+        base_url: "https://www.tecla.io/join",
+        host: "tecla.io",
+        priority: 41,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: LATAM_FALLBACK_REASON,
+        scan_window_days: 20,
+        settings: {
+          seed_urls: [ "https://www.tecla.io/join", "https://app.tecla.io" ],
+          search_hosts: [ "www.tecla.io", "app.tecla.io" ],
+          search_paths: [ "/join", "/" ],
+          regions: [ "latam", "remote" ],
+          default_location: "Latin America",
+          location_terms: LATAM_LOCATION_TERMS,
+          seed_queries: LATAM_SEED_QUERIES
+        }
+      },
+      {
+        name: "VanHack",
+        slug: "vanhack",
+        source_kind: :platform,
+        base_url: "https://vanhack.com/get-hired",
+        host: "vanhack.com",
+        priority: 41,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: LATAM_FALLBACK_REASON,
+        scan_window_days: 20,
+        settings: {
+          seed_urls: [ "https://vanhack.com/get-hired", "https://app.vanhack.com" ],
+          search_hosts: [ "vanhack.com", "app.vanhack.com" ],
+          search_paths: [ "/get-hired", "/" ],
+          regions: [ "latam", "remote" ],
+          default_location: "Latin America",
+          location_terms: LATAM_LOCATION_TERMS,
+          seed_queries: LATAM_SEED_QUERIES
         }
       }
     ].freeze

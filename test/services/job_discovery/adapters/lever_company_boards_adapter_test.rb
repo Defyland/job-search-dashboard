@@ -79,6 +79,8 @@ class JobDiscovery::Adapters::LeverCompanyBoardsAdapterTest < ActiveSupport::Tes
     assert_equal "strong", candidates.first[:classification]
     assert_equal "CI&T", candidates.first[:company_name]
     assert_equal "a1baffc5-29e1-42bd-a34c-d231ae9416d7", candidates.first[:external_job_id]
+    assert_equal "Lever Test", candidates.first[:source_name]
+    assert_equal "lever-test", candidates.first[:source_slug]
   end
 
   test "skips generic senior roles with no target stack signal but keeps borderline matches with stack in context" do

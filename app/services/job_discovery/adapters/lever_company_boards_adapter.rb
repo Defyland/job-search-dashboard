@@ -43,7 +43,7 @@ module JobDiscovery
             remote_text:,
             location_text:,
             description:,
-            source_slug: "lever",
+            source_slug: source_scan.job_source.slug.presence || "lever",
             posted_text:,
             published_at:
           )
@@ -51,9 +51,9 @@ module JobDiscovery
 
           build_candidate(
             source_scan:,
-            source_name: "Lever",
-            source_kind: "ats",
-            source_slug: "lever",
+            source_name: source_scan.job_source.name.presence || "Lever",
+            source_kind: source_scan.job_source.source_kind.presence || "ats",
+            source_slug: source_scan.job_source.slug.presence || "lever",
             title:,
             company_name: company_name_for_lever_job(company_slug, hosted_url, apply_url),
             apply_url:,

@@ -40,6 +40,14 @@ class Api::V1::CodexFallbackSourcesControllerTest < ActionDispatch::IntegrationT
     assert_includes slugs, "sapo-emprego"
     assert_includes slugs, "eurotechjobs"
     assert_includes slugs, "hays-portugal"
+    assert_includes slugs, "turnkey-staffing"
+    assert_includes slugs, "clouddevs"
+    assert_includes slugs, "hire-with-near"
+    assert_includes slugs, "weknow"
+    assert_includes slugs, "revelo"
+    assert_includes slugs, "awana"
+    assert_includes slugs, "tecla"
+    assert_includes slugs, "vanhack"
     assert_equal "/api/v1/job_ingestions", body.fetch("ingestion_endpoint")
     assert_equal false, body.dig("search_index", "rails_native_enabled")
     query_text = body.dig("search_index", "queries").map { |query| query.fetch("query") }.join("\n")
@@ -50,6 +58,14 @@ class Api::V1::CodexFallbackSourcesControllerTest < ActionDispatch::IntegrationT
     assert_includes query_text, "site:www.itjobs.pt"
     assert_includes query_text, "site:pt.teamlyzer.com/companies/jobs"
     assert_includes query_text, "site:www.hays.pt"
+    assert_includes query_text, "site:turnkeystaffing.com/career"
+    assert_includes query_text, "site:clouddevs.com/jobs"
+    assert_includes query_text, "site:jobs.hirewithnear.com"
+    assert_includes query_text, "site:weknowinc.com/careers/work-at-weknow"
+    assert_includes query_text, "site:careers.revelo.com"
+    assert_includes query_text, "site:www.awana.io/job-openings.html"
+    assert_includes query_text, "site:www.tecla.io/join"
+    assert_includes query_text, "site:vanhack.com/get-hired"
     default_policy = body.dig("policy", "profiles").find { |profile| profile.fetch("profile_name").include?("Ruby/Rails") }
     inclusive_policy = body.dig("policy", "profiles").find { |profile| profile.fetch("profile_name").include?("afirmativas") }
 

@@ -52,9 +52,9 @@ module JobDiscovery
 
           build_candidate(
             source_scan:,
-            source_name: "Teamtailor",
-            source_kind: "ats",
-            source_slug: "teamtailor",
+            source_name: source_scan.job_source.name.presence || "Teamtailor",
+            source_kind: source_scan.job_source.source_kind.presence || "ats",
+            source_slug: source_scan.job_source.slug.presence || "teamtailor",
             title:,
             company_name:,
             apply_url: card.fetch(:url),
