@@ -23,6 +23,19 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", new_session_path, text: "Entrar", minimum: 1
   end
 
+  test "home hides the sign up link when public registration is closed" do
+    original = Rails.configuration.x.allow_public_registration
+    Rails.configuration.x.allow_public_registration = false
+
+    get root_path
+
+    assert_response :success
+    assert_select "a[href=?]", new_registration_path, text: "Criar conta", count: 0
+    assert_select "a[href=?]", new_session_path, text: "Entrar", minimum: 1
+  ensure
+    Rails.configuration.x.allow_public_registration = original
+  end
+
   test "home sends authenticated operators straight to the radar" do
     sign_in_as(User.take)
 

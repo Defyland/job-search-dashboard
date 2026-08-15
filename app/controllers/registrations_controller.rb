@@ -4,12 +4,14 @@ class RegistrationsController < ApplicationController
 
   def new
     return redirect_to root_path if existing_session?
+    return redirect_to(root_path, alert: "Cadastro fechado no momento.") unless registration_open?
 
     @user = User.new
   end
 
   def create
     return redirect_to root_path if existing_session?
+    return redirect_to(root_path, alert: "Cadastro fechado no momento.") unless registration_open?
 
     @user = User.new(registration_params)
 

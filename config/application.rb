@@ -32,5 +32,10 @@ module JobSearchDashboard
     #
     config.time_zone = "America/Sao_Paulo"
     # config.eager_load_paths << Rails.root.join("extras")
+
+    # Public registration is open by default outside production; production
+    # must opt in explicitly with ALLOW_PUBLIC_REGISTRATION=true.
+    config.x.allow_public_registration =
+      ENV.fetch("ALLOW_PUBLIC_REGISTRATION", Rails.env.production? ? "false" : "true") == "true"
   end
 end

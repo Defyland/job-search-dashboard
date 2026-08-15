@@ -6,6 +6,7 @@ namespace :dashboard do
 
     user = User.find_or_initialize_by(email_address: email)
     user.password = password if user.new_record? || ENV["ADMIN_RESET_PASSWORD"].present?
+    user.admin = true
     user.save!
 
     puts "Admin pronto: #{user.email_address}"

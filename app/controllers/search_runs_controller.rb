@@ -1,4 +1,6 @@
 class SearchRunsController < ApplicationController
+  before_action :require_admin
+
   def index
     @search_runs = SearchRun.order(started_at: :desc).limit(50)
     @source_options = JobSource.backfillable.order(priority: :asc, name: :asc)

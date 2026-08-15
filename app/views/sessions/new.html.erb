@@ -27,9 +27,11 @@
       <%= form.submit "Acessar painel", **submit_state_submit_options(loading_text: "Entrando...", class: "inline-flex w-full items-center justify-center rounded-2xl bg-sky-400 px-5 py-3 text-sm font-extrabold uppercase tracking-[0.18em] text-slate-950 transition hover:bg-sky-300") %>
     <% end %>
 
-    <p class="mt-6 text-center text-sm text-slate-400">
-      Ainda nao tem conta?
-      <%= link_to "Criar conta", new_registration_path, class: "font-semibold text-sky-200 hover:text-white" %>
-    </p>
+    <% if registration_open? %>
+      <p class="mt-6 text-center text-sm text-slate-400">
+        Ainda nao tem conta?
+        <%= link_to "Criar conta", new_registration_path, class: "font-semibold text-sky-200 hover:text-white" %>
+      </p>
+    <% end %>
   </section>
 </div>

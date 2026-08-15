@@ -1,6 +1,40 @@
 require "test_helper"
 
 class RegistrationsControllerTest < ActionDispatch::IntegrationTest
+  test "new redirects to root when registration is closed" do
+    original = Rails.configuration.x.allow_public_registration
+    Rails.configuration.x.allow_public_registration = false
+
+    get new_registration_path
+
+    assert_redirected_to root_path
+    assert_equal "Cadastro fechado no momento.", flash[:alert]
+  ensure
+    Rails.configuration.x.allow_public_registration = original
+  end
+
+  test "create redirects to root without creating an account when registration is closed" do
+    original = Rails.configuration.x.allow_public_registration
+    Rails.configuration.x.allow_public_registration = false
+
+    assert_no_difference -> { User.count } do
+      assert_no_difference -> { Session.count } do
+        post registration_path, params: {
+          user: {
+            email_address: "closed@example.com",
+            password: "password123",
+            password_confirmation: "password123"
+          }
+        }
+      end
+    end
+
+    assert_redirected_to root_path
+    assert_equal "Cadastro fechado no momento.", flash[:alert]
+  ensure
+    Rails.configuration.x.allow_public_registration = original
+  end
+
   test "new renders signup form" do
     get new_registration_path
 

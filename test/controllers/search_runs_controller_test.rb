@@ -7,6 +7,21 @@ class SearchRunsControllerTest < ActionDispatch::IntegrationTest
     sign_in_as(users(:one))
   end
 
+  test "non-admin users are blocked from search runs" do
+    sign_in_as(users(:two))
+
+    get search_runs_path
+    assert_response :not_found
+
+    get search_run_path(search_runs(:recent))
+    assert_response :not_found
+
+    assert_no_enqueued_jobs only: DiscoverJobsRunJob do
+      post search_runs_path, params: { window_days: 20 }
+    end
+    assert_response :not_found
+  end
+
   test "should get index" do
     get search_runs_path
     assert_response :success

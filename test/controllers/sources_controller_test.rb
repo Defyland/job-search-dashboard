@@ -5,6 +5,21 @@ class SourcesControllerTest < ActionDispatch::IntegrationTest
     sign_in_as(users(:one))
   end
 
+  test "non-admin users are blocked from sources" do
+    sign_in_as(users(:two))
+
+    get sources_path
+    assert_response :not_found
+
+    get edit_source_path(job_sources(:gupy))
+    assert_response :not_found
+
+    patch source_path(job_sources(:gupy)), params: {
+      job_source: { name: "Gupy", base_url: "https://gupy.io", host: "gupy.io" }
+    }
+    assert_response :not_found
+  end
+
   test "should get index" do
     get sources_path
     assert_response :success

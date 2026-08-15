@@ -1,4 +1,5 @@
 class SourcesController < ApplicationController
+  before_action :require_admin
   before_action :set_source, only: %i[edit update]
 
   def index
