@@ -2,3 +2,4 @@ current:
   user: one
   ip_address: 127.0.0.1
   user_agent: Rails
+  expires_at: <%= 30.days.from_now %>
