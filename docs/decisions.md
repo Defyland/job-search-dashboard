@@ -5,6 +5,30 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-08-15 — Security hardening round (dependencies, operator role, sessions, hosts, CSP)
+
+**Decision:** Applied the security adjustments from the read-only audit of the public repo:
+updated vulnerable gems (json, loofah, rails-html-sanitizer, rails patch), added an `admin`
+flag gating `Sources`/`SearchRuns`, made self-registration configurable (closed by default in
+production), added server-side session expiry (`expires_at`, default 30 days), enabled host
+authorization with an `APP_HOSTS` allowlist, enabled a Content-Security-Policy with script
+nonces, and removed `--ensure-latest` from `bin/brakeman` so local scans are reproducible.
+
+**Why:** The audit found known-vulnerable gems that kept CI red (blocking the automated Railway
+deploy), open registration with no roles that contradicted the documented "private operator
+dashboard" trust boundary, sessions that never expired, no DNS-rebinding protection, and no CSP.
+
+**Tradeoffs accepted:** CSP allows `style-src 'unsafe-inline'` because the views use inline
+`style` attributes; script nonces cover the inline landing script. Host authorization can return
+403 for unknown hosts (custom domains must be added to `APP_HOSTS`). Session expiry requires
+re-login after the window; `SESSION_TTL_DAYS` tunes it.
+
+**Refs:** `Gemfile.lock`, `db/migrate/20260815090000_add_admin_to_users.rb`,
+`db/migrate/20260815100000_add_expiry_to_sessions.rb`, `app/controllers/concerns/authentication.rb`,
+`config/environments/production.rb`, `config/initializers/content_security_policy.rb`.
+
+---
+
 ## 2026-06-29 - Publish the operator repo under the MIT License
 
 **Decision:** Added `LICENSE.txt` and a README license section so the dashboard,

@@ -62,17 +62,23 @@ The product exposes the operational truth needed to run the system:
 - `SearchRun` and `SearchRunItem` show import/update/reject outcomes;
 - `SourceScan` shows per-source scan status and coverage counters;
 - `DiscoveredJob` preserves pre-ingestion evidence for audits and debugging;
-- `SourcesController` lets the operator edit adapter settings, enable backfill, and mark Codex fallback reasons;
-- `SearchRunsController` can enqueue a full run or a source-scoped run.
+- `SourcesController` lets the operator edit adapter settings, enable backfill, and mark Codex fallback reasons (admin-only);
+- `SearchRunsController` can enqueue a full run or a source-scoped run (admin-only).
 
-The source catalog is part of the product, not just a seed script.
+Operational screens are restricted to users with the `admin` flag; `dashboard:bootstrap_admin`
+and the development seed mark the bootstrap user as admin. The source catalog is part of the
+product, not just a seed script.
 
 ## Web And API Boundary
 
 The app has two user-facing surfaces:
 
-- private HTML dashboard for the operator (`Jobs`, `SearchProfiles`, `SearchRuns`, `Sources`);
+- private HTML dashboard for authenticated users (`Jobs`, `SearchProfiles`) and for operators
+  (`SearchRuns`, `Sources`, admin-only);
 - public Farol landing with a persisted waitlist capture flow.
+
+Self-registration is configurable: enabled by default in development/test and closed by default
+in production unless `ALLOW_PUBLIC_REGISTRATION=true`. New accounts are never operators.
 
 The API surface stays narrow:
 

@@ -57,7 +57,10 @@ The rest of the catalog is still present for normalization/filtering. Sources th
 
 - Rails 8, PostgreSQL, Turbo, Stimulus, Tailwind
 - public Farol landing with persisted waitlist capture, request throttling, and optional Resend notification
-- session-based private login
+- session-based private login with server-side expiry (30 days by default, `SESSION_TTL_DAYS`)
+- operator role (`admin`) gating source administration and run/backfill screens
+- configurable self-registration: open in development, closed by default in production
+  (`ALLOW_PUBLIC_REGISTRATION=true` to enable)
 - configurable search profiles for stack, title terms, seniority, locality, remote requirement, and women-only affirmative-role eligibility
 - filterable and paginated job radar
 - profile-scoped job matches and workflow state
@@ -235,6 +238,9 @@ Useful optional variables:
 
 - `APP_SERVICE_ROLE=web` or `worker`
 - `ADMIN_RESET_PASSWORD=1`
+- `ALLOW_PUBLIC_REGISTRATION=true` (registration is closed by default in production)
+- `SESSION_TTL_DAYS=30` (server-side session expiry window)
+- `APP_HOSTS=web-production-b2243.up.railway.app` (comma-separated allowed hosts for DNS rebinding protection)
 - `JOB_CONCURRENCY=1`
 - `JOB_STALE_AFTER_DAYS=21`
 
