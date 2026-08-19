@@ -30,6 +30,49 @@ module JobSources
     ].freeze
     PORTUGAL_FALLBACK_REASON = "Fonte com cobertura de vagas em Portugal sem adapter Rails nativo; usar Codex fallback para busca por area/localidade, validar vaga ativa e postar pelo ingestion API.".freeze
     LATAM_FALLBACK_REASON = "Fonte de staffing ou carreira remota na America Latina; usar Codex fallback para descobrir vagas publicas, validar pagina ativa e postar pelo ingestion API.".freeze
+    LANGUAGE_BOARD_FALLBACK_REASON = "Portal especializado por linguagem ou framework sem adapter Rails nativo; usar Codex fallback com as stacks configuradas, validar recencia e canonizar para a pagina de candidatura.".freeze
+    LANGUAGE_BOARD_SPECS = [
+      { name: "Python Job Board", slug: "python-job-board", base_url: "https://www.python.org/jobs", host: "python.org", stacks: %w[python django flask fastapi] },
+      { name: "Django Community Jobs", slug: "django-community-jobs", base_url: "https://www.djangoproject.com/community/jobs", host: "djangoproject.com", stacks: %w[python django] },
+      { name: "JavaScript Jobs", slug: "javascript-jobs", base_url: "https://javascript.jobs", host: "javascript.jobs", stacks: [ "javascript", "typescript", "node", "react", "react native", "nextjs", "angular", "vue" ] },
+      { name: "React Jobs", slug: "react-jobs", base_url: "https://reactjobs.io", host: "reactjobs.io", stacks: [ "react", "react native", "nextjs" ] },
+      { name: "VueJobs", slug: "vue-jobs", base_url: "https://vuejobs.com", host: "vuejobs.com", stacks: %w[vue nuxt javascript typescript] },
+      { name: "Angular.work", slug: "angular-work", base_url: "https://angular.work", host: "angular.work", stacks: %w[angular javascript typescript] },
+      { name: "LaraJobs", slug: "larajobs", base_url: "https://larajobs.com", host: "larajobs.com", stacks: %w[php laravel] },
+      { name: "Symfony Jobs", slug: "symfony-jobs", base_url: "https://symfony.com/jobs", host: "symfony.com", stacks: %w[php symfony] },
+      { name: "Elixir Jobs", slug: "elixir-jobs", base_url: "https://elixirjobs.net", host: "elixirjobs.net", stacks: %w[elixir phoenix erlang] },
+      { name: "GolangProjects", slug: "golang-projects", base_url: "https://www.golangprojects.com", host: "golangprojects.com", stacks: %w[go golang] },
+      { name: "RustJobs.dev", slug: "rust-jobs-dev", base_url: "https://rustjobs.dev", host: "rustjobs.dev", stacks: %w[rust] },
+      { name: "Kotlin Brasil", slug: "kotlin-brasil-jobs", base_url: "https://kotlin.dev.br/vagas", host: "kotlin.dev.br", stacks: %w[kotlin android java] },
+      { name: "Mobile Career Swift", slug: "mobile-career-swift", base_url: "https://mobile.career/swift-developer-jobs", host: "mobile.career", stacks: %w[swift ios macos] },
+      { name: "C++ Jobs", slug: "cpp-jobs", base_url: "https://cppjobs.it", host: "cppjobs.it", stacks: [ "c", "c++", "cpp" ] },
+      { name: "EmbeddedJobs", slug: "embedded-jobs", base_url: "https://embedded.jobs/embedded-c%2B%2B-jobs", host: "embedded.jobs", stacks: [ "c", "c++", "cpp", "rust", "embedded" ] }
+    ].freeze
+    LANGUAGE_BOARD_DEFAULTS = LANGUAGE_BOARD_SPECS.map do |spec|
+      path = URI.parse(spec.fetch(:base_url)).path.presence || "/"
+
+      {
+        name: spec.fetch(:name),
+        slug: spec.fetch(:slug),
+        source_kind: :platform,
+        base_url: spec.fetch(:base_url),
+        host: spec.fetch(:host),
+        priority: 38,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: LANGUAGE_BOARD_FALLBACK_REASON,
+        scan_window_days: 20,
+        settings: {
+          seed_urls: [ spec.fetch(:base_url) ],
+          search_hosts: [ spec.fetch(:host) ],
+          search_paths: [ path ],
+          stack_terms: spec.fetch(:stacks),
+          regions: %w[global remote],
+          seed_queries: spec.fetch(:stacks).first(4).map { |stack| "#{stack} jobs remote" }
+        }
+      }
+    end.freeze
     LATAM_SEED_QUERIES = [
       "senior software engineer remote latin america",
       "senior frontend engineer remote latam",
@@ -105,6 +148,55 @@ module JobSources
         scan_window_days: 20,
         settings: {
           company_slugs: %w[ciandt jobgether decilegroup toptal]
+        }
+      },
+      {
+        name: "Loxo - FitNext",
+        slug: "loxo-fitnext",
+        source_kind: :ats,
+        base_url: "https://pod6.app.loxo.co/fitnext",
+        host: "app.loxo.co",
+        priority: 22,
+        adapter_key: "loxo_job_board",
+        supports_backfill: true,
+        scan_window_days: 20,
+        settings: {
+          board_urls: [ "https://pod6.app.loxo.co/fitnext" ],
+          seed_urls: [
+            "https://fitnext.app.loxo.co/job/NDI0NzQtOG1zMzg5NjhsN3NpeTNnYg=="
+          ]
+        }
+      },
+      {
+        name: "Luflox",
+        slug: "luflox",
+        source_kind: :company,
+        base_url: "https://www.luflox.com/career",
+        host: "luflox.com",
+        priority: 22,
+        adapter_key: "luflox_positions",
+        supports_backfill: true,
+        scan_window_days: 20,
+        settings: {
+          max_pages: 5,
+          seed_urls: [
+            "https://www.luflox.com/career/details/kWCKNjWHsbkWljOEbjBw"
+          ]
+        }
+      },
+      {
+        name: "Nir Yu",
+        slug: "nir-yu",
+        source_kind: :company,
+        base_url: "https://niryu.teamtailor.com",
+        host: "niryu.teamtailor.com",
+        priority: 22,
+        adapter_key: "teamtailor_company_boards",
+        supports_backfill: true,
+        scan_window_days: 20,
+        settings: {
+          board_urls: [ "https://niryu.teamtailor.com" ],
+          max_pages: 6
         }
       },
       {
@@ -199,6 +291,25 @@ module JobSources
       },
       { name: "Teamtailor", slug: "teamtailor", source_kind: :ats, base_url: "https://career.teamtailor.com", host: "teamtailor.com", priority: 20, adapter_key: "teamtailor_company_boards", supports_backfill: true, scan_window_days: 20 },
       { name: "Workable", slug: "workable", source_kind: :ats, base_url: "https://jobs.workable.com", host: "jobs.workable.com", priority: 20, adapter_key: "workable_global_api", supports_backfill: true, scan_window_days: 20 },
+      { name: "Rails Job Board", slug: "rails-job-board", source_kind: :platform, base_url: "https://jobs.rubyonrails.org", host: "jobs.rubyonrails.org", priority: 18, adapter_key: "rails_jobs_rss", supports_backfill: true, scan_window_days: 20, settings: { feed_url: "https://jobs.rubyonrails.org/jobs.rss" } },
+      { name: "RemoteOK", slug: "remoteok", source_kind: :platform, base_url: "https://remoteok.com", host: "remoteok.com", priority: 25, adapter_key: "remoteok_jobs_api", supports_backfill: true, scan_window_days: 20 },
+      { name: "Remotive", slug: "remotive", source_kind: :platform, base_url: "https://remotive.com", host: "remotive.com", priority: 25, adapter_key: "remotive_remote_jobs", supports_backfill: true, scan_window_days: 20 },
+      { name: "Himalayas", slug: "himalayas", source_kind: :platform, base_url: "https://himalayas.app", host: "himalayas.app", priority: 25, adapter_key: "himalayas_jobs_api", supports_backfill: true, scan_window_days: 20 },
+      {
+        name: "beBee",
+        slug: "bebee",
+        source_kind: :aggregator,
+        base_url: "https://bebee.com/br/jobs",
+        host: "bebee.com",
+        priority: 25,
+        adapter_key: "bebee_jobs_page",
+        supports_backfill: true,
+        scan_window_days: 20,
+        settings: {
+          search_queries: %w[ruby react],
+          remote_filter: "full_remote"
+        }
+      },
       {
         name: "SmartRecruiters",
         slug: "smartrecruiters",
@@ -487,8 +598,12 @@ module JobSources
         codex_fallback_reason: PORTUGAL_FALLBACK_REASON,
         scan_window_days: 20,
         settings: {
+          seed_urls: [
+            "https://www.workingnomads.com/remote-portugal-jobs",
+            "https://www.workingnomads.com/remote-ruby-on-rails-jobs"
+          ],
           search_hosts: [ "www.workingnomads.com", "workingnomads.com" ],
-          search_paths: [ "/remote-portugal-jobs" ],
+          search_paths: [ "/remote-portugal-jobs", "/remote-ruby-on-rails-jobs" ],
           regions: [ "portugal", "remote" ],
           default_location: "Portugal",
           location_terms: PORTUGAL_LOCATION_TERMS,
@@ -695,8 +810,12 @@ module JobSources
         codex_fallback_reason: PORTUGAL_FALLBACK_REASON,
         scan_window_days: 20,
         settings: {
+          seed_urls: [
+            "https://arc.dev/en-pt/remote-jobs",
+            "https://arc.dev/remote-jobs/ruby-on-rails"
+          ],
           search_hosts: [ "arc.dev" ],
-          search_paths: [ "/en-pt/remote-jobs" ],
+          search_paths: [ "/en-pt/remote-jobs", "/remote-jobs/ruby-on-rails" ],
           regions: [ "portugal", "remote" ],
           default_location: "Portugal",
           location_terms: PORTUGAL_LOCATION_TERMS,
@@ -894,6 +1013,67 @@ module JobSources
         codex_fallback_enabled: true,
         codex_fallback_reason: "Fonte protegida por Cloudflare para o worker Rails; usar Codex fallback quando houver busca assistida.",
         scan_window_days: 20
+      },
+      {
+        name: "DataAnnotation Coding",
+        slug: "dataannotation-coding",
+        source_kind: :platform,
+        base_url: "https://www.dataannotation.tech/coding",
+        host: "dataannotation.tech",
+        priority: 40,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: "Plataforma de trabalho remoto em avaliacao e treinamento de IA; usar Codex fallback para confirmar disponibilidade regional, senioridade e termos antes da ingestao.",
+        scan_window_days: 20,
+        settings: {
+          seed_urls: [ "https://www.dataannotation.tech/coding" ],
+          search_hosts: [ "www.dataannotation.tech", "dataannotation.tech" ],
+          search_paths: [ "/coding" ],
+          regions: %w[global remote],
+          seed_queries: [ "senior software engineer remote", "coding AI training remote" ]
+        }
+      },
+      {
+        name: "Proxify Careers",
+        slug: "proxify-careers",
+        source_kind: :platform,
+        base_url: "https://career.proxify.io/ruby-on-rails/vacancies",
+        host: "career.proxify.io",
+        priority: 40,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: "Portal remoto especializado com protecao anti-bot para o worker Rails; usar Codex fallback e validar a vaga antes da ingestao.",
+        scan_window_days: 20,
+        settings: {
+          seed_urls: [ "https://career.proxify.io/ruby-on-rails/vacancies" ],
+          search_hosts: [ "career.proxify.io" ],
+          search_paths: [ "/ruby-on-rails/vacancies" ],
+          stack_terms: [ "ruby", "ruby on rails", "rails" ],
+          regions: %w[global remote],
+          seed_queries: [ "senior ruby on rails remote" ]
+        }
+      },
+      {
+        name: "RemoteJobsFinder",
+        slug: "remote-jobs-finder",
+        source_kind: :aggregator,
+        base_url: "https://remotejobsfinder.co/en",
+        host: "remotejobsfinder.co",
+        priority: 42,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: "Agregador remoto sem adapter Rails validado; usar Codex fallback, checar recencia e preferir o ATS ou careers page original.",
+        scan_window_days: 20,
+        settings: {
+          seed_urls: [ "https://remotejobsfinder.co/en" ],
+          search_hosts: [ "remotejobsfinder.co", "www.remotejobsfinder.co" ],
+          search_paths: [ "/en" ],
+          regions: %w[global remote],
+          seed_queries: LATAM_SEED_QUERIES
+        }
       },
       {
         name: "Landor ATS",
@@ -1237,8 +1417,52 @@ module JobSources
           location_terms: LATAM_LOCATION_TERMS,
           seed_queries: LATAM_SEED_QUERIES
         }
+      },
+      {
+        name: "Kake",
+        slug: "kake",
+        source_kind: :company,
+        base_url: "https://kake.co/jobs",
+        host: "kake.co",
+        priority: 40,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: LATAM_FALLBACK_REASON,
+        scan_window_days: 20,
+        settings: {
+          seed_urls: [ "https://kake.co/jobs" ],
+          search_hosts: [ "kake.co" ],
+          search_paths: [ "/jobs", "/jobs/" ],
+          regions: %w[latam remote],
+          default_location: "Latin America",
+          location_terms: LATAM_LOCATION_TERMS,
+          seed_queries: LATAM_SEED_QUERIES
+        }
+      },
+      {
+        name: "Zipdev",
+        slug: "zipdev",
+        source_kind: :company,
+        base_url: "https://www.zipdev.com/careers",
+        host: "zipdev.com",
+        priority: 40,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: LATAM_FALLBACK_REASON,
+        scan_window_days: 20,
+        settings: {
+          seed_urls: [ "https://www.zipdev.com/careers/" ],
+          search_hosts: [ "www.zipdev.com", "zipdev.com" ],
+          search_paths: [ "/careers/" ],
+          regions: %w[latam remote],
+          default_location: "Latin America",
+          location_terms: LATAM_LOCATION_TERMS,
+          seed_queries: LATAM_SEED_QUERIES
+        }
       }
-    ].freeze
+    ].concat(LANGUAGE_BOARD_DEFAULTS).freeze
 
     def self.defaults
       DEFAULTS

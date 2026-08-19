@@ -62,7 +62,27 @@ module JobDiscovery
         { source_slug: "revelo", host: "careers.revelo.com", setting_key: nil },
         { source_slug: "awana", host: "www.awana.io/job-openings.html", setting_key: nil },
         { source_slug: "tecla", host: "www.tecla.io/join", setting_key: nil },
-        { source_slug: "vanhack", host: "vanhack.com/get-hired", setting_key: nil }
+        { source_slug: "vanhack", host: "vanhack.com/get-hired", setting_key: nil },
+        { source_slug: "kake", host: "kake.co/jobs", setting_key: nil },
+        { source_slug: "zipdev", host: "www.zipdev.com/careers", setting_key: nil },
+        { source_slug: "dataannotation-coding", host: "www.dataannotation.tech/coding", setting_key: nil },
+        { source_slug: "proxify-careers", host: "career.proxify.io/ruby-on-rails/vacancies", setting_key: nil, stacks: [ "ruby", "ruby on rails", "rails" ] },
+        { source_slug: "remote-jobs-finder", host: "remotejobsfinder.co/en", setting_key: nil },
+        { source_slug: "python-job-board", host: "www.python.org/jobs", setting_key: nil, stacks: %w[python django flask fastapi] },
+        { source_slug: "django-community-jobs", host: "www.djangoproject.com/community/jobs", setting_key: nil, stacks: %w[python django] },
+        { source_slug: "javascript-jobs", host: "javascript.jobs", setting_key: nil, stacks: [ "javascript", "typescript", "node", "react", "react native", "nextjs", "angular", "vue" ] },
+        { source_slug: "react-jobs", host: "reactjobs.io", setting_key: nil, stacks: [ "react", "react native", "nextjs" ] },
+        { source_slug: "vue-jobs", host: "vuejobs.com", setting_key: nil, stacks: %w[vue nuxt javascript typescript] },
+        { source_slug: "angular-work", host: "angular.work", setting_key: nil, stacks: %w[angular javascript typescript] },
+        { source_slug: "larajobs", host: "larajobs.com", setting_key: nil, stacks: %w[php laravel] },
+        { source_slug: "symfony-jobs", host: "symfony.com/jobs", setting_key: nil, stacks: %w[php symfony] },
+        { source_slug: "elixir-jobs", host: "elixirjobs.net", setting_key: nil, stacks: %w[elixir phoenix erlang] },
+        { source_slug: "golang-projects", host: "www.golangprojects.com", setting_key: nil, stacks: %w[go golang] },
+        { source_slug: "rust-jobs-dev", host: "rustjobs.dev", setting_key: nil, stacks: %w[rust] },
+        { source_slug: "kotlin-brasil-jobs", host: "kotlin.dev.br/vagas", setting_key: nil, stacks: %w[kotlin android java] },
+        { source_slug: "mobile-career-swift", host: "mobile.career/swift-developer-jobs", setting_key: nil, stacks: %w[swift ios macos] },
+        { source_slug: "cpp-jobs", host: "cppjobs.it", setting_key: nil, stacks: [ "c", "c++", "cpp" ] },
+        { source_slug: "embedded-jobs", host: "embedded.jobs/embedded-c%2B%2B-jobs", setting_key: nil, stacks: [ "c", "c++", "cpp", "rust", "embedded" ] }
       ].freeze
 
       Query = Struct.new(
@@ -99,7 +119,7 @@ module JobDiscovery
         def queries_for_profile(profile)
           stacks = normalize_list(profile.target_stacks).first(6)
           stacks.flat_map do |stack|
-            @targets.map do |target|
+            targets_for_stack(stack).map do |target|
               Query.new(
                 source_slug: target.fetch(:source_slug),
                 host: target.fetch(:host),
@@ -109,6 +129,15 @@ module JobDiscovery
                 query: query_for(profile:, stack:, host: target.fetch(:host))
               )
             end
+          end
+        end
+
+        def targets_for_stack(stack)
+          stack_terms = stack_terms_for(stack)
+
+          @targets.select do |target|
+            target_stacks = normalize_list(target[:stacks])
+            target_stacks.blank? || target_stacks.intersect?(stack_terms)
           end
         end
 

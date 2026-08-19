@@ -130,4 +130,32 @@ class JobDiscovery::SearchIndex::QueryBuilderTest < ActiveSupport::TestCase
     assert_not_includes query, "developer recruiter"
     assert_not_includes query, "software engineer recruiter"
   end
+
+  test "only sends stack-specific queries to matching ecosystem boards" do
+    targets = [
+      { source_slug: "python", host: "python.org/jobs", setting_key: nil, stacks: %w[python django] },
+      { source_slug: "rust", host: "rustjobs.dev", setting_key: nil, stacks: %w[rust] },
+      { source_slug: "general", host: "example.com/jobs", setting_key: nil }
+    ]
+    profile = users(:one).search_profiles.create!(
+      name: "Senior Python",
+      slug: "senior-python-ecosystem-query",
+      active: true,
+      language_scope: :english,
+      target_stacks: [ "python" ],
+      target_titles: [ "developer", "engineer" ],
+      seniority_terms: [ "senior" ],
+      location_terms: [ "remote" ],
+      negative_terms: [],
+      required_remote: true,
+      include_women_only: false,
+      scan_window_days: 20
+    )
+
+    queries = JobDiscovery::SearchIndex::QueryBuilder.new(search_profiles: [ profile ], targets:).queries
+
+    assert_equal %w[python general], queries.map(&:source_slug)
+    assert_includes queries.first.query, "site:python.org/jobs"
+    refute queries.any? { |query| query.source_slug == "rust" }
+  end
 end

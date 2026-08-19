@@ -203,12 +203,20 @@ class JobSourceTest < ActiveSupport::TestCase
       "prometeo-talent" => {
         adapter_key: "teamtailor_company_boards",
         settings_key: "board_urls",
-        values: [ "https://jobs.prometeotalent.com" ]
+        values: [ "https://jobs.prometeotalent.com" ],
+        source_kind: "platform"
       },
       "blue-coding" => {
         adapter_key: "lever_company_boards",
         settings_key: "company_slugs",
-        values: [ "bluecoding" ]
+        values: [ "bluecoding" ],
+        source_kind: "platform"
+      },
+      "nir-yu" => {
+        adapter_key: "teamtailor_company_boards",
+        settings_key: "board_urls",
+        values: [ "https://niryu.teamtailor.com" ],
+        source_kind: "company"
       }
     }
 
@@ -217,7 +225,7 @@ class JobSourceTest < ActiveSupport::TestCase
 
       assert source.supports_backfill?, "#{slug} should support native backfill"
       assert_equal config.fetch(:adapter_key), source.adapter_key
-      assert_equal "platform", source.source_kind
+      assert_equal config.fetch(:source_kind), source.source_kind
       assert_equal config.fetch(:values), source.settings.fetch(config.fetch(:settings_key))
     end
 
@@ -230,6 +238,8 @@ class JobSourceTest < ActiveSupport::TestCase
       awana
       tecla
       vanhack
+      kake
+      zipdev
     ]
 
     fallback_slugs.each do |slug|
@@ -240,6 +250,63 @@ class JobSourceTest < ActiveSupport::TestCase
       assert source.codex_fallback_enabled?
       assert_equal "Latin America", source.settings.fetch("default_location")
       assert_includes source.settings.fetch("seed_queries"), "senior software engineer remote latin america"
+    end
+  end
+
+  test "seeds screenshot-sourced remote platforms" do
+    JobSources::Catalog.seed!
+
+    expected_urls = {
+      "dataannotation-coding" => "https://www.dataannotation.tech/coding",
+      "proxify-careers" => "https://career.proxify.io/ruby-on-rails/vacancies",
+      "remote-jobs-finder" => "https://remotejobsfinder.co/en"
+    }
+
+    expected_urls.each do |slug, url|
+      source = JobSource.find_by!(slug:)
+
+      assert source.codex_fallback_enabled?
+      assert_includes source.settings["seed_urls"], url
+    end
+
+    working_nomads = JobSource.find_by!(slug: "working-nomads-portugal")
+    arc = JobSource.find_by!(slug: "arc-portugal")
+    assert_includes working_nomads.settings["seed_urls"], "https://www.workingnomads.com/remote-ruby-on-rails-jobs"
+    assert_includes arc.settings["seed_urls"], "https://arc.dev/remote-jobs/ruby-on-rails"
+  end
+
+  test "seeds native Rails, Loxo, and Luflox discovery sources" do
+    JobSources::Catalog.seed!
+
+    rails = JobSource.find_by!(slug: "rails-job-board")
+    loxo = JobSource.find_by!(slug: "loxo-fitnext")
+    luflox = JobSource.find_by!(slug: "luflox")
+
+    assert rails.supports_backfill?
+    assert_equal "rails_jobs_rss", rails.adapter_key
+    assert_equal "https://jobs.rubyonrails.org/jobs.rss", rails.settings["feed_url"]
+
+    assert loxo.supports_backfill?
+    assert_equal "loxo_job_board", loxo.adapter_key
+    assert_equal [ "https://pod6.app.loxo.co/fitnext" ], loxo.settings["board_urls"]
+    assert_includes loxo.settings["seed_urls"], "https://fitnext.app.loxo.co/job/NDI0NzQtOG1zMzg5NjhsN3NpeTNnYg=="
+
+    assert luflox.supports_backfill?
+    assert_equal "luflox_positions", luflox.adapter_key
+    assert_includes luflox.settings["seed_urls"], "https://www.luflox.com/career/details/kWCKNjWHsbkWljOEbjBw"
+  end
+
+  test "seeds stack-specific fallback job boards" do
+    JobSources::Catalog.seed!
+
+    JobSources::Catalog::LANGUAGE_BOARD_SPECS.each do |spec|
+      source = JobSource.find_by!(slug: spec.fetch(:slug))
+
+      assert source.codex_fallback_enabled?, "#{source.slug} should use Codex fallback"
+      assert_equal "manual_only", source.adapter_key
+      assert_not source.supports_backfill?
+      assert_equal spec.fetch(:stacks), source.settings["stack_terms"]
+      assert_equal [ spec.fetch(:base_url) ], source.settings["seed_urls"]
     end
   end
 

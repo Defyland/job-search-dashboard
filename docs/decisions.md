@@ -5,7 +5,56 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
-## 2026-08-15 — Security hardening round (dependencies, operator role, sessions, hosts, CSP)
+## 2026-08-19 - Native Loxo/Luflox/Rails discovery and stack-specific source routing
+
+**Decision:** Added native adapters for the official Rails Job Board RSS feed, public Loxo
+career boards (seeded with FitNext), and Luflox's public Firestore positions feed. Nir Yu is
+seeded through the existing Teamtailor adapter. Language/framework-specific portals are
+registered as assisted sources with explicit stack affinity, and search-index queries now skip
+ecosystem boards that do not match the active profile's stack.
+
+**Why:** General aggregators miss high-signal community boards, while the supplied Loxo and
+Luflox links expose stable public data that can participate in deterministic Rails discovery.
+Stack affinity prevents wasteful queries such as searching a Rust-only board for React roles.
+
+**Tradeoffs accepted:** Boards without a stable public feed remain in Codex fallback mode and
+must be checked for recency and canonicalized to the original application page. Loxo relative
+posting ages are approximate; Luflox depends on its intentionally public Firestore collection.
+DataAnnotation is retained as a distinct AI-evaluation work platform rather than treated as a
+normal employer board, and Proxify remains assisted because the Rails client receives a 403.
+
+**Verification:** Adapter, catalog, query-routing, and existing BeBee regression tests cover the
+new contracts. Live endpoint smoke checks are recorded in the implementation handoff.
+
+**Refs:** app/services/job_discovery/adapters/{rails_jobs_rss,loxo_job_board,luflox_positions}_adapter.rb,
+app/services/job_sources/catalog.rb, app/services/job_discovery/search_index/query_builder.rb.
+
+---
+
+## 2026-08-17 - Native adapters for international remote boards (RemoteOK, Remotive, Himalayas, beBee)
+
+**Decision:** Added four native discovery adapters for international/BR remote job feeds:
+RemoteOK (public global JSON API), Remotive (public remote jobs API), Himalayas (public JSON
+API with pagination), and beBee BR (profile-driven search pages parsed from the embedded
+Next.js payload). Each source is seeded in the catalog with backfill enabled, registered in the
+adapter registry, and covered by adapter tests.
+
+**Why:** The dashboard already covered BR ATS/platforms well but missed global remote boards
+with public, stable, auth-free feeds, which surfaced jobs that the native coverage did not
+include.
+
+**Tradeoffs accepted:** beBee disallows /api/ and query URLs in its robots.txt, so the adapter
+keeps request volume low (one page per configured query term, throttled by the shared
+Fetcher); RemoteOK's API terms require attribution/link-back, so the source stays visible in
+the dashboard. Himalayas' feed carries a placeholder company name, so the company slug is used
+as the display name.
+
+**Refs:** app/services/job_discovery/adapters/{remoteok_jobs_api,remotive_remote_jobs,himalayas_jobs_api,bebee_jobs_page}_adapter.rb,
+app/services/job_discovery/registry.rb, app/services/job_sources/catalog.rb.
+
+---
+
+## 2026-08-15 - Security hardening round (dependencies, operator role, sessions, hosts, CSP)
 
 **Decision:** Applied the security adjustments from the read-only audit of the public repo:
 updated vulnerable gems (json, loofah, rails-html-sanitizer, rails patch), added an `admin`
@@ -17,6 +66,10 @@ nonces, and removed `--ensure-latest` from `bin/brakeman` so local scans are rep
 **Why:** The audit found known-vulnerable gems that kept CI red (blocking the automated Railway
 deploy), open registration with no roles that contradicted the documented "private operator
 dashboard" trust boundary, sessions that never expired, no DNS-rebinding protection, and no CSP.
+
+The follow-up dependency audit on 2026-08-19 also upgraded `mail` from 2.9.0 to 2.9.1
+(and its compatible `net-imap` release) to close GHSA-mvxr-6m87-mv2q; Bundler Audit is
+now clean.
 
 **Tradeoffs accepted:** CSP allows `style-src 'unsafe-inline'` because the views use inline
 `style` attributes; script nonces cover the inline landing script. Host authorization can return
