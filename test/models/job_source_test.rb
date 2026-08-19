@@ -275,12 +275,14 @@ class JobSourceTest < ActiveSupport::TestCase
     assert_includes arc.settings["seed_urls"], "https://arc.dev/remote-jobs/ruby-on-rails"
   end
 
-  test "seeds native Rails, Loxo, and Luflox discovery sources" do
+  test "seeds native Rails, Loxo, Luflox, and RemoteYeah discovery sources" do
     JobSources::Catalog.seed!
 
     rails = JobSource.find_by!(slug: "rails-job-board")
     loxo = JobSource.find_by!(slug: "loxo-fitnext")
     luflox = JobSource.find_by!(slug: "luflox")
+    remoteyeah = JobSource.find_by!(slug: "remoteyeah")
+    railsfullstack = JobSource.find_by!(slug: "railsfullstack")
 
     assert rails.supports_backfill?
     assert_equal "rails_jobs_rss", rails.adapter_key
@@ -294,6 +296,17 @@ class JobSourceTest < ActiveSupport::TestCase
     assert luflox.supports_backfill?
     assert_equal "luflox_positions", luflox.adapter_key
     assert_includes luflox.settings["seed_urls"], "https://www.luflox.com/career/details/kWCKNjWHsbkWljOEbjBw"
+
+    assert remoteyeah.supports_backfill?
+    assert_equal "remoteyeah_rss", remoteyeah.adapter_key
+    assert_equal "https://remoteyeah.com/rss.xml", remoteyeah.settings["feed_url"]
+    assert_includes remoteyeah.settings["seed_urls"], "https://remoteyeah.com/jobs/remote-lead-ruby-on-rails-software-engineer-alex-staff-agency-4?utm_source=linkedin"
+
+    assert railsfullstack.supports_backfill?
+    assert_equal "railsfullstack_jobs_sitemap", railsfullstack.adapter_key
+    assert_equal [ "https://www.railsfullstack.com/collections/remote-full-stack-rails-jobs" ], railsfullstack.settings["collection_urls"]
+    assert_equal "https://www.railsfullstack.com/sitemap.xml", railsfullstack.settings["sitemap_url"]
+    assert_equal 40, railsfullstack.settings["max_jobs"]
   end
 
   test "seeds stack-specific fallback job boards" do

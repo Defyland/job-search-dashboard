@@ -16,6 +16,8 @@ module JobDiscovery
       "quickin_company_boards" => JobDiscovery::Adapters::QuickinCompanyBoardsAdapter,
       "recrutei_company_boards" => JobDiscovery::Adapters::RecruteiCompanyBoardsAdapter,
       "remoteok_jobs_api" => JobDiscovery::Adapters::RemoteokJobsApiAdapter,
+      "remoteyeah_rss" => JobDiscovery::Adapters::RemoteyeahRssAdapter,
+      "railsfullstack_jobs_sitemap" => JobDiscovery::Adapters::RailsfullstackJobsSitemapAdapter,
       "remotive_remote_jobs" => JobDiscovery::Adapters::RemotiveRemoteJobsAdapter,
       "remotar_jobs_api" => JobDiscovery::Adapters::RemotarJobsApiAdapter,
       "rails_jobs_rss" => JobDiscovery::Adapters::RailsJobsRssAdapter,

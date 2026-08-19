@@ -5,11 +5,37 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-08-19 - Add native RailsFullstack discovery
+
+**Decision:** Added a native `RailsFullstack` adapter backed primarily by the site's SSR remote
+Rails collection. Its embedded job payload supplies fresh roles and external application links in
+one request. The sitemap index and SSR `JobPosting` detail pages remain a fallback with a bounded
+`max_jobs` detail-page budget.
+
+**Why:** `railsfullstack.com` exposes a stable public sitemap and server-rendered vacancy metadata,
+while its RSS endpoints are unavailable. Using the sitemap avoids search scraping and lets the
+shared policy decide which remote roles belong in the radar.
+
+**Tradeoffs accepted:** The collection payload is an application-level contract and may change;
+the sitemap fallback preserves discovery if it does. Sitemap `lastmod` is only a discovery hint
+and may refresh independently of the posting date, so the fallback validates `datePosted` and
+`validThrough` on each detail page. The default detail budget is 40 jobs per fallback scan.
+
+**Verification:** Focused adapter/catalog tests, RuboCop on the touched Ruby files, and live
+smoke checks against the sitemap index and a JSON-LD vacancy page.
+
+**Refs:** app/services/job_discovery/adapters/railsfullstack_jobs_sitemap_adapter.rb,
+app/services/job_discovery/registry.rb, app/services/job_sources/catalog.rb.
+
+---
+
 ## 2026-08-19 - Native Loxo/Luflox/Rails discovery and stack-specific source routing
 
 **Decision:** Added native adapters for the official Rails Job Board RSS feed, public Loxo
 career boards (seeded with FitNext), and Luflox's public Firestore positions feed. Nir Yu is
-seeded through the existing Teamtailor adapter. Language/framework-specific portals are
+seeded through the existing Teamtailor adapter. RemoteYeah is integrated through its public RSS
+feed, with supplied job pages retained as seeds for postings that have aged out of the feed.
+Language/framework-specific portals are
 registered as assisted sources with explicit stack affinity, and search-index queries now skip
 ecosystem boards that do not match the active profile's stack.
 

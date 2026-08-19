@@ -293,6 +293,41 @@ module JobSources
       { name: "Workable", slug: "workable", source_kind: :ats, base_url: "https://jobs.workable.com", host: "jobs.workable.com", priority: 20, adapter_key: "workable_global_api", supports_backfill: true, scan_window_days: 20 },
       { name: "Rails Job Board", slug: "rails-job-board", source_kind: :platform, base_url: "https://jobs.rubyonrails.org", host: "jobs.rubyonrails.org", priority: 18, adapter_key: "rails_jobs_rss", supports_backfill: true, scan_window_days: 20, settings: { feed_url: "https://jobs.rubyonrails.org/jobs.rss" } },
       { name: "RemoteOK", slug: "remoteok", source_kind: :platform, base_url: "https://remoteok.com", host: "remoteok.com", priority: 25, adapter_key: "remoteok_jobs_api", supports_backfill: true, scan_window_days: 20 },
+      {
+        name: "RemoteYeah",
+        slug: "remoteyeah",
+        source_kind: :platform,
+        base_url: "https://remoteyeah.com",
+        host: "remoteyeah.com",
+        priority: 24,
+        adapter_key: "remoteyeah_rss",
+        supports_backfill: true,
+        scan_window_days: 20,
+        settings: {
+          feed_url: "https://remoteyeah.com/rss.xml",
+          seed_urls: [
+            "https://remoteyeah.com/jobs/remote-lead-ruby-on-rails-software-engineer-alex-staff-agency-4?utm_source=linkedin"
+          ]
+        }
+      },
+      {
+        name: "RailsFullstack",
+        slug: "railsfullstack",
+        source_kind: :platform,
+        base_url: "https://www.railsfullstack.com",
+        host: "railsfullstack.com",
+        priority: 24,
+        adapter_key: "railsfullstack_jobs_sitemap",
+        supports_backfill: true,
+        scan_window_days: 20,
+        settings: {
+          collection_urls: [
+            "https://www.railsfullstack.com/collections/remote-full-stack-rails-jobs"
+          ],
+          sitemap_url: "https://www.railsfullstack.com/sitemap.xml",
+          max_jobs: 40
+        }
+      },
       { name: "Remotive", slug: "remotive", source_kind: :platform, base_url: "https://remotive.com", host: "remotive.com", priority: 25, adapter_key: "remotive_remote_jobs", supports_backfill: true, scan_window_days: 20 },
       { name: "Himalayas", slug: "himalayas", source_kind: :platform, base_url: "https://himalayas.app", host: "himalayas.app", priority: 25, adapter_key: "himalayas_jobs_api", supports_backfill: true, scan_window_days: 20 },
       {
