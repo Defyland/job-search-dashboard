@@ -119,7 +119,7 @@ module JobDiscovery
 
       private
         def queries_for_profile(profile)
-          stacks = normalize_list(profile.target_stacks).first(6)
+          stacks = normalize_list(profile.target_stacks)
           stacks.flat_map do |stack|
             targets_for_stack(stack).map do |target|
               Query.new(
@@ -180,7 +180,16 @@ module JobDiscovery
               end
             end
 
-          normalize_list(generated_titles_for(profile, stack) + phrases).first(MAX_PHRASES_PER_QUERY)
+          generated_titles = generated_titles_for(profile, stack)
+          seniority_phrases = normalize_list(phrases).select do |phrase|
+            seniority_terms.any? { |seniority| term_match?(phrase, seniority) }
+          end
+          stack_seniority_phrases = [ "#{seniority_terms.first} #{stack_terms.first}" ]
+          if %w[elixir golang].include?(stack)
+            stack_seniority_phrases.concat(stack_terms.drop(1).map { |stack_term| "#{seniority_terms.first} #{stack_term}" })
+          end
+
+          normalize_list(stack_seniority_phrases + seniority_phrases.first(2) + generated_titles + phrases).first(MAX_PHRASES_PER_QUERY)
         end
 
         def generated_titles_for(profile, stack)
@@ -196,10 +205,19 @@ module JobDiscovery
             Array(generated_titles.fetch("pt", [])) + Array(generated_titles.fetch("en", []))
           end
 
-          stack_patterns = JobDiscovery::Policy::TITLE_STACK_SYNONYMS.fetch(stack, [ stack ])
-          normalized_patterns = normalize_list([ stack ] + stack_patterns)
+          normalized_patterns = stack_terms_for(stack)
           normalize_list(titles).select do |title|
-            normalized_patterns.any? { |term| title.include?(term) }
+            matching_terms = normalized_patterns.select { |term| term_match?(title, term) }
+            next false if matching_terms.blank?
+
+            strongest_match = matching_terms.map(&:length).max
+            conflicting_terms = normalize_list(profile.target_stacks).reject { |target| target == stack }
+              .flat_map { |target| stack_terms_for(target) }
+              .uniq
+
+            conflicting_terms.none? do |term|
+              term.length > strongest_match && term_match?(title, term)
+            end
           end
         end
 
@@ -281,6 +299,15 @@ module JobDiscovery
 
         def stack_terms_for(stack)
           normalize_list([ stack ] + JobDiscovery::Policy::TITLE_STACK_SYNONYMS.fetch(stack, []))
+        end
+
+        def term_match?(input, term)
+          normalized_input = input.to_s.downcase.squish
+          normalized_term = SearchProfiles::Vocabulary.normalize(term)
+          return false if normalized_input.blank? || normalized_term.blank?
+
+          pattern = Regexp.escape(normalized_term).gsub("\\ ", "[\\s-]+")
+          normalized_input.match?(/(?<![[:alnum:]])#{pattern}(?![[:alnum:]])/i)
         end
 
         def normalize_list(values)

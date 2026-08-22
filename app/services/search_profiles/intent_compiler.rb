@@ -2,6 +2,12 @@ module SearchProfiles
   class IntentCompiler
     class Error < StandardError; end
 
+    CANONICAL_STACK_ALIASES = {
+      "go" => "golang",
+      "go lang" => "golang",
+      "phoenix" => "elixir"
+    }.freeze
+
     OUTPUT_SCHEMA = {
       type: "object",
       properties: {
@@ -9,18 +15,15 @@ module SearchProfiles
         canonical_stacks: {
           type: "array",
           items: { type: "string" },
-          minItems: 1,
-          maxItems: 6
+          minItems: 1
         },
         title_variants_pt: {
           type: "array",
-          items: { type: "string" },
-          maxItems: 12
+          items: { type: "string" }
         },
         title_variants_en: {
           type: "array",
-          items: { type: "string" },
-          maxItems: 12
+          items: { type: "string" }
         },
         stack_aliases: {
           type: "array",
@@ -36,8 +39,7 @@ module SearchProfiles
             },
             required: %w[canonical_stack aliases],
             additionalProperties: false
-          },
-          maxItems: 6
+          }
         }
       },
       required: %w[profile_name_suggestion canonical_stacks title_variants_pt title_variants_en stack_aliases],
@@ -122,12 +124,12 @@ module SearchProfiles
       end
 
       def normalize_response(response)
-        canonical_stacks = normalize_list(response["canonical_stacks"])
+        canonical_stacks = normalize_list(response["canonical_stacks"]).map { |stack| canonical_stack_for(stack) }.uniq
         raise Error, "O Claude nao retornou areas ou stacks canonicas suficientes." if canonical_stacks.blank?
 
         stack_aliases =
           Array(response["stack_aliases"]).each_with_object([]) do |entry, result|
-            canonical_stack = entry["canonical_stack"].to_s.downcase.squish
+            canonical_stack = canonical_stack_for(entry["canonical_stack"])
             aliases = normalize_list(entry["aliases"])
             next if canonical_stack.blank?
 
@@ -148,6 +150,11 @@ module SearchProfiles
 
       def normalize_list(values)
         Array(values).map { |value| value.to_s.downcase.squish }.reject(&:blank?).uniq
+      end
+
+      def canonical_stack_for(stack)
+        normalized_stack = stack.to_s.downcase.squish
+        CANONICAL_STACK_ALIASES.fetch(normalized_stack, normalized_stack)
       end
   end
 end

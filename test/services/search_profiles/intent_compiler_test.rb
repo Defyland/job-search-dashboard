@@ -61,6 +61,44 @@ class SearchProfiles::IntentCompilerTest < ActiveSupport::TestCase
     assert_equal [ "itsm", "flow designer" ], result["stack_aliases"].first["aliases"]
   end
 
+  test "canonicalizes Go and Phoenix aliases in structured responses" do
+    compiler = SearchProfiles::IntentCompiler.new(
+      client: FakeClient.new(
+        response: {
+          "profile_name_suggestion" => "Senior Go Phoenix",
+          "canonical_stacks" => [ "go", "go lang", "phoenix" ],
+          "title_variants_pt" => [ "desenvolvedor go", "desenvolvedor phoenix" ],
+          "title_variants_en" => [ "go developer", "phoenix developer" ],
+          "stack_aliases" => [
+            { "canonical_stack" => "go", "aliases" => [ "go", "go lang" ] },
+            { "canonical_stack" => "phoenix", "aliases" => [ "phoenix" ] }
+          ]
+        }
+      )
+    )
+
+    result = compiler.call(
+      technology_intent: "go, phoenix",
+      seniority_preset: "senior",
+      language_scope: "both",
+      required_remote: true,
+      region_scope: "brazil_latam",
+      include_women_only: false
+    )
+
+    assert_equal [ "golang", "elixir" ], result.fetch("canonical_stacks")
+    assert_equal [ "golang", "elixir" ], result.fetch("stack_aliases").map { |entry| entry.fetch("canonical_stack") }
+  end
+
+  test "structured schema has no implicit stack or title count caps" do
+    properties = SearchProfiles::IntentCompiler::OUTPUT_SCHEMA.fetch(:properties)
+
+    refute properties.fetch(:canonical_stacks).key?(:maxItems)
+    refute properties.fetch(:title_variants_pt).key?(:maxItems)
+    refute properties.fetch(:title_variants_en).key?(:maxItems)
+    refute properties.fetch(:stack_aliases).key?(:maxItems)
+  end
+
   test "retries a transient client error once" do
     transient_error = SearchProfiles::CompilerClient::TransientError.new("timeout")
     client = FakeClient.new(response: nil, error: transient_error)

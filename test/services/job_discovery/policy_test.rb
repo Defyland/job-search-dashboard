@@ -138,6 +138,60 @@ class JobDiscovery::PolicyTest < ActiveSupport::TestCase
     assert_includes result.stack_tags, "salesforce"
   end
 
+  test "matches Go and Phoenix titles without treating common go context as Golang" do
+    golang_profile = users(:one).search_profiles.create!(
+      name: "Senior Golang",
+      target_stacks: [ "golang" ],
+      target_titles: [ "developer", "engineer" ],
+      seniority_terms: [ "senior" ],
+      location_terms: [ "remote", "brazil" ],
+      negative_terms: []
+    )
+    elixir_profile = users(:one).search_profiles.create!(
+      name: "Senior Elixir",
+      target_stacks: [ "elixir" ],
+      target_titles: [ "developer", "engineer" ],
+      seniority_terms: [ "senior" ],
+      location_terms: [ "remote", "brazil" ],
+      negative_terms: []
+    )
+
+    go_title = JobDiscovery::Policy.new(search_profile: golang_profile).classify(
+      title: "Senior Go Developer",
+      remote_text: "Remote Brazil",
+      location_text: "Brazil",
+      description: "Build Go services",
+      source_slug: "lever",
+      posted_text: "today",
+      published_at: nil
+    )
+    common_go_context = JobDiscovery::Policy.new(search_profile: golang_profile).classify(
+      title: "Senior Software Engineer",
+      remote_text: "Remote Brazil",
+      location_text: "Brazil",
+      description: "We go to market with a remote team",
+      source_slug: "lever",
+      posted_text: "today",
+      published_at: nil
+    )
+    phoenix_title = JobDiscovery::Policy.new(search_profile: elixir_profile).classify(
+      title: "Senior Phoenix Engineer",
+      remote_text: "Remote Brazil",
+      location_text: "Brazil",
+      description: "Phoenix application",
+      source_slug: "lever",
+      posted_text: "today",
+      published_at: nil
+    )
+
+    assert go_title.accepted?
+    assert_includes go_title.stack_tags, "golang"
+    assert_equal :rejected, common_go_context.classification
+    assert_match(/area alvo|match suficiente/, common_go_context.reason)
+    assert phoenix_title.accepted?
+    assert_includes phoenix_title.stack_tags, "elixir"
+  end
+
   test "does not use compiled aliases from generic body context" do
     profile = users(:one).search_profiles.create!(
       name: "Senior Next.js",

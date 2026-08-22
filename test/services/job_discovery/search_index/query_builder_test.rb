@@ -158,4 +158,77 @@ class JobDiscovery::SearchIndex::QueryBuilderTest < ActiveSupport::TestCase
     assert_includes queries.first.query, "site:python.org/jobs"
     refute queries.any? { |query| query.source_slug == "rust" }
   end
+
+  test "builds final queries for every stack in a seven-stack profile" do
+    stacks = [ "ruby", "ruby on rails", "react", "react native", "salesforce", "elixir", "golang" ]
+    generated_titles = {
+      "pt" => stacks.map { |stack| "desenvolvedor #{stack}" },
+      "en" => stacks.map { |stack| "#{stack} developer" }
+    }
+    profile = SearchProfile.new(
+      id: 901,
+      name: "Seven-stack query profile",
+      language_scope: :both,
+      target_stacks: stacks,
+      target_titles: [ "developer", "engineer" ],
+      seniority_terms: [ "senior" ],
+      location_terms: [ "remote" ],
+      negative_terms: [],
+      required_remote: true,
+      include_women_only: false,
+      settings: { "compiler" => { "generated_titles" => generated_titles } }
+    )
+    targets = [
+      { source_slug: "general", host: "example.com", setting_key: nil },
+      { source_slug: "elixir", host: "elixirjobs.net", setting_key: nil, stacks: %w[elixir phoenix] },
+      { source_slug: "golang", host: "www.golangprojects.com", setting_key: nil, stacks: %w[go golang] }
+    ]
+
+    queries = JobDiscovery::SearchIndex::QueryBuilder.new(search_profiles: [ profile ], targets:).queries
+    query_stacks = queries.map(&:target_stack).uniq
+
+    assert_equal stacks, query_stacks
+    assert queries.any? { |query| query.target_stack == "elixir" && query.query.include?("\"senior phoenix\"") }
+    assert queries.any? { |query| query.target_stack == "golang" && query.query.include?("\"senior go\"") }
+  end
+
+  test "keeps Ruby and React queries isolated and retains seniority phrases" do
+    stacks = [ "ruby", "ruby on rails", "react", "react native" ]
+    profile = SearchProfile.new(
+      id: 902,
+      name: "Ruby Rails React query profile",
+      language_scope: :both,
+      target_stacks: stacks,
+      target_titles: [ "developer", "engineer" ],
+      seniority_terms: [ "senior" ],
+      location_terms: [ "remote" ],
+      negative_terms: [],
+      required_remote: true,
+      include_women_only: false,
+      settings: {
+        "compiler" => {
+          "generated_titles" => {
+            "pt" => [ "desenvolvedor ruby", "desenvolvedor ruby on rails", "desenvolvedor react", "desenvolvedor react native" ],
+            "en" => [ "ruby developer", "ruby on rails developer", "react developer", "react native developer" ]
+          }
+        }
+      }
+    )
+
+    queries = JobDiscovery::SearchIndex::QueryBuilder.new(
+      search_profiles: [ profile ],
+      targets: [ { source_slug: "general", host: "example.com", setting_key: nil } ]
+    ).queries
+    ruby_query = queries.find { |query| query.target_stack == "ruby" }.query
+    rails_query = queries.find { |query| query.target_stack == "ruby on rails" }.query
+    react_query = queries.find { |query| query.target_stack == "react" }.query
+
+    assert_includes ruby_query, '"senior ruby"'
+    refute_includes ruby_query, '"desenvolvedor ruby on rails"'
+    refute_includes ruby_query, '"ruby on rails developer"'
+    assert_includes rails_query, '"desenvolvedor ruby on rails"'
+    assert_includes rails_query, '"senior ruby on rails"'
+    assert_includes react_query, '"senior react"'
+    refute_includes react_query, '"desenvolvedor react native"'
+  end
 end

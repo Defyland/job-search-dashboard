@@ -27,6 +27,8 @@ module JobDiscovery
       "react" => [ "react", "reactjs", "react.js" ],
       "react native" => [ "react native", "react-native" ],
       "nextjs" => [ "nextjs", "next.js", "next js" ],
+      "golang" => [ "golang", "go lang" ],
+      "elixir" => [ "elixir", "phoenix" ],
       "recruiter" => [
         "recruiter",
         "tech recruiter",
@@ -133,7 +135,7 @@ module JobDiscovery
       "node" => [ "node", "node.js", "nodejs", "nestjs", "nest.js", "express" ],
       "angular" => [ "angular", "angularjs" ],
       "vue" => [ "vue", "vue.js", "vuejs", "nuxt", "nuxt.js", "nuxtjs" ],
-      "golang" => [ "golang" ],
+      "golang" => [ "golang", "go", "go lang" ],
       "elixir" => [ "elixir", "phoenix" ],
       "ios" => [ "ios", "swift" ],
       "android" => [ "android", "kotlin" ],

@@ -29,8 +29,8 @@ module JobDiscovery
       Policy::Criteria.new(
         profile: @profile,
         language_scope:,
-        title_stack_patterns: build_stack_patterns(include_compiler_aliases: true),
-        context_stack_patterns: build_stack_patterns(include_compiler_aliases: false),
+        title_stack_patterns: build_stack_patterns(include_compiler_aliases: true, use_title_synonyms: true),
+        context_stack_patterns: build_stack_patterns(include_compiler_aliases: false, use_title_synonyms: false),
         allowed_catalog_stack_tags: allowed_catalog_stack_tags,
         compiled_title_patterns: self.class.build_patterns(compiler_generated_titles(language_scope)),
         catalog_title_stack_patterns: self.class.catalog_title_stack_patterns,
@@ -64,9 +64,10 @@ module JobDiscovery
         end
       end
 
-      def build_stack_patterns(include_compiler_aliases:)
+      def build_stack_patterns(include_compiler_aliases:, use_title_synonyms:)
         normalize_list(@profile.target_stacks).each_with_object({}) do |tag, result|
-          terms = Policy::STACK_SYNONYMS.fetch(tag, [ tag ])
+          synonyms = use_title_synonyms ? Policy::TITLE_STACK_SYNONYMS : Policy::STACK_SYNONYMS
+          terms = synonyms.fetch(tag, [ tag ])
 
           if include_compiler_aliases && @profile.respond_to?(:compiler_stack_aliases)
             terms += Array(@profile.compiler_stack_aliases[tag])

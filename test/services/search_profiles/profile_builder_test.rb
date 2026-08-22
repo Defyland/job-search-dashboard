@@ -88,6 +88,37 @@ module SearchProfiles
       assert_includes attributes[:settings]["compiler"]["generated_titles"]["en"], "java developer"
     end
 
+    test "preserves all seven compiled stacks and their generated titles" do
+      stacks = [ "ruby", "ruby on rails", "react", "react native", "salesforce", "elixir", "golang" ]
+      payload = {
+        "profile_name_suggestion" => "Senior stack bundle",
+        "canonical_stacks" => stacks,
+        "title_variants_pt" => stacks.map { |stack| "desenvolvedor #{stack}" },
+        "title_variants_en" => stacks.map { |stack| "#{stack} developer" },
+        "stack_aliases" => stacks.map do |stack|
+          aliases = case stack
+          when "elixir" then [ "elixir", "phoenix" ]
+          when "golang" then [ "golang", "go", "go lang" ]
+          else [ stack ]
+          end
+          { "canonical_stack" => stack, "aliases" => aliases }
+        end
+      }
+
+      attributes = ProfileBuilder.from_compiled(simple_input:, compiled_payload: payload)
+      persisted_profile = users(:one).search_profiles.create!(attributes).reload
+
+      assert_equal stacks, attributes.fetch(:target_stacks)
+      assert_includes attributes.fetch(:target_titles), "desenvolvedor elixir"
+      assert_includes attributes.fetch(:target_titles), "golang developer"
+      assert_equal stacks, attributes.fetch(:settings).dig("compiler", "stack_aliases").keys
+      assert_equal stacks, persisted_profile.target_stacks
+      assert_includes persisted_profile.target_titles, "desenvolvedor elixir"
+      assert_includes persisted_profile.target_titles, "golang developer"
+      assert_includes persisted_profile.compiler_stack_aliases.fetch("elixir"), "phoenix"
+      assert_includes persisted_profile.compiler_stack_aliases.fetch("golang"), "go"
+    end
+
     test "compiled recruiter profiles do not inherit software role titles" do
       attributes = ProfileBuilder.from_compiled(
         simple_input: simple_input.merge("technology_intent" => "tech recruiter"),

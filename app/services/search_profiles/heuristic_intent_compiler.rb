@@ -11,6 +11,8 @@ module SearchProfiles
       "react native" => "React Native",
       "nextjs" => "Next.js",
       "salesforce" => "Salesforce",
+      "elixir" => "Elixir",
+      "golang" => "Golang",
       "servicenow" => "ServiceNow",
       "recruiter" => "Recruiter",
       "rh" => "RH",
@@ -36,6 +38,9 @@ module SearchProfiles
       "next.js" => "nextjs",
       "next js" => "nextjs",
       "ror" => "ruby on rails",
+      "go" => "golang",
+      "go lang" => "golang",
+      "phoenix" => "elixir",
       "service now" => "servicenow",
       "tech recruiter" => "recruiter",
       "technical recruiter" => "recruiter",
@@ -182,7 +187,7 @@ module SearchProfiles
           accepted << candidate
         end
 
-        accepted.first(6)
+        accepted
       end
 
       def duplicate_stack?(accepted, candidate)
@@ -231,7 +236,6 @@ module SearchProfiles
           end
         end.map { |title| SearchProfiles::Vocabulary.normalize(title) }
           .uniq
-          .first(12)
       end
 
       def non_tech_title_variants_for(stack, language)

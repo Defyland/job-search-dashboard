@@ -19,6 +19,61 @@ module SearchProfiles
       assert_equal "local-rules-v1", payload.fetch("model")
     end
 
+    test "preserves every stack and title variant from the seven-stack intent" do
+      payload = HeuristicIntentCompiler.new.call(
+        technology_intent: "ruby, ruby on rails, react, react native, salesforce, elixir, golang",
+        seniority_preset: "senior",
+        language_scope: "both",
+        required_remote: true,
+        region_scope: "brazil_latam",
+        include_women_only: false
+      )
+
+      assert_equal [ "ruby", "ruby on rails", "react", "react native", "salesforce", "elixir", "golang" ], payload.fetch("canonical_stacks")
+      assert_equal 7, payload.fetch("stack_aliases").size
+      assert_includes payload.fetch("stack_aliases").find { |entry| entry.fetch("canonical_stack") == "elixir" }.fetch("aliases"), "phoenix"
+      assert_includes payload.fetch("stack_aliases").find { |entry| entry.fetch("canonical_stack") == "golang" }.fetch("aliases"), "go"
+      assert_includes payload.fetch("title_variants_pt"), "desenvolvedor elixir"
+      assert_includes payload.fetch("title_variants_pt"), "desenvolvedor golang"
+      assert_includes payload.fetch("title_variants_en"), "elixir developer"
+      assert_includes payload.fetch("title_variants_en"), "golang developer"
+    end
+
+    test "canonicalizes Go and Phoenix aliases to their stack families" do
+      {
+        "go" => "golang",
+        "go lang" => "golang",
+        "phoenix" => "elixir"
+      }.each do |technology_intent, expected_stack|
+        payload = HeuristicIntentCompiler.new.call(
+          technology_intent:,
+          seniority_preset: "senior",
+          language_scope: "both",
+          required_remote: true,
+          region_scope: "brazil_latam",
+          include_women_only: false
+        )
+
+        assert_equal [ expected_stack ], payload.fetch("canonical_stacks"), technology_intent
+      end
+    end
+
+    test "supports more than seven valid stacks without an implicit compiler cap" do
+      stacks = [ "java", "python", "php", "node", "angular", "vue", "elixir", "golang" ]
+      payload = HeuristicIntentCompiler.new.call(
+        technology_intent: stacks.join(", "),
+        seniority_preset: "senior",
+        language_scope: "both",
+        required_remote: true,
+        region_scope: "brazil_latam",
+        include_women_only: false
+      )
+
+      assert_equal stacks, payload.fetch("canonical_stacks")
+      assert_equal stacks.size * 3, payload.fetch("title_variants_pt").size
+      assert_equal stacks.size * 3, payload.fetch("title_variants_en").size
+    end
+
     test "rejects empty technology intents" do
       error = assert_raises(SearchProfiles::IntentCompiler::Error) do
         HeuristicIntentCompiler.new.call(
