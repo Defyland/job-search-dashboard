@@ -90,8 +90,8 @@ class JobDiscovery::Adapters::RailsfullstackJobsSitemapAdapterTest < ActiveSuppo
           title: "Senior Ruby on Rails Engineer",
           company_name: "Acme",
           identifier: "railsfullstack-acme-1",
-          date_posted: 2.days.ago.iso8601,
-          valid_through: 5.days.from_now.iso8601,
+          date_posted: "2026-08-17T12:00:00Z",
+          valid_through: "2026-08-24T12:00:00Z",
           canonical_url: active_url,
           apply_url: "https://acme.example/apply/rails"
         ),
@@ -99,8 +99,8 @@ class JobDiscovery::Adapters::RailsfullstackJobsSitemapAdapterTest < ActiveSuppo
           title: "Senior Ruby Developer",
           company_name: "OldCo",
           identifier: "railsfullstack-oldco-1",
-          date_posted: 3.days.ago.iso8601,
-          valid_through: 1.day.ago.iso8601,
+          date_posted: "2026-08-16T12:00:00Z",
+          valid_through: "2026-08-18T12:00:00Z",
           canonical_url: expired_url
         )
       )

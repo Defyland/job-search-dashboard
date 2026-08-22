@@ -309,6 +309,32 @@ class JobSourceTest < ActiveSupport::TestCase
     assert_equal 40, railsfullstack.settings["max_jobs"]
   end
 
+  test "seeds We Work Remotely natively and the Wellfound/Job Board Search assisted sources" do
+    JobSources::Catalog.seed!
+
+    wwr = JobSource.find_by!(slug: "weworkremotely")
+    assert wwr.supports_backfill?
+    assert_equal "weworkremotely_rss", wwr.adapter_key
+    assert_equal "platform", wwr.source_kind
+    assert_not wwr.codex_fallback_enabled?
+    assert_includes wwr.settings["feed_urls"], "https://weworkremotely.com/categories/remote-programming-jobs.rss"
+    assert wwr.settings["feed_urls"].all? { |url| url.start_with?("https://weworkremotely.com/") }
+
+    wellfound = JobSource.find_by!(slug: "wellfound")
+    assert wellfound.codex_fallback_enabled?
+    assert_equal "manual_only", wellfound.adapter_key
+    assert_not wellfound.supports_backfill?
+    assert_includes wellfound.settings["seed_urls"], "https://wellfound.com/jobs"
+    assert_includes wellfound.settings["search_hosts"], "angel.co"
+
+    job_board_search = JobSource.find_by!(slug: "job-board-search")
+    assert job_board_search.codex_fallback_enabled?
+    assert_equal "manual_only", job_board_search.adapter_key
+    assert_not job_board_search.supports_backfill?
+    assert_includes job_board_search.settings["seed_urls"], "https://jobboardsearch.com"
+    assert_match(/diretorio de job boards/i, job_board_search.codex_fallback_reason)
+  end
+
   test "seeds stack-specific fallback job boards" do
     JobSources::Catalog.seed!
 

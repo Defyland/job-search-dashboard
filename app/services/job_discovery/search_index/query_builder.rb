@@ -68,6 +68,8 @@ module JobDiscovery
         { source_slug: "dataannotation-coding", host: "www.dataannotation.tech/coding", setting_key: nil },
         { source_slug: "proxify-careers", host: "career.proxify.io/ruby-on-rails/vacancies", setting_key: nil, stacks: [ "ruby", "ruby on rails", "rails" ] },
         { source_slug: "remote-jobs-finder", host: "remotejobsfinder.co/en", setting_key: nil },
+        { source_slug: "wellfound", host: "wellfound.com", setting_key: nil },
+        { source_slug: "job-board-search", host: "jobboardsearch.com", setting_key: nil },
         { source_slug: "python-job-board", host: "www.python.org/jobs", setting_key: nil, stacks: %w[python django flask fastapi] },
         { source_slug: "django-community-jobs", host: "www.djangoproject.com/community/jobs", setting_key: nil, stacks: %w[python django] },
         { source_slug: "javascript-jobs", host: "javascript.jobs", setting_key: nil, stacks: [ "javascript", "typescript", "node", "react", "react native", "nextjs", "angular", "vue" ] },

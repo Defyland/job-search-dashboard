@@ -25,6 +25,7 @@ module JobDiscovery
       "smartrecruiters_postings_api" => JobDiscovery::Adapters::SmartrecruitersPostingsApiAdapter,
       "teamtailor_company_boards" => JobDiscovery::Adapters::TeamtailorCompanyBoardsAdapter,
       "trampos_opportunities_api" => JobDiscovery::Adapters::TramposOpportunitiesApiAdapter,
+      "weworkremotely_rss" => JobDiscovery::Adapters::WeworkremotelyRssAdapter,
       "workable_global_api" => JobDiscovery::Adapters::WorkableGlobalApiAdapter
     }.freeze
 

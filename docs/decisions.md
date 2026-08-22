@@ -5,6 +5,32 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-08-22 - Add We Work Remotely natively; Wellfound and Job Board Search assisted
+
+**Decision:** Added a native `We Work Remotely` adapter over its public category RSS feeds, and
+registered `Wellfound` (angel.co/AngelList Talent) and `Job Board Search` as Codex fallback
+sources. `Himalayas` and `Remotive` were already native and were left untouched.
+
+**Why:** WWR publishes a complete, auth-free RSS feed per category with company, region,
+employment type, publication date and expiry, which is enough for deterministic Rails discovery.
+`angel.co` now redirects to `wellfound.com`, and both Wellfound and Job Board Search answer the
+Rails worker with a Cloudflare challenge, so a native adapter would be unreliable by construction.
+
+**Tradeoffs accepted:** WWR titles arrive as `Company: Role`, so the adapter splits the prefix
+before classification; a role legitimately containing a colon would lose the fragment before it.
+Feed coverage is scoped to the engineering categories in `feed_urls` instead of the firehose feed,
+which keeps request volume low but excludes non-engineering roles. Job Board Search is a directory
+of boards, not of vacancies, so its fallback role is to surface boards worth promoting into the
+catalog rather than to ingest listings.
+
+**Verification:** Adapter and catalog tests, plus a live smoke against the real feeds that returned
+23 candidates over 4 requests with company/title split correctly on every row.
+
+**Refs:** app/services/job_discovery/adapters/weworkremotely_rss_adapter.rb,
+app/services/job_discovery/registry.rb, app/services/job_sources/catalog.rb.
+
+---
+
 ## 2026-08-19 - Add native RailsFullstack discovery
 
 **Decision:** Added a native `RailsFullstack` adapter backed primarily by the site's SSR remote

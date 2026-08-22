@@ -331,6 +331,25 @@ module JobSources
       { name: "Remotive", slug: "remotive", source_kind: :platform, base_url: "https://remotive.com", host: "remotive.com", priority: 25, adapter_key: "remotive_remote_jobs", supports_backfill: true, scan_window_days: 20 },
       { name: "Himalayas", slug: "himalayas", source_kind: :platform, base_url: "https://himalayas.app", host: "himalayas.app", priority: 25, adapter_key: "himalayas_jobs_api", supports_backfill: true, scan_window_days: 20 },
       {
+        name: "We Work Remotely",
+        slug: "weworkremotely",
+        source_kind: :platform,
+        base_url: "https://weworkremotely.com",
+        host: "weworkremotely.com",
+        priority: 24,
+        adapter_key: "weworkremotely_rss",
+        supports_backfill: true,
+        scan_window_days: 20,
+        settings: {
+          feed_urls: [
+            "https://weworkremotely.com/categories/remote-programming-jobs.rss",
+            "https://weworkremotely.com/categories/remote-full-stack-programming-jobs.rss",
+            "https://weworkremotely.com/categories/remote-back-end-programming-jobs.rss",
+            "https://weworkremotely.com/categories/remote-front-end-programming-jobs.rss"
+          ]
+        }
+      },
+      {
         name: "beBee",
         slug: "bebee",
         source_kind: :aggregator,
@@ -1108,6 +1127,58 @@ module JobSources
           search_paths: [ "/en" ],
           regions: %w[global remote],
           seed_queries: LATAM_SEED_QUERIES
+        }
+      },
+      {
+        name: "Wellfound (AngelList Talent)",
+        slug: "wellfound",
+        source_kind: :platform,
+        base_url: "https://wellfound.com/jobs",
+        host: "wellfound.com",
+        priority: 40,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: "Portal de startups (angel.co redireciona para wellfound.com) protegido por desafio Cloudflare para o worker Rails; usar Codex fallback, validar vaga ativa e preferir o ATS da startup quando existir.",
+        scan_window_days: 20,
+        settings: {
+          seed_urls: [
+            "https://wellfound.com/jobs",
+            "https://wellfound.com/role/r/ruby-on-rails-developer",
+            "https://wellfound.com/role/r/react-developer"
+          ],
+          search_hosts: [ "wellfound.com", "angel.co" ],
+          search_paths: [ "/jobs", "/role/r/ruby-on-rails-developer", "/role/r/react-developer" ],
+          regions: %w[global remote],
+          seed_queries: [
+            "senior ruby on rails engineer remote startup",
+            "senior react engineer remote startup",
+            "senior software engineer remote latam startup"
+          ]
+        }
+      },
+      {
+        name: "Job Board Search",
+        slug: "job-board-search",
+        source_kind: :aggregator,
+        base_url: "https://jobboardsearch.com",
+        host: "jobboardsearch.com",
+        priority: 45,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: "Diretorio de job boards, nao de vagas; usar Codex fallback para descobrir novos boards por stack e promover as fontes uteis ao catalogo, nunca para ingerir vagas direto.",
+        scan_window_days: 30,
+        settings: {
+          seed_urls: [ "https://jobboardsearch.com" ],
+          search_hosts: [ "jobboardsearch.com" ],
+          search_paths: [ "/" ],
+          regions: %w[global remote],
+          seed_queries: [
+            "ruby on rails job board",
+            "react job board remote",
+            "remote engineering job board latam"
+          ]
         }
       },
       {
