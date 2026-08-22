@@ -52,3 +52,10 @@
 - Worker commits: `9298a58eaaec75c741f0b71c3a07c1ff1f4353bf` (`fix: preserve profile stack variations`) and `3bc23fb8639178591a1e5421da9c42019e8a9d05` (`fix: tighten go matching and query fairness`), clean detached worker worktree.
 - Integrated commits: `72e7cd2` and `b9986bf` (controller cherry-picks).
 - Current risks: limits explicitly requested below the number of profile+stack groups necessarily truncate by caller contract; the default 600 now distributes fairly and preserves the tested 12-stack/two-profile cases. The specialized bare-Go title matcher does not recognize comma-separated forms such as `Platform Engineer, Go`; `golang`, `go lang`, and the tested common forms remain covered. The unrelated Railsfullstack temporal test remains red on both baseline and fixed snapshots. No production data was inspected, so impact on already-published profiles is inferred from code/history rather than counted from production rows; profiles that already persisted without their discarded seventh stack require recompilation/resaving to restore that missing value.
+
+## Production backfill follow-up
+
+- A later production screenshot still showed six stacks and twelve titles because these commits had not been pushed or deployed; it reproduced the old code path rather than a failure of the accepted patch.
+- `dashboard:backfill_profile_variations` regenerates stacks, titles, aliases, and compiler metadata from the persisted `settings.intent.technology_intent` using the deterministic heuristic compiler. Profiles without a stored intent are skipped, and unrelated filters/manual terms remain untouched.
+- The task is dry-run by default. `APPLY=1` enables writes; optional `SYNC=1` reenqueues active profiles with stale-match pruning and is rejected unless `APPLY=1`; `PROFILE_ID=<id>` supports a canary and `BATCH_SIZE` defaults to 100.
+- Follow-up gates: focused stack/backfill suite `45 runs, 415 assertions, 0 failures`; full suite `269 runs, 2208 assertions, 1 failure` (the same unrelated temporal baseline failure); RuboCop `226 files, no offenses`; Brakeman `79 checks, 0 warnings/errors`; task registration and `git diff --check` passed.
