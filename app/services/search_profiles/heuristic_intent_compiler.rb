@@ -29,6 +29,7 @@ module SearchProfiles
 
     STACK_CANONICAL_ALIASES = {
       "dotnet" => ".net",
+      "donet" => ".net",
       "asp.net" => ".net",
       "csharp" => "c#",
       "reactjs" => "react",

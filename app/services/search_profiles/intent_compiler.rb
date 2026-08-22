@@ -3,6 +3,7 @@ module SearchProfiles
     class Error < StandardError; end
 
     CANONICAL_STACK_ALIASES = {
+      "donet" => ".net",
       "go" => "golang",
       "go lang" => "golang",
       "phoenix" => "elixir"

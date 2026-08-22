@@ -39,8 +39,9 @@ module SearchProfiles
       assert_includes payload.fetch("title_variants_en"), "golang developer"
     end
 
-    test "canonicalizes Go and Phoenix aliases to their stack families" do
+    test "canonicalizes common aliases to their stack families" do
       {
+        "donet" => ".net",
         "go" => "golang",
         "go lang" => "golang",
         "phoenix" => "elixir"

@@ -90,6 +90,34 @@ class SearchProfiles::IntentCompilerTest < ActiveSupport::TestCase
     assert_equal [ "golang", "elixir" ], result.fetch("stack_aliases").map { |entry| entry.fetch("canonical_stack") }
   end
 
+  test "canonicalizes the historical donet typo in structured responses" do
+    compiler = SearchProfiles::IntentCompiler.new(
+      client: FakeClient.new(
+        response: {
+          "profile_name_suggestion" => "Senior .NET",
+          "canonical_stacks" => [ "donet" ],
+          "title_variants_pt" => [ "desenvolvedor .net" ],
+          "title_variants_en" => [ ".net developer" ],
+          "stack_aliases" => [
+            { "canonical_stack" => "donet", "aliases" => [ "donet", "dotnet" ] }
+          ]
+        }
+      )
+    )
+
+    result = compiler.call(
+      technology_intent: "donet",
+      seniority_preset: "senior",
+      language_scope: "both",
+      required_remote: true,
+      region_scope: "brazil_latam",
+      include_women_only: false
+    )
+
+    assert_equal [ ".net" ], result.fetch("canonical_stacks")
+    assert_equal [ ".net" ], result.fetch("stack_aliases").map { |entry| entry.fetch("canonical_stack") }
+  end
+
   test "structured schema has no implicit stack or title count caps" do
     properties = SearchProfiles::IntentCompiler::OUTPUT_SCHEMA.fetch(:properties)
 
