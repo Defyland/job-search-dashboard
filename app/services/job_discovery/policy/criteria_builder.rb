@@ -1,22 +1,43 @@
 module JobDiscovery
   class Policy::CriteriaBuilder
+    GO_TITLE_ROLES = (
+      Policy::PORTUGUESE_ROLE_TERMS + Policy::ENGLISH_ROLE_TERMS + Policy::NEUTRAL_ROLE_TERMS
+    ).freeze
+
     def self.catalog_title_stack_patterns
       @catalog_title_stack_patterns ||= Policy::TITLE_STACK_SYNONYMS.each_with_object({}) do |(tag, terms), result|
-        result[tag] = build_patterns(terms)
+        result[tag] = build_patterns(terms, stack_tag: tag)
       end
     end
 
-    def self.build_patterns(terms)
-      normalize_list(terms).map { |term| term_pattern(term) }
+    def self.build_patterns(terms, stack_tag: nil)
+      normalize_list(terms).map { |term| term_pattern(term, stack_tag:) }
     end
 
     def self.normalize_list(values)
       SearchProfiles::Vocabulary.normalize_list(values)
     end
 
-    def self.term_pattern(term)
+    def self.term_pattern(term, stack_tag: nil)
+      return go_title_pattern if stack_tag == "golang" && term == "go"
+
       escaped = Regexp.escape(term).gsub("\\ ", "[\\s-]+")
       /(?<![[:alnum:]])#{escaped}(?![[:alnum:]])/i
+    end
+
+    def self.go_title_pattern
+      role_pattern = GO_TITLE_ROLES.map do |role|
+        Regexp.escape(role).gsub("\\ ", "[\\s-]+")
+      end.join("|")
+
+      Regexp.new(
+        "(?:" \
+          "(?<![[:alnum:]])go(?![[:alnum:]])[\\s-]+(?:#{role_pattern})(?![[:alnum:]])" \
+          "|" \
+          "(?<![[:alnum:]])(?:#{role_pattern})(?![[:alnum:]])[\\s-]*(?:[-–—:]\\s*)?go(?![[:alnum:]])" \
+          ")",
+        Regexp::IGNORECASE
+      )
     end
 
     def initialize(profile:)
@@ -73,7 +94,7 @@ module JobDiscovery
             terms += Array(@profile.compiler_stack_aliases[tag])
           end
 
-          result[tag] = self.class.build_patterns(terms)
+          result[tag] = self.class.build_patterns(terms, stack_tag: use_title_synonyms ? tag : nil)
         end
       end
 

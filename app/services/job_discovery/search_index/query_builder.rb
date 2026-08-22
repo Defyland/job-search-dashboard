@@ -114,13 +114,20 @@ module JobDiscovery
       end
 
       def queries(limit: DEFAULT_LIMIT)
-        @search_profiles.flat_map { |profile| queries_for_profile(profile) }.first(limit)
+        query_groups = @search_profiles.flat_map { |profile| query_groups_for_profile(profile) }
+        ordered_queries = if limit && limit < query_groups.length
+          query_groups.flatten
+        else
+          interleave_query_groups(query_groups)
+        end
+
+        ordered_queries.first(limit)
       end
 
       private
-        def queries_for_profile(profile)
+        def query_groups_for_profile(profile)
           stacks = normalize_list(profile.target_stacks)
-          stacks.flat_map do |stack|
+          stacks.map do |stack|
             targets_for_stack(stack).map do |target|
               Query.new(
                 source_slug: target.fetch(:source_slug),
@@ -131,6 +138,14 @@ module JobDiscovery
                 query: query_for(profile:, stack:, host: target.fetch(:host))
               )
             end
+          end
+        end
+
+        def interleave_query_groups(query_groups)
+          max_group_size = query_groups.map(&:length).max.to_i
+
+          (0...max_group_size).flat_map do |index|
+            query_groups.filter_map { |group| group[index] }
           end
         end
 

@@ -165,6 +165,33 @@ class JobDiscovery::PolicyTest < ActiveSupport::TestCase
       posted_text: "today",
       published_at: nil
     )
+    software_engineer_go_title = JobDiscovery::Policy.new(search_profile: golang_profile).classify(
+      title: "Senior Software Engineer - Go",
+      remote_text: "Remote Brazil",
+      location_text: "Brazil",
+      description: "Build Go services",
+      source_slug: "lever",
+      posted_text: "today",
+      published_at: nil
+    )
+    go_to_market_title = JobDiscovery::Policy.new(search_profile: golang_profile).classify(
+      title: "Senior Go-To-Market Engineer",
+      remote_text: "Remote Brazil",
+      location_text: "Brazil",
+      description: "Go-to-market strategy for a remote team",
+      source_slug: "lever",
+      posted_text: "today",
+      published_at: nil
+    )
+    backend_on_the_go_title = JobDiscovery::Policy.new(search_profile: golang_profile).classify(
+      title: "Senior Backend Engineer on the go",
+      remote_text: "Remote Brazil",
+      location_text: "Brazil",
+      description: "Backend engineering for a remote team",
+      source_slug: "lever",
+      posted_text: "today",
+      published_at: nil
+    )
     common_go_context = JobDiscovery::Policy.new(search_profile: golang_profile).classify(
       title: "Senior Software Engineer",
       remote_text: "Remote Brazil",
@@ -186,6 +213,10 @@ class JobDiscovery::PolicyTest < ActiveSupport::TestCase
 
     assert go_title.accepted?
     assert_includes go_title.stack_tags, "golang"
+    assert software_engineer_go_title.accepted?
+    assert_includes software_engineer_go_title.stack_tags, "golang"
+    assert_equal :rejected, go_to_market_title.classification
+    assert_equal :rejected, backend_on_the_go_title.classification
     assert_equal :rejected, common_go_context.classification
     assert_match(/area alvo|match suficiente/, common_go_context.reason)
     assert phoenix_title.accepted?

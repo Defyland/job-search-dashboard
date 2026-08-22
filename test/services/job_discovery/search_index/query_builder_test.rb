@@ -192,6 +192,53 @@ class JobDiscovery::SearchIndex::QueryBuilderTest < ActiveSupport::TestCase
     assert queries.any? { |query| query.target_stack == "golang" && query.query.include?("\"senior go\"") }
   end
 
+  test "interleaves a twelve-stack profile before applying the default global limit" do
+    stacks = [ "ruby", "ruby on rails", "react", "react native", "salesforce", "elixir", "golang", "python", "java", "php", "node", "vue" ]
+    profile = SearchProfile.new(
+      id: 903,
+      name: "Twelve-stack query profile",
+      language_scope: :both,
+      target_stacks: stacks,
+      target_titles: [ "developer", "engineer" ],
+      seniority_terms: [ "senior" ],
+      location_terms: [ "remote" ],
+      negative_terms: [],
+      required_remote: true,
+      include_women_only: false
+    )
+
+    queries = JobDiscovery::SearchIndex::QueryBuilder.new(search_profiles: [ profile ]).queries
+
+    assert_operator queries.length, :>=, 600
+    assert_equal stacks.sort, queries.map(&:target_stack).uniq.sort
+  end
+
+  test "interleaves stacks across profiles before applying the default global limit" do
+    stacks = [ "ruby", "ruby on rails", "react", "react native", "salesforce", "elixir", "golang" ]
+    profiles = [ 904, 905 ].map do |id|
+      SearchProfile.new(
+        id:,
+        name: "Seven-stack query profile #{id}",
+        language_scope: :both,
+        target_stacks: stacks,
+        target_titles: [ "developer", "engineer" ],
+        seniority_terms: [ "senior" ],
+        location_terms: [ "remote" ],
+        negative_terms: [],
+        required_remote: true,
+        include_women_only: false
+      )
+    end
+
+    queries = JobDiscovery::SearchIndex::QueryBuilder.new(search_profiles: profiles).queries
+
+    assert_operator queries.length, :>=, 600
+    profiles.each do |profile|
+      profile_stacks = queries.select { |query| query.search_profile_id == profile.id }.map(&:target_stack).uniq
+      assert_equal stacks.sort, profile_stacks.sort
+    end
+  end
+
   test "keeps Ruby and React queries isolated and retains seniority phrases" do
     stacks = [ "ruby", "ruby on rails", "react", "react native" ]
     profile = SearchProfile.new(
