@@ -54,6 +54,7 @@ What Rails currently discovers by itself:
 - `Remotive` via the public remote jobs API
 - `Himalayas` via the public jobs API
 - `GoGloby` via its dedicated jobs sitemap and SSR vacancy pages
+- public `Notion` job pages via Notion's own public page API
 - `We Work Remotely` via its public category RSS feeds
 - `beBee` via its public BR job search pages (profile-driven queries and remote
   filter configured in the source settings)
@@ -72,6 +73,8 @@ Portugal coverage is intentionally broad in Codex fallback mode: local tech port
 `JobLeads Portugal` is assisted for a different reason: its remote listing does embed a readable Nuxt payload, but repeated requests from the Rails worker start returning Cloudflare 503s, the `filter_by_date` parameter is ignored server-side, the returned set skews heavily stale (median around 237 days old, with a single posting inside a 20-day window), and detail pages expose no external apply link — they gate the application behind a JobLeads login. The fallback role is therefore to confirm recency and locate the original posting before anything is ingested.
 
 `GoGloby` is a small curated board (single digits of open roles) discovered through `jobs-sitemap.xml`; recency comes from the sitemap `lastmod` plus each page's `article:modified_time`, and the canonical vacancy URL is also the apply link because applications go through an on-page form rather than an external ATS. Two of its markup quirks are worth knowing: every vacancy page also renders a "More jobs like this" carousel whose `.position-type` nodes describe *other* postings, so the adapter reads the location only from the page header, and the header format is `<contract> / <location>` where the location itself may contain slashes, so only the first separator is split.
+
+Public `Notion` vacancy pages are read through Notion's `loadPageChunk` endpoint, the same public API the browser calls, because the HTML those URLs serve is an empty JavaScript shell. Notion offers no way to enumerate a workspace's public pages — its search endpoint returns nothing without membership and the parent block of a shared page is normally private — so this source is seeded with explicit `page_urls` rather than crawled. Each entry may be a plain URL or a hash with `mirror_of` pointing at the same vacancy on the company's own site; when set, the site URL becomes the canonical identity so the two sources collapse into one job while the Notion page stays the apply link.
 
 `Lever` also has one important optimization: the adapter now applies the active profile union policy against the board payload before materializing a candidate. That keeps strong and borderline matches for any configured profile, while avoiding obvious generic roles that do not fit any active radar.
 

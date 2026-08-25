@@ -5,6 +5,40 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-08-25 - Read public Notion job pages through Notion's public page API
+
+**Decision:** Added a generic `notion_public_pages` adapter that resolves vacancies published as
+public Notion pages, seeded with the GoGloby Rails role. `JobDiscovery::Fetcher` gained a `post`
+method so the call reuses the existing throttling, retry and backoff policy.
+
+**Why:** Notion serves those URLs as an empty JavaScript shell ("JavaScript must be enabled"), so
+HTML parsing is useless, but the public `loadPageChunk` endpoint returns the full block tree with
+no authentication for a page shared with public read access, including title, body and timestamps.
+
+**Discovery is seeded, not crawled:** Notion exposes no enumeration path for a workspace's public
+pages. The workspace search endpoint returns zero results without membership, the shared page's
+parent block is private, `gogloby.notion.site/sitemap.xml` is Notion's own marketing sitemap, and
+none of the eight vacancies on gogloby.com link to Notion. So the source takes explicit `page_urls`.
+
+**Dedupe:** the requested page is the same vacancy already discovered on gogloby.com, and the
+fingerprint is built from company, title, canonical host and external id, so it would have been
+imported twice — breaking the product's "zero duplicates" promise. A `page_urls` entry may now
+carry `mirror_of`; when present the origin site URL supplies the canonical URL and external id,
+while the Notion page remains the apply link. Verified live: both sources now yield an identical
+fingerprint.
+
+**Tradeoffs accepted:** `loadPageChunk` is an internal-but-public API and could change shape; the
+adapter fails soft on unparseable payloads. New Notion vacancies must be added to `page_urls` by
+hand, which is acceptable for a source that cannot be enumerated at all.
+
+**Verification:** Three adapter tests, two new Fetcher tests for the POST path, and a live smoke
+that classified the requested Rails role as strong with the correct date and description.
+
+**Refs:** app/services/job_discovery/adapters/notion_public_pages_adapter.rb,
+app/services/job_discovery/fetcher.rb, app/services/job_sources/catalog.rb.
+
+---
+
 ## 2026-08-25 - Add native GoGloby discovery
 
 **Decision:** Added a native `GoGloby` adapter driven by the site's dedicated `jobs-sitemap.xml`

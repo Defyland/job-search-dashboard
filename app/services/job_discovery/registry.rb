@@ -13,6 +13,7 @@ module JobDiscovery
       "lever_company_boards" => JobDiscovery::Adapters::LeverCompanyBoardsAdapter,
       "loxo_job_board" => JobDiscovery::Adapters::LoxoJobBoardAdapter,
       "luflox_positions" => JobDiscovery::Adapters::LufloxPositionsAdapter,
+      "notion_public_pages" => JobDiscovery::Adapters::NotionPublicPagesAdapter,
       "programathor_remote_senior" => JobDiscovery::Adapters::ProgramathorRemoteSeniorAdapter,
       "quickin_company_boards" => JobDiscovery::Adapters::QuickinCompanyBoardsAdapter,
       "recrutei_company_boards" => JobDiscovery::Adapters::RecruteiCompanyBoardsAdapter,

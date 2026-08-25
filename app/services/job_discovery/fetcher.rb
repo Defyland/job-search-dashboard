@@ -54,7 +54,7 @@ module JobDiscovery
       raise ArgumentError, "redirect limit reached" if limit <= 0
 
       uri = URI.parse(url)
-      response = resilient_response(uri, headers)
+      response = resilient_response(uri, headers, body: nil)
       status = response.code.to_i
 
       case status
@@ -67,8 +67,20 @@ module JobDiscovery
       end
     end
 
+    # Some public endpoints only answer to POST (for example Notion's
+    # `loadPageChunk`), so this shares the same throttling, retry and
+    # backoff behaviour as `call` instead of opening a bare connection.
+    def post(url, body:, headers: {})
+      uri = URI.parse(url)
+      response = resilient_response(uri, { "Content-Type" => "application/json" }.merge(headers), body:)
+      status = response.code.to_i
+      return response.body if status.between?(200, 299)
+
+      raise RequestError.new("request failed: #{url} -> #{status}", code: status)
+    end
+
     private
-      def resilient_response(uri, headers)
+      def resilient_response(uri, headers, body: nil)
         attempt = 0
 
         loop do
@@ -76,7 +88,7 @@ module JobDiscovery
           throttle!(uri.host)
 
           begin
-            response = @request_runner.call(uri, headers)
+            response = @request_runner.call(uri, headers, body)
           rescue *RETRYABLE_ERRORS => error
             raise error if attempt > @max_retries
 
@@ -132,11 +144,12 @@ module JobDiscovery
         nil
       end
 
-      def perform_request(uri, headers)
+      def perform_request(uri, headers, body = nil)
         Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https", read_timeout: @read_timeout, open_timeout: @open_timeout) do |http|
-          request = Net::HTTP::Get.new(uri)
+          request = body.nil? ? Net::HTTP::Get.new(uri) : Net::HTTP::Post.new(uri)
           request["User-Agent"] = ENV.fetch("SEARCH_USER_AGENT", USER_AGENT)
           headers.each { |key, value| request[key] = value }
+          request.body = body unless body.nil?
           http.request(request)
         end
       end

@@ -346,6 +346,26 @@ module JobSources
         }
       },
       {
+        name: "GoGloby Notion",
+        slug: "gogloby-notion",
+        source_kind: :company,
+        base_url: "https://gogloby.notion.site",
+        host: "gogloby.notion.site",
+        priority: 26,
+        adapter_key: "notion_public_pages",
+        supports_backfill: true,
+        scan_window_days: 20,
+        settings: {
+          company_name: "GoGloby",
+          page_urls: [
+            {
+              url: "https://gogloby.notion.site/Senior-Full-Stack-Ruby-on-Rails-Developer-3ad2af3d743680ac8f29ec22df48b623",
+              mirror_of: "https://gogloby.com/jobs/senior-full-stack-ruby-on-rails-developer"
+            }
+          ]
+        }
+      },
+      {
         name: "We Work Remotely",
         slug: "weworkremotely",
         source_kind: :platform,

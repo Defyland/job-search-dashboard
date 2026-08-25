@@ -10,15 +10,16 @@ class JobDiscovery::FetcherTest < ActiveSupport::TestCase
   # Returns each scripted step in order. A step that is an exception class is raised,
   # simulating a network error; anything else is returned as the HTTP response.
   class ScriptedRunner
-    attr_reader :calls
+    attr_reader :calls, :last_body
 
     def initialize(steps)
       @steps = steps
       @calls = 0
     end
 
-    def call(_uri, _headers)
+    def call(_uri, _headers, body = nil)
       @calls += 1
+      @last_body = body
       step = @steps.shift
       raise step if step.is_a?(Class) && step <= Exception
 
@@ -137,5 +138,31 @@ class JobDiscovery::FetcherTest < ActiveSupport::TestCase
     fetcher.call("https://example.com/two")
 
     assert_equal [ 0.4 ], sleeps
+  end
+
+  test "post sends a JSON body and reuses the retry policy" do
+    sleeps = []
+    fetcher, runner = build_fetcher(
+      [ FakeResponse.new(503, "busy"), FakeResponse.new(200, "{\"ok\":true}") ],
+      sleeps:
+    )
+
+    body = fetcher.post("https://example.com/api/v3/loadPageChunk", body: %({"pageId":"abc"}))
+
+    assert_equal "{\"ok\":true}", body
+    assert_equal 2, runner.calls
+    assert_equal %({"pageId":"abc"}), runner.last_body
+    assert_equal [ 0.5 ], sleeps
+  end
+
+  test "post raises on a non-retryable error status" do
+    sleeps = []
+    fetcher, _runner = build_fetcher([ FakeResponse.new(403, "denied") ], sleeps:)
+
+    error = assert_raises(JobDiscovery::Fetcher::RequestError) do
+      fetcher.post("https://example.com/api/v3/syncRecordValues", body: "{}")
+    end
+
+    assert_equal 403, error.code
   end
 end

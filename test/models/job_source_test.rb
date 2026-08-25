@@ -364,6 +364,22 @@ class JobSourceTest < ActiveSupport::TestCase
     assert_equal 25, gogloby.settings["max_jobs"]
   end
 
+  test "seeds the GoGloby Notion mirror with an origin-site pointer" do
+    JobSources::Catalog.seed!
+
+    notion = JobSource.find_by!(slug: "gogloby-notion")
+
+    assert notion.supports_backfill?
+    assert_equal "notion_public_pages", notion.adapter_key
+    assert_equal "company", notion.source_kind
+    assert_not notion.codex_fallback_enabled?
+    assert_equal "GoGloby", notion.settings["company_name"]
+
+    entry = notion.settings["page_urls"].first
+    assert_equal "https://gogloby.notion.site/Senior-Full-Stack-Ruby-on-Rails-Developer-3ad2af3d743680ac8f29ec22df48b623", entry["url"]
+    assert_equal "https://gogloby.com/jobs/senior-full-stack-ruby-on-rails-developer", entry["mirror_of"]
+  end
+
   test "seeds stack-specific fallback job boards" do
     JobSources::Catalog.seed!
 
