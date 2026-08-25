@@ -5,6 +5,33 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-08-25 - Register JobLeads Portugal as an assisted source
+
+**Decision:** Registered `JobLeads Portugal` (`/pt/jobs?filter_by_remote=remote`) as a Codex
+fallback aggregator instead of writing a native adapter, and routed it through the search index
+like the other assisted Portugal sources.
+
+**Why:** The listing page does embed a machine-readable Nuxt payload with title, company, salary,
+location and `validFrom`, so a native adapter was technically possible. Four findings ruled it out:
+repeated fetches from the Rails worker returned Cloudflare 503s, the `filter_by_date` filter was
+ignored server-side, the returned set was overwhelmingly stale (median ~237 days, only 1 of 25
+inside a 20-day window, and 1 of 10 policy matches), and detail pages carry no external apply link
+because JobLeads gates the application behind its own login.
+
+**Tradeoffs accepted:** Discovery through this source needs a Codex pass to confirm recency and to
+find the original posting, which is slower than a native scan. In exchange the radar avoids
+ingesting long-expired vacancies whose only application path is a JobLeads account. If they ever
+expose a dated feed or an external apply URL, the payload shape is already understood and a native
+adapter becomes cheap to add.
+
+**Verification:** Catalog test for the new source, plus live probes of the listing page, a detail
+page, and the date-filtered variants through the project's own HTTP client.
+
+**Refs:** app/services/job_sources/catalog.rb,
+app/services/job_discovery/search_index/query_builder.rb.
+
+---
+
 ## 2026-08-22 - Add We Work Remotely natively; Wellfound and Job Board Search assisted
 
 **Decision:** Added a native `We Work Remotely` adapter over its public category RSS feeds, and

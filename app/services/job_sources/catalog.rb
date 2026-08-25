@@ -1130,6 +1130,30 @@ module JobSources
         }
       },
       {
+        name: "JobLeads Portugal",
+        slug: "jobleads-portugal",
+        source_kind: :aggregator,
+        base_url: "https://www.jobleads.com/pt/jobs?filter_by_remote=remote",
+        host: "jobleads.com",
+        priority: 44,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: "Agregador com listagem remota de Portugal atras de desafio Cloudflare (503 em requisicoes repetidas) e sem link externo de candidatura; o payload publico traz sobretudo vagas antigas, entao usar Codex fallback para confirmar recencia e localizar o anuncio original antes da ingestao.",
+        scan_window_days: 20,
+        settings: {
+          seed_urls: [
+            "https://www.jobleads.com/pt/jobs?filter_by_remote=remote"
+          ],
+          search_hosts: [ "www.jobleads.com", "jobleads.com" ],
+          search_paths: [ "/pt/jobs", "/pt/job" ],
+          regions: [ "portugal", "remote" ],
+          default_location: "Portugal",
+          location_terms: PORTUGAL_LOCATION_TERMS,
+          seed_queries: PORTUGAL_SEED_QUERIES
+        }
+      },
+      {
         name: "Wellfound (AngelList Talent)",
         slug: "wellfound",
         source_kind: :platform,

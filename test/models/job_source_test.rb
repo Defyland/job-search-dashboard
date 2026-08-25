@@ -335,6 +335,22 @@ class JobSourceTest < ActiveSupport::TestCase
     assert_match(/diretorio de job boards/i, job_board_search.codex_fallback_reason)
   end
 
+  test "seeds JobLeads Portugal as an assisted Portugal-focused aggregator" do
+    JobSources::Catalog.seed!
+
+    jobleads = JobSource.find_by!(slug: "jobleads-portugal")
+
+    assert jobleads.codex_fallback_enabled?
+    assert_equal "manual_only", jobleads.adapter_key
+    assert_not jobleads.supports_backfill?
+    assert_equal "aggregator", jobleads.source_kind
+    assert_includes jobleads.settings["seed_urls"], "https://www.jobleads.com/pt/jobs?filter_by_remote=remote"
+    assert_includes jobleads.settings["regions"], "portugal"
+    assert_equal "Portugal", jobleads.settings["default_location"]
+    assert_match(/cloudflare/i, jobleads.codex_fallback_reason)
+    assert_match(/recencia/i, jobleads.codex_fallback_reason)
+  end
+
   test "seeds stack-specific fallback job boards" do
     JobSources::Catalog.seed!
 

@@ -68,6 +68,8 @@ Portugal coverage is intentionally broad in Codex fallback mode: local tech port
 
 `We Work Remotely` publishes its titles as `Company: Role`, so the adapter splits the company prefix before the policy classifies the role; it also honours `expires_at`, keeps the canonical link on `weworkremotely.com` as the attribution their feed terms ask for, and reads the engineering category feeds configured in `feed_urls`. `Wellfound` (the current home of `angel.co`/AngelList Talent) and `Job Board Search` are assisted instead of native: both answer the Rails worker with a Cloudflare challenge. `Job Board Search` is also a directory of boards rather than a source of vacancies, so its fallback role is to surface new stack-specific boards worth promoting into this catalog, never to ingest listings directly.
 
+`JobLeads Portugal` is assisted for a different reason: its remote listing does embed a readable Nuxt payload, but repeated requests from the Rails worker start returning Cloudflare 503s, the `filter_by_date` parameter is ignored server-side, the returned set skews heavily stale (median around 237 days old, with a single posting inside a 20-day window), and detail pages expose no external apply link — they gate the application behind a JobLeads login. The fallback role is therefore to confirm recency and locate the original posting before anything is ingested.
+
 `Lever` also has one important optimization: the adapter now applies the active profile union policy against the board payload before materializing a candidate. That keeps strong and borderline matches for any configured profile, while avoiding obvious generic roles that do not fit any active radar.
 
 ## Main Features
