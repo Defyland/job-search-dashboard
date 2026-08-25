@@ -331,6 +331,21 @@ module JobSources
       { name: "Remotive", slug: "remotive", source_kind: :platform, base_url: "https://remotive.com", host: "remotive.com", priority: 25, adapter_key: "remotive_remote_jobs", supports_backfill: true, scan_window_days: 20 },
       { name: "Himalayas", slug: "himalayas", source_kind: :platform, base_url: "https://himalayas.app", host: "himalayas.app", priority: 25, adapter_key: "himalayas_jobs_api", supports_backfill: true, scan_window_days: 20 },
       {
+        name: "GoGloby",
+        slug: "gogloby",
+        source_kind: :platform,
+        base_url: "https://gogloby.com/jobs/",
+        host: "gogloby.com",
+        priority: 24,
+        adapter_key: "gogloby_jobs_sitemap",
+        supports_backfill: true,
+        scan_window_days: 20,
+        settings: {
+          sitemap_url: "https://gogloby.com/jobs-sitemap.xml",
+          max_jobs: 25
+        }
+      },
+      {
         name: "We Work Remotely",
         slug: "weworkremotely",
         source_kind: :platform,

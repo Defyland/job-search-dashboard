@@ -351,6 +351,19 @@ class JobSourceTest < ActiveSupport::TestCase
     assert_match(/recencia/i, jobleads.codex_fallback_reason)
   end
 
+  test "seeds GoGloby as a native sitemap-driven source" do
+    JobSources::Catalog.seed!
+
+    gogloby = JobSource.find_by!(slug: "gogloby")
+
+    assert gogloby.supports_backfill?
+    assert_equal "gogloby_jobs_sitemap", gogloby.adapter_key
+    assert_equal "platform", gogloby.source_kind
+    assert_not gogloby.codex_fallback_enabled?
+    assert_equal "https://gogloby.com/jobs-sitemap.xml", gogloby.settings["sitemap_url"]
+    assert_equal 25, gogloby.settings["max_jobs"]
+  end
+
   test "seeds stack-specific fallback job boards" do
     JobSources::Catalog.seed!
 

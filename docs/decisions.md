@@ -5,6 +5,36 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-08-25 - Add native GoGloby discovery
+
+**Decision:** Added a native `GoGloby` adapter driven by the site's dedicated `jobs-sitemap.xml`
+and its server-rendered vacancy pages. The canonical vacancy URL doubles as the apply link.
+
+**Why:** GoGloby exposes a jobs-only sitemap with per-vacancy `lastmod`, allows crawling in
+`robots.txt`, and answers the Rails worker without any challenge. The board is small and recent
+(8 live roles, all within weeks), so a bounded native scan is cheap and the shared policy can
+classify the roles directly.
+
+**Tradeoffs accepted:** Applications are submitted through an on-page WordPress form, so there is
+no external ATS link to canonicalize to; the vacancy URL is the applyable destination. The board
+is small enough that `max_jobs` mostly guards against future growth rather than current volume.
+Vacancy slugs do not always match the current title (`/jobs/ios-developer` now serves a Senior
+Full Stack AI Engineer role), so titles are read from the page instead of the URL.
+
+**Two markup traps found during live verification:** every vacancy page renders a "More jobs like
+this" carousel whose `.position-type` nodes belong to *other* postings, which made a hybrid San
+Francisco role report itself as LATAM remote; the location is now read only from the page header.
+And the header reads `<contract> / <location>` where the location may itself contain a slash
+(`4 days/week`), so only the first separator is split. Both are covered by regression tests.
+
+**Verification:** Three adapter tests plus a live smoke that returned 5 vacancies over 9 requests,
+with the requested Rails role classified strong and the hybrid role correctly rejected as non-remote.
+
+**Refs:** app/services/job_discovery/adapters/gogloby_jobs_sitemap_adapter.rb,
+app/services/job_discovery/registry.rb, app/services/job_sources/catalog.rb.
+
+---
+
 ## 2026-08-25 - Register JobLeads Portugal as an assisted source
 
 **Decision:** Registered `JobLeads Portugal` (`/pt/jobs?filter_by_remote=remote`) as a Codex

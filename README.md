@@ -53,6 +53,7 @@ What Rails currently discovers by itself:
 - `RailsFullstack` via its SSR remote collection, with sitemap/`JobPosting` fallback
 - `Remotive` via the public remote jobs API
 - `Himalayas` via the public jobs API
+- `GoGloby` via its dedicated jobs sitemap and SSR vacancy pages
 - `We Work Remotely` via its public category RSS feeds
 - `beBee` via its public BR job search pages (profile-driven queries and remote
   filter configured in the source settings)
@@ -69,6 +70,8 @@ Portugal coverage is intentionally broad in Codex fallback mode: local tech port
 `We Work Remotely` publishes its titles as `Company: Role`, so the adapter splits the company prefix before the policy classifies the role; it also honours `expires_at`, keeps the canonical link on `weworkremotely.com` as the attribution their feed terms ask for, and reads the engineering category feeds configured in `feed_urls`. `Wellfound` (the current home of `angel.co`/AngelList Talent) and `Job Board Search` are assisted instead of native: both answer the Rails worker with a Cloudflare challenge. `Job Board Search` is also a directory of boards rather than a source of vacancies, so its fallback role is to surface new stack-specific boards worth promoting into this catalog, never to ingest listings directly.
 
 `JobLeads Portugal` is assisted for a different reason: its remote listing does embed a readable Nuxt payload, but repeated requests from the Rails worker start returning Cloudflare 503s, the `filter_by_date` parameter is ignored server-side, the returned set skews heavily stale (median around 237 days old, with a single posting inside a 20-day window), and detail pages expose no external apply link — they gate the application behind a JobLeads login. The fallback role is therefore to confirm recency and locate the original posting before anything is ingested.
+
+`GoGloby` is a small curated board (single digits of open roles) discovered through `jobs-sitemap.xml`; recency comes from the sitemap `lastmod` plus each page's `article:modified_time`, and the canonical vacancy URL is also the apply link because applications go through an on-page form rather than an external ATS. Two of its markup quirks are worth knowing: every vacancy page also renders a "More jobs like this" carousel whose `.position-type` nodes describe *other* postings, so the adapter reads the location only from the page header, and the header format is `<contract> / <location>` where the location itself may contain slashes, so only the first separator is split.
 
 `Lever` also has one important optimization: the adapter now applies the active profile union policy against the board payload before materializing a candidate. That keeps strong and borderline matches for any configured profile, while avoiding obvious generic roles that do not fit any active radar.
 

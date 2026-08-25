@@ -6,6 +6,7 @@ module JobDiscovery
       "coodesh_jobs_sitemap" => JobDiscovery::Adapters::CoodeshJobsSitemapAdapter,
       "gupy_company_boards" => JobDiscovery::Adapters::GupyCompanyBoardsAdapter,
       "greenhouse_boards_api" => JobDiscovery::Adapters::GreenhouseBoardsApiAdapter,
+      "gogloby_jobs_sitemap" => JobDiscovery::Adapters::GoglobyJobsSitemapAdapter,
       "himalayas_jobs_api" => JobDiscovery::Adapters::HimalayasJobsApiAdapter,
       "inhire_career_pages" => JobDiscovery::Adapters::InhireCareerPagesAdapter,
       "jobtarget_hosted_apply" => JobDiscovery::Adapters::JobtargetHostedApplyAdapter,
