@@ -50,10 +50,14 @@ module JobDiscovery
       @last_request_at = {}
     end
 
-    def call(url, limit: 5, headers: {})
+    # `allowed_hosts` pins every hop of a redirect chain to a caller-approved
+    # set. Validating only the first URL is not enough: a third-party payload
+    # can point at an allowed host that immediately redirects somewhere else.
+    def call(url, limit: 5, headers: {}, allowed_hosts: nil)
       raise ArgumentError, "redirect limit reached" if limit <= 0
 
       uri = URI.parse(url)
+      ensure_allowed_host!(uri, allowed_hosts)
       response = resilient_response(uri, headers, body: nil)
       status = response.code.to_i
 
@@ -61,7 +65,7 @@ module JobDiscovery
       when 200..299
         response.body
       when 300..399
-        follow_redirect(url, response, limit:, headers:)
+        follow_redirect(url, response, limit:, headers:, allowed_hosts:)
       else
         raise RequestError.new("request failed: #{url} -> #{status}", code: status)
       end
@@ -105,11 +109,21 @@ module JobDiscovery
         end
       end
 
-      def follow_redirect(url, response, limit:, headers:)
+      def follow_redirect(url, response, limit:, headers:, allowed_hosts: nil)
         location = response["location"].to_s
         raise RequestError.new("redirect without location: #{url}", code: response.code.to_i) if location.blank?
 
-        call(URI.join(url, location).to_s, limit: limit - 1, headers:)
+        call(URI.join(url, location).to_s, limit: limit - 1, headers:, allowed_hosts:)
+      end
+
+      def ensure_allowed_host!(uri, allowed_hosts)
+        return if allowed_hosts.nil?
+
+        host = uri.host.to_s.downcase.sub(/\Awww\./, "")
+        allowed = Array(allowed_hosts).map { |value| value.to_s.downcase.sub(/\Awww\./, "") }
+        return if allowed.include?(host)
+
+        raise RequestError.new("host not allowed: #{uri}", code: nil)
       end
 
       # Keep requests to the same host spaced out with a little jitter so a single scan does not

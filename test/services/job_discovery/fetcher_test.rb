@@ -165,4 +165,47 @@ class JobDiscovery::FetcherTest < ActiveSupport::TestCase
 
     assert_equal 403, error.code
   end
+
+  test "allowed_hosts pins every hop of a redirect chain" do
+    sleeps = []
+    fetcher, runner = build_fetcher(
+      [ FakeResponse.new(302, "", { "location" => "https://evil.example/steal" }) ],
+      sleeps:
+    )
+
+    error = assert_raises(JobDiscovery::Fetcher::RequestError) do
+      fetcher.call("https://board.example/jobs/1", allowed_hosts: [ "board.example" ])
+    end
+
+    assert_match(/host not allowed/, error.message)
+    assert_equal 1, runner.calls, "the off-host hop must never be requested"
+  end
+
+  test "allowed_hosts still permits a same-host redirect" do
+    sleeps = []
+    fetcher, runner = build_fetcher(
+      [
+        FakeResponse.new(302, "", { "location" => "https://board.example/jobs/final" }),
+        FakeResponse.new(200, "body")
+      ],
+      sleeps:
+    )
+
+    assert_equal "body", fetcher.call("https://board.example/jobs/1", allowed_hosts: [ "board.example" ])
+    assert_equal 2, runner.calls
+  end
+
+  test "without allowed_hosts the redirect behaviour is unchanged" do
+    sleeps = []
+    fetcher, runner = build_fetcher(
+      [
+        FakeResponse.new(302, "", { "location" => "https://other.example/x" }),
+        FakeResponse.new(200, "ok")
+      ],
+      sleeps:
+    )
+
+    assert_equal "ok", fetcher.call("https://board.example/jobs/1")
+    assert_equal 2, runner.calls
+  end
 end

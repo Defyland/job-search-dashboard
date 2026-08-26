@@ -5,6 +5,39 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-08-26 - Close the remaining review findings: redirect pinning, JSON parsing, EU query hosts
+
+**Decision:** Closed the three findings still open after the previous round.
+
+**Redirect SSRF (real gap):** the AI adapter validated the detail URL's host, but `Fetcher#call`
+followed redirects to any host, so an allowed URL that immediately redirected elsewhere still
+reached an arbitrary target. `call` now accepts `allowed_hosts` and re-checks *every hop*; the AI
+adapter passes its own host. Adapters that do not opt in are unaffected, and `html_document` only
+forwards the argument when a caller asks for pinning, so existing fetchers keep their signature.
+Verified against a live redirect: `https://example.com/` was refused mid-chain.
+
+**Unguarded `JSON.parse`:** a malformed or HTML page (exactly what the Vercel checkpoint returns)
+raised mid-scan and discarded rows already collected. Parsing is now guarded, logs the failure and
+ends the scan, keeping the pages that did parse.
+
+**EU hosts in the search index:** `QueryBuilder::TARGETS` still listed only the primary Greenhouse
+and Lever hosts, so the site-scoped queries never reached EU boards even after the classifier and
+adapters learned those hosts. The three EU hosts are now seeded there too.
+
+**Still UNVERIFIED:** Workable, Recruitee and Personio boards appear in the harvested company
+lists and remain ignored by the classifier. The Workable adapter reads a global feed instead of
+per-company boards, so supporting them is a design change rather than a host addition.
+
+**Verification:** 308 tests / 2532 assertions green, RuboCop clean, Zeitwerk ok, plus a live
+redirect probe. Three new Fetcher tests cover the off-host hop, the same-host hop and the
+unpinned default.
+
+**Refs:** app/services/job_discovery/fetcher.rb, app/services/job_discovery/adapters/base.rb,
+app/services/job_discovery/adapters/artificialintelligencejobs_api_adapter.rb,
+app/services/job_discovery/search_index/query_builder.rb.
+
+---
+
 ## 2026-08-26 - Close the review findings on the AI jobs adapter and ATS host parity
 
 **Decision:** Fixed every remaining item raised by the DeepSeek/Grok review, each reproduced on

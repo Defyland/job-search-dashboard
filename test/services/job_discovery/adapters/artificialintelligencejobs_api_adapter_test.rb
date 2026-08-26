@@ -11,7 +11,7 @@ class JobDiscovery::Adapters::ArtificialintelligencejobsApiAdapterTest < ActiveS
       @detail_urls = []
     end
 
-    def call(url, limit: 5, headers: {})
+    def call(url, limit: 5, headers: {}, allowed_hosts: nil)
       unless url.include?("/api/jobs")
         @detail_urls << url
         raise JobDiscovery::Fetcher::RequestError.new("detail unavailable", code: 500) if @detail_body == :raise
@@ -263,6 +263,22 @@ class JobDiscovery::Adapters::ArtificialintelligencejobsApiAdapterTest < ActiveS
 
       assert_not_includes description, "window.secret"
       assert_operator description.length, :<=, JobDiscovery::Adapters::ArtificialintelligencejobsApiAdapter::MAX_DESCRIPTION_CHARS
+    end
+  end
+
+  test "a malformed page ends the scan without losing rows already collected" do
+    source_scan = build_source_scan(max_pages: 3, page_size: 2)
+    pages = [
+      { "jobs" => [ api_job("a"), api_job("b") ] }.to_json,
+      "<html>not json</html>"
+    ]
+    fetcher = FakeFetcher.new(pages)
+    adapter = JobDiscovery::Adapters::ArtificialintelligencejobsApiAdapter.new(fetcher:)
+
+    travel_to Time.zone.parse("2026-08-26 12:00:00") do
+      candidates = adapter.scan(source_scan:, window_days: 20)
+
+      assert_equal 2, candidates.size, "rows from the good page must survive"
     end
   end
 

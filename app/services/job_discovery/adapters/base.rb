@@ -14,8 +14,13 @@ module JobDiscovery
       private
         attr_reader :fetcher, :policy
 
-        def html_document(url)
-          Nokogiri::HTML(fetcher.call(url))
+        # `allowed_hosts` is forwarded so adapters fetching URLs that came from
+        # a third-party payload can pin every redirect hop to a known host.
+        def html_document(url, allowed_hosts: nil)
+          # Only adapters that need pinning pay for the extra argument, so
+          # fetchers that predate it keep working unchanged.
+          body = allowed_hosts ? fetcher.call(url, allowed_hosts:) : fetcher.call(url)
+          Nokogiri::HTML(body)
         end
 
         def absolute_url(base_url, href)

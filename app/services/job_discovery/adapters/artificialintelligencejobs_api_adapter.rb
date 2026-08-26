@@ -35,7 +35,10 @@ module JobDiscovery
 
         max_pages.times do |page|
           source_scan.record_page!
-          payload = JSON.parse(fetcher.call(page_url(page_size:, offset: page * page_size, settings:)))
+          # A malformed page must not abort a scan that already collected rows.
+          payload = parsed_page(page_url(page_size:, offset: page * page_size, settings:))
+          break if payload.nil?
+
           jobs = Array(payload["jobs"])
           break if jobs.empty?
 
@@ -117,6 +120,14 @@ module JobDiscovery
           [ job["category"], job["level"], job["region"], job["salary"], location ].compact_blank.join(" | ")
         end
 
+        def parsed_page(url)
+          payload = JSON.parse(fetcher.call(url, allowed_hosts: [ API_HOST ]))
+          payload.is_a?(Hash) ? payload : nil
+        rescue JSON::ParserError => error
+          Rails.logger.warn("[artificialintelligencejobs] unparseable page #{url}: #{error.message}")
+          nil
+        end
+
         # `candidates_seen` on the scan only counts rows that survived the
         # pre-filter, which makes an aggregator look silent when it is simply
         # returning roles outside the profile. Recording rows offered by the API
@@ -139,7 +150,9 @@ module JobDiscovery
         def detail_description(board_url)
           return unless detail_fetchable?(board_url)
 
-          document = html_document(board_url)
+          # Pin the redirect chain too: an allowed URL that redirects elsewhere
+          # would otherwise still reach an arbitrary host.
+          document = html_document(board_url, allowed_hosts: [ API_HOST ])
           document.css("script, style, noscript").each(&:remove)
           document.at_css("body")&.text.to_s.squish.presence
         rescue JobDiscovery::Fetcher::RequestError, Nokogiri::SyntaxError => error

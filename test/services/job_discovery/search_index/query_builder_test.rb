@@ -278,4 +278,12 @@ class JobDiscovery::SearchIndex::QueryBuilderTest < ActiveSupport::TestCase
     assert_includes react_query, '"senior react"'
     refute_includes react_query, '"desenvolvedor react native"'
   end
+
+  test "regional ATS hosts are seeded alongside their primary hosts" do
+    hosts = JobDiscovery::SearchIndex::QueryBuilder::TARGETS.map { |target| target[:host] }
+
+    assert_includes hosts, "boards.eu.greenhouse.io"
+    assert_includes hosts, "job-boards.eu.greenhouse.io"
+    assert_includes hosts, "jobs.eu.lever.co"
+  end
 end
