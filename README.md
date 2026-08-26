@@ -55,7 +55,7 @@ What Rails currently discovers by itself:
 - `Himalayas` via the public jobs API
 - `GoGloby` via its dedicated jobs sitemap and SSR vacancy pages
 - public `Notion` job pages via Notion's own public page API
-- `Artificial Intelligence Jobs` via its documented public jobs API
+- `Artificial Intelligence Jobs` (assisted since 2026-08-26: the host now returns `403` behind a Vercel checkpoint)
 - `We Work Remotely` via its public category RSS feeds
 - `beBee` via its public BR job search pages (profile-driven queries and remote
   filter configured in the source settings)
@@ -77,7 +77,7 @@ Portugal coverage is intentionally broad in Codex fallback mode: local tech port
 
 Public `Notion` vacancy pages are read through Notion's `loadPageChunk` endpoint, the same public API the browser calls, because the HTML those URLs serve is an empty JavaScript shell. Notion offers no way to enumerate a workspace's public pages — its search endpoint returns nothing without membership and the parent block of a shared page is normally private — so this source is seeded with explicit `page_urls` rather than crawled. Each entry may be a plain URL or a hash with `mirror_of` pointing at the same vacancy on the company's own site; when set, the site URL becomes the canonical identity so the two sources collapse into one job while the Notion page stays the apply link.
 
-`Artificial Intelligence Jobs` is read through its documented public API (`/api/jobs`, see their `/developers` page), filtered to remote roles. Two behaviours are deliberate: the candidate canonicalizes to the employer's own `apply_url` when the board exposes one, so the same vacancy discovered directly through Greenhouse/Lever/Ashby collapses into a single job; and because the list API carries no technology fields, titles that pass the pre-filter earn a bounded number of detail-page fetches (`max_detail_pages`) so the policy has enough context to confirm a stack.
+`Artificial Intelligence Jobs` was read through its documented public API (`/api/jobs`), but since 2026-08-26 the whole host answers `403` behind a Vercel Security Checkpoint — API, vacancy pages and `robots.txt` alike, for any user agent — so the source is currently assisted. The adapter and its tests remain in the repository and `settings.native_adapter_key` records how to switch back without code changes. Its two deliberate behaviours still apply when it works: candidates canonicalize to the employer's own `apply_url` so the same vacancy found directly through Greenhouse/Lever/Ashby collapses into one job, and because the list API carries no technology fields, titles passing the pre-filter earn a bounded number of detail fetches (`max_detail_pages`) — restricted to the board's own host, so a third-party `url` cannot steer the worker elsewhere.
 
 The Google Sheets company lists (`European Tech Companies Visa Sponsorship`, `Remotive Remote Startups`, `100% Remote Hiring Companies`, `Recently Funded Startups`, `Pragmatic Engineer Companies Hiring`) are registered as assisted sources with a distinct role: they list *companies*, not vacancies. Their fallback job is to extract careers pages and promote any board running on an ATS this project already reads natively into that source's settings — which is exactly how the current Greenhouse, Lever, Ashby and SmartRecruiters board lists were expanded.
 

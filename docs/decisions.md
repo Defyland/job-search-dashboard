@@ -54,6 +54,60 @@ app/services/job_sources/catalog.rb, README.md.
 
 ---
 
+## 2026-08-26 - AI jobs board blocked; round closure and residual risks
+
+**Decision:** Flipped `artificial-intelligence-jobs` from a native adapter to an assisted
+(Codex fallback) source, and recorded the verification status of every item raised in this round.
+
+**Why the flip:** one day after the adapter shipped, the whole host began answering `403` behind a
+Vercel Security Checkpoint — `/api/jobs`, the vacancy detail pages and even `robots.txt`, for the
+project's bot user agent, a plain browser user agent and no user agent at all. A native scan can
+only fail, so the source now goes through assisted discovery. The adapter and its tests stay in
+the repository and `settings.native_adapter_key` records how to flip it back if the checkpoint is
+lifted; no code needs to change for that.
+
+**Failure mode is safe:** with the source still native, a scan raised `Fetcher::RequestError`,
+which the orchestrator catches per source-scan and reports as a failed scan (`partial` run), so a
+blocked source never aborted the whole discovery run.
+
+**Closed in this round (verified):**
+- SSRF on detail enrichment: the third-party `url` is now validated against the board host before
+  any fetch, with a regression test using a link-local address.
+- Pagination: `matched` counts rows offered by the API, not rows accepted by the policy; the scan
+  now stops on a short page or once every advertised row was seen, and tolerates a missing or
+  non-numeric `matched`.
+- `max_detail_pages: 0` is honoured literally instead of being coerced to 1.
+- Detail fetch failures are logged instead of silently swallowed; scripts/styles are stripped and
+  the description is capped at 8k characters.
+- Regional ATS hosts: EU Greenhouse and EU Lever URLs now feed autodiscovery in both the URL
+  classifier and the adapters themselves. Verified live that EU-harvested boards resolve on the
+  shared APIs (autoscout24 47 jobs, gocardless 25, octoenergy 132, contentsquare 26).
+- Re-seeding: curated board lists are merged as a union, so a catalog expansion reaches an existing
+  database instead of losing to the stored value.
+- Cost per scan: the four ATS sources total 59 boards at roughly one request each, about 24s of
+  throttle for that group at the default 0.4s interval.
+
+**UNVERIFIED / residual risks:**
+- Workable, Recruitee and Personio URLs appear in the harvested company lists but are still ignored
+  by the URL classifier, so those boards are silently dropped during search-index seeding. The
+  Workable adapter reads a global feed rather than per-company boards, so wiring them needs a
+  design decision, not a one-line host addition.
+- Whether the AI board's checkpoint is permanent or transient is unknown; it was reachable the day
+  before.
+- The Google Sheets company lists are point-in-time snapshots. `docs.google.com/robots.txt` allows
+  the document paths in use, but the sheets' own terms of reuse were not audited.
+- Recall of the shared policy against AI-heavy boards was not measured; the observation that a
+  Ruby/Rails profile accepted none of 49 AI roles is expected filtering, not a proven recall loss.
+
+**Verification:** 303 tests / 2517 assertions green, RuboCop clean over 234 files, Zeitwerk ok,
+plus live probes of the blocked host, the EU ATS boards and an end-to-end scan of harvested boards.
+
+**Refs:** app/services/job_sources/catalog.rb,
+app/services/job_discovery/adapters/artificialintelligencejobs_api_adapter.rb,
+app/services/job_discovery/adapters/{greenhouse_boards_api,lever_company_boards}_adapter.rb.
+
+---
+
 ## 2026-08-26 - Make curated ATS board lists additive on re-seed
 
 **Decision:** `JobSources::Catalog.seed!` now unions the four curated ATS board lists
