@@ -83,6 +83,32 @@ The Google Sheets company lists (`European Tech Companies Visa Sponsorship`, `Re
 
 `Lever` also has one important optimization: the adapter now applies the active profile union policy against the board payload before materializing a candidate. That keeps strong and borderline matches for any configured profile, while avoiding obvious generic roles that do not fit any active radar.
 
+## Source provenance and unverified terms
+
+Discovery only reads endpoints the sites publish for machine consumption, and each candidate keeps
+a link back to the original posting. That is an engineering guarantee, not a legal review. The
+following stay **UNVERIFIED** and must not be reported as cleared:
+
+- **Terms of service.** No ToS of any aggregator or company list in this catalog has been read or
+  approved for automated collection or redistribution. Robots directives were checked where they
+  exist, but robots is not consent.
+- **Google Sheets company lists.** `docs.google.com/robots.txt` does not grant access to
+  `/spreadsheets/`, and the sheets are third-party documents shared publicly by their authors. They
+  are registered as assisted sources precisely so a human decides what gets promoted; the app never
+  ingests vacancies from them.
+- **Licensing of harvested board lists.** Company names and ATS tokens are treated as factual
+  identifiers, but no license was reviewed for the sheets themselves.
+- **`artificialintelligencejobs.co`.** Verified on 2026-08-26: the site now answers `403` behind a
+  "Vercel Security Checkpoint" for the homepage, `robots.txt` and `/api/jobs` alike, including with
+  a browser user agent. Its `/developers` page previously documented the API and robots previously
+  allowed crawling. The adapter surfaces this as a failed scan instead of pretending the source is
+  empty. Next step: re-probe before relying on it, and move the source to Codex fallback if the
+  block persists.
+
+Next delimited step for any of the above: read the specific ToS, record the verdict here with a
+date, and only then change a source's mode. Until that happens the honest status is unverified.
+
+
 ## Main Features
 
 - Rails 8, PostgreSQL, Turbo, Stimulus, Tailwind

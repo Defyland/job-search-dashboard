@@ -388,9 +388,14 @@ class JobSourceTest < ActiveSupport::TestCase
     JobSources::Catalog.seed!
 
     ai = JobSource.find_by!(slug: "artificial-intelligence-jobs")
-    assert ai.supports_backfill?
-    assert_equal "artificialintelligencejobs_api", ai.adapter_key
     assert_equal true, ai.settings["remote_only"]
+    # The host started answering 403 behind a Vercel checkpoint, so the source
+    # is assisted; the native adapter key is retained for a later flip back.
+    assert_not ai.supports_backfill?
+    assert_equal "manual_only", ai.adapter_key
+    assert ai.codex_fallback_enabled?
+    assert_equal "artificialintelligencejobs_api", ai.settings["native_adapter_key"]
+    assert_match(/checkpoint/i, ai.codex_fallback_reason)
 
     JobSources::Catalog::COMPANY_LIST_SPECS.each do |spec|
       source = JobSource.find_by!(slug: spec.fetch(:slug))
@@ -401,6 +406,27 @@ class JobSourceTest < ActiveSupport::TestCase
       assert_includes source.settings["export_urls"].first, spec.fetch(:sheet_id)
       assert_includes source.settings["promotes_to"], "greenhouse"
       assert_match(/nao vagas/i, source.codex_fallback_reason)
+    end
+  end
+
+  test "promotes_to only names ATS sources that accept a per-company board list" do
+    JobSources::Catalog.seed!
+
+    board_list_keys = %w[board_tokens board_slugs company_slugs company_identifiers]
+
+    JobSources::Catalog::COMPANY_LIST_SPECS.each do |spec|
+      promotes_to = JobSource.find_by!(slug: spec.fetch(:slug)).settings["promotes_to"]
+
+      assert_not_includes promotes_to, "workable", "Workable is a single global feed with no per-company board setting"
+
+      promotes_to.each do |target_slug|
+        target = JobSources::Catalog.defaults.find { |s| s[:slug] == target_slug }
+        assert target, "#{target_slug} must exist in the catalog"
+
+        settings = target[:settings] || {}
+        assert board_list_keys.any? { |key| settings.key?(key.to_sym) },
+          "#{target_slug} must expose a board list setting to receive a promoted board"
+      end
     end
   end
 

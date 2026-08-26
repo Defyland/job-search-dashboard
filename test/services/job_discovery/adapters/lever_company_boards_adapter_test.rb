@@ -140,4 +140,12 @@ class JobDiscovery::Adapters::LeverCompanyBoardsAdapterTest < ActiveSupport::Tes
     assert_equal "borderline", candidates.first[:classification]
     assert_equal "borderline-react", candidates.first[:external_job_id]
   end
+
+  test "extracts company slugs from EU-hosted lever urls" do
+    adapter = JobDiscovery::Adapters::LeverCompanyBoardsAdapter.new
+
+    assert_equal "eulever", adapter.send(:extract_company_slug, "https://jobs.eu.lever.co/eulever/2")
+    assert_equal "usco", adapter.send(:extract_company_slug, "https://jobs.lever.co/usco/2")
+    assert_nil adapter.send(:extract_company_slug, "https://evil.example/usco/2")
+  end
 end

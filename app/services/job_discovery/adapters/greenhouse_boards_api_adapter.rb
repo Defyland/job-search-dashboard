@@ -4,7 +4,15 @@ module JobDiscovery
   module Adapters
     class GreenhouseBoardsApiAdapter < Base
       API_URL = "https://boards-api.greenhouse.io/v1/boards".freeze
-      HOSTS = %w[boards.greenhouse.io job-boards.greenhouse.io].freeze
+      # The board token is region-independent: `boards-api.greenhouse.io` serves
+      # EU-hosted boards too, so EU URLs already stored by the dashboard must
+      # also yield a token during autodiscovery.
+      HOSTS = %w[
+        boards.greenhouse.io
+        job-boards.greenhouse.io
+        boards.eu.greenhouse.io
+        job-boards.eu.greenhouse.io
+      ].freeze
 
       def scan(source_scan:, window_days:)
         board_tokens(source_scan).flat_map do |board_token|

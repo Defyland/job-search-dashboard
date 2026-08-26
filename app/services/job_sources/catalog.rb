@@ -100,7 +100,11 @@ module JobSources
           seed_urls: [ "#{sheet_url}/htmlview" ],
           export_urls: [ "#{sheet_url}/export?format=csv", "#{sheet_url}/gviz/tq?tqx=out:csv" ],
           regions: spec.fetch(:regions),
-          promotes_to: %w[greenhouse lever ashby smartrecruiters workable],
+          # Only ATS sources whose adapter accepts a per-company board list can
+          # receive a harvested board. Workable is scanned through a single
+          # global feed and has no per-company setting, so listing it here would
+          # promise an ingestion path that does not exist.
+          promotes_to: %w[greenhouse lever ashby smartrecruiters],
           seed_queries: [ "careers page", "open roles remote" ]
         }
       }
@@ -369,14 +373,26 @@ module JobSources
         base_url: "https://artificialintelligencejobs.co/remote-ai-jobs",
         host: "artificialintelligencejobs.co",
         priority: 26,
-        adapter_key: "artificialintelligencejobs_api",
-        supports_backfill: true,
+        # 2026-08-26: the whole host began answering 403 behind a Vercel
+        # Security Checkpoint — API, detail pages and even robots.txt, for every
+        # user agent including a plain browser one. The native adapter is kept
+        # in the registry so the source can be flipped back by editing settings
+        # once the checkpoint is lifted.
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: "Host inteiro protegido por Vercel Security Checkpoint (403 em /api/jobs, paginas de vaga e robots.txt, com qualquer user agent); usar Codex fallback e preferir o ATS do empregador. Reverter para adapter_key artificialintelligencejobs_api quando o checkpoint cair.",
         scan_window_days: 20,
         settings: {
           remote_only: true,
           page_size: 50,
           max_pages: 4,
-          max_detail_pages: 12
+          max_detail_pages: 12,
+          seed_urls: [ "https://artificialintelligencejobs.co/remote-ai-jobs" ],
+          search_hosts: [ "artificialintelligencejobs.co" ],
+          search_paths: [ "/remote-ai-jobs" ],
+          regions: %w[global remote],
+          native_adapter_key: "artificialintelligencejobs_api"
         }
       },
       {

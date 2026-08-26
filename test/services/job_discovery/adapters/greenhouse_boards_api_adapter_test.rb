@@ -75,4 +75,15 @@ class JobDiscovery::Adapters::GreenhouseBoardsApiAdapterTest < ActiveSupport::Te
     assert_equal "Fueled", candidates.first[:company_name]
     assert_equal "5134378008", candidates.first[:external_job_id]
   end
+
+  test "extracts board tokens from EU-hosted greenhouse urls" do
+    adapter = JobDiscovery::Adapters::GreenhouseBoardsApiAdapter.new
+
+    # The search-index classifier accepts these hosts, so autodiscovery must
+    # resolve them too; the boards API itself is region-independent.
+    assert_equal "euco", adapter.send(:extract_board_token, "https://boards.eu.greenhouse.io/euco/jobs/1")
+    assert_equal "euco", adapter.send(:extract_board_token, "https://job-boards.eu.greenhouse.io/euco/jobs/1")
+    assert_equal "usco", adapter.send(:extract_board_token, "https://boards.greenhouse.io/usco/jobs/1")
+    assert_nil adapter.send(:extract_board_token, "https://evil.example/usco/jobs/1")
+  end
 end

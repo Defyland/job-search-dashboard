@@ -2,7 +2,9 @@ module JobDiscovery
   module Adapters
     class LeverCompanyBoardsAdapter < Base
       API_URL = "https://api.lever.co/v0/postings".freeze
-      HOST = "jobs.lever.co".freeze
+      # `api.lever.co` resolves company slugs regardless of the region the board
+      # is served from, so EU URLs must feed autodiscovery as well.
+      HOSTS = %w[jobs.lever.co jobs.eu.lever.co].freeze
 
       def scan(source_scan:, window_days:)
         company_slugs(source_scan).flat_map do |company_slug|
@@ -77,7 +79,7 @@ module JobDiscovery
 
         def company_slugs(source_scan)
           configured = Array(source_scan.job_source.settings["company_slugs"])
-          discovered = known_hosted_urls(host_suffixes: [ HOST ]).filter_map do |url|
+          discovered = known_hosted_urls(host_suffixes: HOSTS).filter_map do |url|
             extract_company_slug(url)
           end
 
@@ -86,7 +88,7 @@ module JobDiscovery
 
         def extract_company_slug(url)
           uri = URI.parse(url)
-          return unless normalized_host(url) == HOST
+          return unless HOSTS.include?(normalized_host(url))
 
           uri.path.split("/").reject(&:blank?).first
         rescue URI::InvalidURIError

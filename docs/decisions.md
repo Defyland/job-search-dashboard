@@ -5,6 +5,55 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-08-26 - Close the review findings on the AI jobs adapter and ATS host parity
+
+**Decision:** Fixed every remaining item raised by the DeepSeek/Grok review, each reproduced on
+HEAD before being changed and locked with a regression test.
+
+**AI jobs adapter.** Five defects, all reproduced first:
+- `break if candidates.size >= payload["matched"].to_i` truncated the scan whenever `matched` was
+  absent (`nil.to_i` is 0, so the guard was always true) or non-numeric. It also compared accepted
+  candidates against rows the API offers, so a page of filtered-out roles ended the scan early.
+  Paging now tracks rows seen and only trusts a positive integer total.
+- `bounded` used `value.presence`, which drops a literal `0`, so `max_detail_pages: 0` was coerced
+  to 1 and still fetched a detail page. Numeric input is now parsed explicitly with a `floor:`.
+- The detail URL came straight from the third-party payload. A hostile `url` pointed the worker at
+  `169.254.169.254` and the response landed in the candidate description. Detail fetches are now
+  restricted to https on the board's own host.
+- `rescue StandardError` hid every detail failure. It now rescues the expected fetch/parse errors
+  and logs them, so a degraded stack signal is visible.
+- Detail text is stripped of `script`/`style` and capped at 8k chars.
+
+**ATS host parity.** The classifier accepted `boards.eu.greenhouse.io`, `job-boards.eu.greenhouse.io`
+and `jobs.eu.lever.co`, but the adapters' own `HOSTS` constants did not, so an EU URL already stored
+by the dashboard never produced a board token. Verified against the live APIs that
+`boards-api.greenhouse.io` and `api.lever.co` are region-independent (gocardless, autoscout24,
+octoenergy, blablacar, contentsquare all answered 200), so widening the host list is enough; no
+regional endpoint is needed.
+
+**Workable in `promotes_to`.** Removed. Workable is scanned through one global feed and exposes no
+per-company board setting, so promising it as a promotion target advertised an ingestion path that
+does not exist. A test now asserts every `promotes_to` entry actually owns a board-list setting.
+
+**Observability.** `candidates_seen` only counts rows that survived the pre-filter, which made a
+quiet aggregator indistinguishable from an empty one. The adapter now records `api_rows_seen`,
+`candidates_built`, `candidates_after_dedupe` and `detail_budget_remaining` in the scan metadata.
+
+**UNVERIFIED, not resolved.** No ToS was reviewed for any aggregator or company list. Verified on
+2026-08-26 that `artificialintelligencejobs.co` now returns 403 behind a Vercel security checkpoint
+for its homepage, robots.txt and API, so the source it was integrated from is currently blocked; the
+adapter surfaces that as a failed scan rather than an empty one. Documented in the README with the
+next delimited step.
+
+**Verification:** 303 tests / 2517 assertions, RuboCop clean on 234 files, Zeitwerk ok, Brakeman 0
+warnings.
+
+**Refs:** app/services/job_discovery/adapters/artificialintelligencejobs_api_adapter.rb,
+app/services/job_discovery/adapters/{greenhouse_boards_api,lever_company_boards}_adapter.rb,
+app/services/job_sources/catalog.rb, README.md.
+
+---
+
 ## 2026-08-26 - Make curated ATS board lists additive on re-seed
 
 **Decision:** `JobSources::Catalog.seed!` now unions the four curated ATS board lists
