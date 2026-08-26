@@ -1698,10 +1698,16 @@ module JobSources
       JobDiscovery::Registry.supports?(adapter_key)
     end
 
+    # Curated ATS board lists grow every time a new company list is harvested.
+    # They are merged as a union so a catalog expansion actually reaches an
+    # existing database, instead of losing to the stored value like every other
+    # setting does.
+    ADDITIVE_SETTING_KEYS = %w[board_tokens board_slugs company_slugs company_identifiers].freeze
+
     def self.apply_defaults!(source, attributes)
       attributes.each do |key, value|
         if key.to_sym == :settings
-          source.settings = default_settings(value).deep_merge(source.settings || {})
+          source.settings = merge_settings(default_settings(value), source.settings || {})
           next
         end
 
@@ -1709,6 +1715,25 @@ module JobSources
       end
     end
     private_class_method :apply_defaults!
+
+    # Stored values still win for every scalar setting, preserving operator
+    # overrides. Only the curated board lists are unioned, keeping catalog order
+    # first and appending operator-added entries without duplicates.
+    def self.merge_settings(catalog_settings, stored_settings)
+      merged = catalog_settings.deep_merge(stored_settings)
+
+      ADDITIVE_SETTING_KEYS.each do |key|
+        catalog_values = catalog_settings[key]
+        next unless catalog_values.is_a?(Array)
+
+        stored_values = stored_settings[key]
+        stored_values = [] unless stored_values.is_a?(Array)
+        merged[key] = (catalog_values + stored_values).map(&:to_s).uniq
+      end
+
+      merged
+    end
+    private_class_method :merge_settings
 
     def self.default_settings(value)
       value.to_h.deep_stringify_keys

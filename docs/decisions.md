@@ -5,6 +5,36 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-08-26 - Make curated ATS board lists additive on re-seed
+
+**Decision:** `JobSources::Catalog.seed!` now unions the four curated ATS board lists
+(`board_tokens`, `board_slugs`, `company_slugs`, `company_identifiers`) instead of letting the
+stored value win. Every other setting keeps the previous behaviour, where an operator override
+beats the catalog default.
+
+**Why (P0 found in review):** `apply_defaults!` merged with `catalog.deep_merge(stored)`, so on a
+database that already had a row the stored array always won. Reproduced: seeding an existing row
+holding the old lists left Lever at 4 slugs and Greenhouse at 2 — none of the 50 boards harvested
+from the company lists reached it. The catalog test passed only because it started from an empty
+database, which hid the regression. `bin/predeploy` runs `dashboard:seed_sources`, so production
+would have deployed the code without ever gaining the boards.
+
+**Why only these four keys:** they are append-only inventories of employer boards, and the whole
+point of harvesting company lists is that they grow. Scalars such as `max_pages` or an edited
+`sitemap_url` stay operator-owned, so widening the rule would silently revert deliberate tuning.
+
+**Tradeoffs accepted:** a board removed from the catalog is no longer dropped from an existing
+row by re-seeding; retiring one now needs an explicit migration or operator edit. The union keeps
+catalog order first and appends operator entries, so ordering is stable across runs.
+
+**Verification:** two regression tests (existing row with a custom token, and seeding twice for
+idempotence) plus a real `dashboard:seed_sources` run against a pre-populated database, which took
+Lever 3 -> 24 and Greenhouse 1 -> 27 while preserving `operator-custom`.
+
+**Refs:** app/services/job_sources/catalog.rb, test/models/job_source_test.rb.
+
+---
+
 ## 2026-08-26 - Harvest ATS boards from company lists; add the AI jobs aggregator
 
 **Decision:** Added a native adapter for `artificialintelligencejobs.co`, registered the five

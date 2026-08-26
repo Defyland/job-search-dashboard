@@ -417,6 +417,47 @@ class JobSourceTest < ActiveSupport::TestCase
     assert_includes JobSource.find_by!(slug: "lever").settings["company_slugs"], "ciandt"
   end
 
+  test "re-seeding an existing database adds newly curated ATS boards without losing operator entries" do
+    JobSources::Catalog.seed!
+
+    # Reproduces production: the row was seeded before the catalog grew, and an
+    # operator added their own board by hand.
+    lever = JobSource.find_by!(slug: "lever")
+    lever.update!(settings: { "company_slugs" => %w[ciandt jobgether operator-custom] })
+    greenhouse = JobSource.find_by!(slug: "greenhouse")
+    greenhouse.update!(settings: { "board_tokens" => %w[rdsourcing], "max_pages" => 9 })
+
+    JobSources::Catalog.seed!
+
+    slugs = lever.reload.settings["company_slugs"]
+    catalog_slugs = JobSources::Catalog.defaults.find { |s| s[:slug] == "lever" }.dig(:settings, :company_slugs)
+
+    assert_equal catalog_slugs, slugs.first(catalog_slugs.size), "catalog boards must reach an existing row"
+    assert_includes slugs, "octoenergy"
+    assert_includes slugs, "operator-custom", "operator additions must survive"
+    assert_equal slugs.uniq, slugs
+
+    tokens = greenhouse.reload.settings["board_tokens"]
+    assert_includes tokens, "spacex"
+    assert_includes tokens, "rdsourcing"
+    assert_equal 9, greenhouse.settings["max_pages"], "scalar operator overrides still win"
+  end
+
+  test "seeding twice is idempotent for curated board lists" do
+    JobSources::Catalog.seed!
+    JobSource.find_by!(slug: "ashby").update!(settings: { "board_slugs" => %w[ruby-labs operator-board] })
+
+    JobSources::Catalog.seed!
+    first = JobSource.find_by!(slug: "ashby").settings["board_slugs"]
+    JobSources::Catalog.seed!
+    second = JobSource.find_by!(slug: "ashby").settings["board_slugs"]
+
+    assert_equal first, second
+    assert_equal second.uniq, second
+    assert_includes second, "operator-board"
+    assert_includes second, "clipboard"
+  end
+
   test "seeds stack-specific fallback job boards" do
     JobSources::Catalog.seed!
 
