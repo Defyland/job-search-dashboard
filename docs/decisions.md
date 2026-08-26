@@ -5,6 +5,45 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-08-26 - Harvest ATS boards from company lists; add the AI jobs aggregator
+
+**Decision:** Added a native adapter for `artificialintelligencejobs.co`, registered the five
+Google Sheets company lists as assisted discovery sources, widened the URL classifier to regional
+ATS hostnames, and seeded 50 live ATS boards harvested from those sheets into the existing
+Greenhouse, Lever, Ashby and SmartRecruiters sources.
+
+**Why the sheets are not job sources:** all five list *companies with careers pages*, not
+vacancies. Reading them as job boards would produce nothing. Their real value is that they contain
+136 URLs on ATS platforms this project already reads natively, so the sheets became a discovery
+input feeding the existing adapters instead of a new ingestion path.
+
+**Only live boards were seeded:** each of the 136 candidates was probed against its ATS API before
+being added. 50 answered with at least one open role (Greenhouse 25, Lever 19, Ashby 5,
+SmartRecruiters 1) totalling ~4,370 open jobs; the rest were dead tokens or empty boards and were
+dropped rather than inflating the catalog with sources that never return anything.
+
+**Classifier gap found:** the sheets exposed `boards.eu.greenhouse.io`, `job-boards.eu.greenhouse.io`,
+`jobs.eu.lever.co` and `careers.smartrecruiters.com`, which the classifier silently ignored, so
+European boards were being discarded during search-index seeding. Those hosts are now recognised.
+
+**AI board specifics:** the API returns the employer's real `apply_url`, so candidates canonicalize
+to the original ATS posting and dedupe against the same vacancy found directly. The list payload
+carries no technology fields, which made the policy reject nearly everything for lack of stack
+context; titles passing the pre-filter now earn a bounded number of detail fetches
+(`max_detail_pages`) to recover that signal.
+
+**Tradeoffs accepted:** harvested board lists are a point-in-time snapshot and will decay; boards
+that go quiet simply return nothing rather than erroring. The detail fetches add traffic, so they
+are capped and only spent on titles that already look relevant.
+
+**Verification:** four adapter tests, classifier tests for the regional hosts, catalog tests for
+the new sources and merged board lists, plus live smokes against the AI API and all four ATS APIs.
+
+**Refs:** app/services/job_discovery/adapters/artificialintelligencejobs_api_adapter.rb,
+app/services/job_discovery/search_index/url_classifier.rb, app/services/job_sources/catalog.rb.
+
+---
+
 ## 2026-08-25 - Read public Notion job pages through Notion's public page API
 
 **Decision:** Added a generic `notion_public_pages` adapter that resolves vacancies published as

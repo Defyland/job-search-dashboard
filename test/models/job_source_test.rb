@@ -93,12 +93,16 @@ class JobSourceTest < ActiveSupport::TestCase
     recrutei.reload
     smartrecruiters.reload
 
-    assert_equal %w[ciandt jobgether decilegroup toptal], source.settings["company_slugs"]
+    # Asserts the bootstrap restored the catalog list without pinning its
+    # contents: curated boards grow as new company lists are harvested.
+    catalog_lever = JobSources::Catalog.defaults.find { |s| s[:slug] == "lever" }
+    assert_equal catalog_lever.dig(:settings, :company_slugs), source.settings["company_slugs"]
+    assert_includes source.settings["company_slugs"], "ciandt"
     assert_equal %w[evtit botcity reply qintess], quickin.settings["company_slugs"]
     assert_equal 6, quickin.settings["max_pages"]
     assert_equal [ "maxxi" ], recrutei.settings["company_labels"]
     assert_equal [ "https://jobs.recrutei.com.br/maxxi/vacancy/145107-desenvolvedora-front-end-reactnextjs-senior" ], recrutei.settings["vacancy_urls"]
-    assert_equal [ "smartrecruiters" ], smartrecruiters.settings["company_identifiers"]
+    assert_includes smartrecruiters.settings["company_identifiers"], "smartrecruiters"
   end
 
   test "default catalog marks blocked public sources for codex fallback" do
@@ -378,6 +382,39 @@ class JobSourceTest < ActiveSupport::TestCase
     entry = notion.settings["page_urls"].first
     assert_equal "https://gogloby.notion.site/Senior-Full-Stack-Ruby-on-Rails-Developer-3ad2af3d743680ac8f29ec22df48b623", entry["url"]
     assert_equal "https://gogloby.com/jobs/senior-full-stack-ruby-on-rails-developer", entry["mirror_of"]
+  end
+
+  test "seeds the AI jobs aggregator and the company-list discovery sheets" do
+    JobSources::Catalog.seed!
+
+    ai = JobSource.find_by!(slug: "artificial-intelligence-jobs")
+    assert ai.supports_backfill?
+    assert_equal "artificialintelligencejobs_api", ai.adapter_key
+    assert_equal true, ai.settings["remote_only"]
+
+    JobSources::Catalog::COMPANY_LIST_SPECS.each do |spec|
+      source = JobSource.find_by!(slug: spec.fetch(:slug))
+
+      assert source.codex_fallback_enabled?, "#{source.slug} should be assisted"
+      assert_equal "manual_only", source.adapter_key
+      assert_not source.supports_backfill?
+      assert_includes source.settings["export_urls"].first, spec.fetch(:sheet_id)
+      assert_includes source.settings["promotes_to"], "greenhouse"
+      assert_match(/nao vagas/i, source.codex_fallback_reason)
+    end
+  end
+
+  test "seeds the ATS boards harvested from the company lists" do
+    JobSources::Catalog.seed!
+
+    assert_includes JobSource.find_by!(slug: "greenhouse").settings["board_tokens"], "spacex"
+    assert_includes JobSource.find_by!(slug: "lever").settings["company_slugs"], "octoenergy"
+    assert_includes JobSource.find_by!(slug: "ashby").settings["board_slugs"], "clipboard"
+    assert_includes JobSource.find_by!(slug: "smartrecruiters").settings["company_identifiers"], "ubisoft2"
+
+    # The originally seeded boards must survive the merge.
+    assert_includes JobSource.find_by!(slug: "greenhouse").settings["board_tokens"], "rdsourcing"
+    assert_includes JobSource.find_by!(slug: "lever").settings["company_slugs"], "ciandt"
   end
 
   test "seeds stack-specific fallback job boards" do

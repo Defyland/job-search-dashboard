@@ -2,6 +2,7 @@ module JobDiscovery
   class Registry
     ADAPTERS = {
       "ashby_job_board" => JobDiscovery::Adapters::AshbyJobBoardAdapter,
+      "artificialintelligencejobs_api" => JobDiscovery::Adapters::ArtificialintelligencejobsApiAdapter,
       "bebee_jobs_page" => JobDiscovery::Adapters::BebeeJobsPageAdapter,
       "coodesh_jobs_sitemap" => JobDiscovery::Adapters::CoodeshJobsSitemapAdapter,
       "gupy_company_boards" => JobDiscovery::Adapters::GupyCompanyBoardsAdapter,

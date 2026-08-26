@@ -73,6 +73,38 @@ module JobSources
         }
       }
     end.freeze
+    COMPANY_LIST_FALLBACK_REASON = "Planilha publica que lista empresas contratando, nao vagas; usar Codex fallback para extrair paginas de carreira, promover boards de ATS ja suportados para os settings da fonte nativa e so entao ingerir vagas.".freeze
+    COMPANY_LIST_SPECS = [
+      { name: "European Tech Companies Visa Sponsorship", slug: "list-european-visa-sponsorship", sheet_id: "13Q8-g51jan_e2ISx-yAFkXU2uW0SNR7G-TeoNYxPIBs", regions: %w[europe portugal remote] },
+      { name: "Remotive Remote Startups", slug: "list-remotive-remote-startups", sheet_id: "18bljq3y5YTxPLmA4xj10EaKxs1KWhIdLTr8bF1K5XKI", regions: %w[global remote] },
+      { name: "100% Remote Hiring Companies", slug: "list-remote-hiring-companies", sheet_id: "1CLTL5PoQ99tbxQ5qbj2ScxqbzS0ASr0Qm0b1wjOot9I", regions: %w[global remote] },
+      { name: "Recently Funded Startups", slug: "list-recently-funded-startups", sheet_id: "1w11kuIGWOVATOad5acQqVWSzELF25xCyP6j3yoBiEUc", regions: %w[global remote] },
+      { name: "Pragmatic Engineer Companies Hiring", slug: "list-pragmatic-engineer-hiring", sheet_id: "1_71AwBP4lv3yCBHjfbYbZ1gqNWMQht0JRPB6H7y9_Mg", regions: %w[global remote] }
+    ].freeze
+    COMPANY_LIST_DEFAULTS = COMPANY_LIST_SPECS.map do |spec|
+      sheet_url = "https://docs.google.com/spreadsheets/d/#{spec.fetch(:sheet_id)}"
+
+      {
+        name: spec.fetch(:name),
+        slug: spec.fetch(:slug),
+        source_kind: :aggregator,
+        base_url: "#{sheet_url}/htmlview",
+        host: "docs.google.com",
+        priority: 46,
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: COMPANY_LIST_FALLBACK_REASON,
+        scan_window_days: 30,
+        settings: {
+          seed_urls: [ "#{sheet_url}/htmlview" ],
+          export_urls: [ "#{sheet_url}/export?format=csv", "#{sheet_url}/gviz/tq?tqx=out:csv" ],
+          regions: spec.fetch(:regions),
+          promotes_to: %w[greenhouse lever ashby smartrecruiters workable],
+          seed_queries: [ "careers page", "open roles remote" ]
+        }
+      }
+    end.freeze
     LATAM_SEED_QUERIES = [
       "senior software engineer remote latin america",
       "senior frontend engineer remote latam",
@@ -147,7 +179,7 @@ module JobSources
         supports_backfill: true,
         scan_window_days: 20,
         settings: {
-          company_slugs: %w[ciandt jobgether decilegroup toptal]
+          company_slugs: %w[bkln blablacar bloomon cfsenergy ciandt contentsquare decilegroup enable fampay findigs fundrise gettyimages jobgether jupiterintel kasada koalahealth matchgroup octoenergy pigment planner5d prismic sonarsource toptal]
         }
       },
       {
@@ -239,7 +271,7 @@ module JobSources
         supports_backfill: true,
         scan_window_days: 20,
         settings: {
-          board_tokens: %w[rdsourcing fueledcareers]
+          board_tokens: %w[airtable apolloio aquaticcapitalmanagement autoscout24 buzzfeed checkr clear codazen diligentrobotics enigmaio evolutioniq flexport fueledcareers goatgroup gocardless hightouch hippo70 mavenclinic nansen okx philo prisma rdsourcing sothebys spacex tide twilio]
         }
       },
       {
@@ -253,7 +285,7 @@ module JobSources
         supports_backfill: true,
         scan_window_days: 20,
         settings: {
-          board_slugs: %w[ruby-labs skydropx]
+          board_slugs: %w[clipboard footprint humaans lightdash ravio ruby-labs skydropx]
         }
       },
       {
@@ -330,6 +362,23 @@ module JobSources
       },
       { name: "Remotive", slug: "remotive", source_kind: :platform, base_url: "https://remotive.com", host: "remotive.com", priority: 25, adapter_key: "remotive_remote_jobs", supports_backfill: true, scan_window_days: 20 },
       { name: "Himalayas", slug: "himalayas", source_kind: :platform, base_url: "https://himalayas.app", host: "himalayas.app", priority: 25, adapter_key: "himalayas_jobs_api", supports_backfill: true, scan_window_days: 20 },
+      {
+        name: "Artificial Intelligence Jobs",
+        slug: "artificial-intelligence-jobs",
+        source_kind: :aggregator,
+        base_url: "https://artificialintelligencejobs.co/remote-ai-jobs",
+        host: "artificialintelligencejobs.co",
+        priority: 26,
+        adapter_key: "artificialintelligencejobs_api",
+        supports_backfill: true,
+        scan_window_days: 20,
+        settings: {
+          remote_only: true,
+          page_size: 50,
+          max_pages: 4,
+          max_detail_pages: 12
+        }
+      },
       {
         name: "GoGloby",
         slug: "gogloby",
@@ -410,7 +459,7 @@ module JobSources
         supports_backfill: true,
         scan_window_days: 20,
         settings: {
-          company_identifiers: [ "smartrecruiters" ]
+          company_identifiers: %w[smartrecruiters ubisoft2]
         }
       },
       { name: "Remotar", slug: "remotar", source_kind: :platform, base_url: "https://remotar.com.br", host: "remotar.com.br", priority: 30, adapter_key: "remotar_jobs_api", supports_backfill: true, scan_window_days: 20 },
@@ -1627,7 +1676,7 @@ module JobSources
           seed_queries: LATAM_SEED_QUERIES
         }
       }
-    ].concat(LANGUAGE_BOARD_DEFAULTS).freeze
+    ].concat(LANGUAGE_BOARD_DEFAULTS).concat(COMPANY_LIST_DEFAULTS).freeze
 
     def self.defaults
       DEFAULTS

@@ -11,11 +11,12 @@ module JobDiscovery
         case host
         when "jobs.ashbyhq.com"
           discovery("ashby", "board_slugs", segments.first, url)
-        when "job-boards.greenhouse.io", "boards.greenhouse.io"
+        when "job-boards.greenhouse.io", "boards.greenhouse.io",
+             "job-boards.eu.greenhouse.io", "boards.eu.greenhouse.io"
           discovery("greenhouse", "board_tokens", segments.first, url)
-        when "jobs.lever.co"
+        when "jobs.lever.co", "jobs.eu.lever.co"
           discovery("lever", "company_slugs", segments.first, url)
-        when "jobs.smartrecruiters.com"
+        when "jobs.smartrecruiters.com", "careers.smartrecruiters.com"
           discovery("smartrecruiters", "company_identifiers", segments.first, url)
         when "jobs.quickin.io"
           discovery("quickin", "company_slugs", segments.first, url)

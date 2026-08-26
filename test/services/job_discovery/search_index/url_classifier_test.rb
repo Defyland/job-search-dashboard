@@ -13,6 +13,16 @@ class JobDiscovery::SearchIndex::UrlClassifierTest < ActiveSupport::TestCase
     assert_discovery classifier.call("https://jobs.recrutei.com.br/acme/vacancy/123-desenvolvedora-react-senior"), "recrutei", "company_labels", "acme"
   end
 
+  test "extracts settings from regional ats hostnames" do
+    classifier = JobDiscovery::SearchIndex::UrlClassifier.new
+
+    # These variants appear in real company lists and were previously dropped.
+    assert_discovery classifier.call("https://boards.eu.greenhouse.io/acme/jobs/123"), "greenhouse", "board_tokens", "acme"
+    assert_discovery classifier.call("https://job-boards.eu.greenhouse.io/acme/jobs/123"), "greenhouse", "board_tokens", "acme"
+    assert_discovery classifier.call("https://jobs.eu.lever.co/acme/123"), "lever", "company_slugs", "acme"
+    assert_discovery classifier.call("https://careers.smartrecruiters.com/Acme/123"), "smartrecruiters", "company_identifiers", "Acme"
+  end
+
   test "ignores unsupported urls" do
     classifier = JobDiscovery::SearchIndex::UrlClassifier.new
 
