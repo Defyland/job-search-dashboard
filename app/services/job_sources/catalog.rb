@@ -411,6 +411,39 @@ module JobSources
         }
       },
       {
+        name: "HiringCafe",
+        slug: "hiringcafe",
+        source_kind: :aggregator,
+        base_url: "https://hiringcafe.com",
+        host: "hiringcafe.com",
+        priority: 25,
+        adapter_key: "hiringcafe_jobs_sitemap",
+        supports_backfill: true,
+        scan_window_days: 20,
+        settings: {
+          sitemap_url: "https://hiringcafe.com/job-posting-sitemap.xml",
+          max_chunks: 2,
+          max_jobs: 25,
+          regions: %w[us remote]
+        }
+      },
+      {
+        name: "ITJobCafe",
+        slug: "itjobcafe",
+        source_kind: :aggregator,
+        base_url: "https://www.itjobcafe.com/JobSearch/RemoteJobs",
+        host: "itjobcafe.com",
+        priority: 24,
+        adapter_key: "itjobcafe_jobs_api",
+        supports_backfill: true,
+        scan_window_days: 20,
+        settings: {
+          search_queries: %w[ruby rails golang elixir react],
+          location: "",
+          regions: %w[us remote]
+        }
+      },
+      {
         name: "GoGloby Notion",
         slug: "gogloby-notion",
         source_kind: :company,

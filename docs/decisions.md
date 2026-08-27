@@ -5,6 +5,45 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-08-27 - Native adapters for HiringCafe and ITJobCafe
+
+**Decision:** Added two native adapters instead of registering either source as assisted:
+`hiringcafe_jobs_sitemap` and `itjobcafe_jobs_api`.
+
+**Why (ITJobCafe):** `/JobSearch/RemoteJobs` is an AngularJS shell — the HTML contains
+`{{ value.Title }}` and zero vacancy links — and the sitemap lists only static pages, so there was
+nothing to scrape. The page's own controller (`/js/NgScripts/JobSearch/jobs.js`) calls
+`POST /JobSearch/GetLatestJobs` with `{keywords, location}`; the endpoint answers `200` with plain
+JSON, no authentication, and returns the same `BriefInfo` description the detail page renders. One
+POST per configured query is therefore enough, with no per-vacancy request and no third-party URL to
+follow. Rows repeat across queries, so they are deduped by `ID`.
+
+**Why (HiringCafe):** its search API answers `401` and the UI is client-side, but `robots.txt`
+advertises job-posting sitemaps, allows `/job/`, and each vacancy page carries a full schema.org
+`JobPosting` block (title, company, `datePosted`, `validThrough`, `jobLocationType`, salary). The
+chunks hold ~20k URLs each, so the adapter filters on `lastmod` and on the role encoded in the slug
+*before* spending a request, and only then fetches the page.
+
+**Rejected:** marking either source assisted. HiringCafe was 403 behind a Vercel checkpoint on
+2026-08-26 and would have been registered as assisted on that evidence; re-probing on 2026-08-27
+showed `200` for `robots.txt`, vacancy pages and sitemaps, which makes a native adapter the honest
+choice today. The 403 may return, and a failure stays visible as a failed scan.
+
+**Safety:** HiringCafe URLs come from a third-party document, so every request pins the whole
+redirect chain to `hiringcafe.com`, and only `/job/<slug>` paths are accepted — the `/viewjob/`,
+`/org/`, `/company/`, `/b/` and query-string disallows in their robots are respected. ITJobCafe needs
+no pinning because it never follows a URL from the payload.
+
+**UNVERIFIED:** neither site's terms of service were read, and the ITJobCafe endpoint is
+undocumented (discovered in the site's own public JS). Recorded in README under "Source provenance
+and unverified terms".
+
+**Verification:** 10 new adapter tests (5 each) covering dedupe across queries, window cutoff,
+malformed payload isolation, query cap, host pinning, slug pre-filter, expired `validThrough`, and
+robots-disallowed paths; full suite and RuboCop green.
+
+---
+
 ## 2026-08-26 - Close the remaining review findings: redirect pinning, JSON parsing, EU query hosts
 
 **Decision:** Closed the three findings still open after the previous round.
