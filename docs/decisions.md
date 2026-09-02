@@ -5,6 +5,41 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-09-02 - Reject remote roles restricted to regions that exclude Brazil/LatAm
+
+**Decision:** The policy now rejects a posting that limits hiring to a foreign region, as a check
+separate from the existing remote check.
+
+**Why:** reproduced first on the current HEAD — "Remote (US only)", "must be authorized to work in
+the United States", "Remote - Europe only", "must be based in the United Kingdom" and "open to
+US-based candidates only" were all classified `strong` and accepted. `remote_blocked?` cannot catch
+these because they are genuinely remote; the posting is remote *and* closed to the candidate at the
+same time. The user is based in Brazil/LatAm, so these roles are noise in the dashboard.
+
+**Design:** a restriction is only recognised when a region appears next to a limiting phrase
+("US only", "must be based in Canada", "EU residents", "US citizens", "reside within the EU").
+An unqualified country mention is deliberately not a restriction, because global roles routinely
+name the employer's headquarters. Two escape hatches come first: an explicit worldwide signal, and
+any mention of the candidate's own region — so "Remote worldwide / United States (HQ)" and
+"Brazil, United States" both stay accepted.
+
+**Scope:** only profiles that require remote and whose `location_terms` target Brazil/LatAm are
+filtered. A global-remote profile has no region to be excluded from, and a profile already scoped to
+a foreign region would filter itself out. Driving this from the profile's own terms means changing a
+profile's region scope changes the filter with it, with no second place to configure.
+
+**Rejected:** matching against the profile's `location_patterns` directly. Those patterns also carry
+"remote"/"remoto", so every remote posting looked like a home-region match and the guard silently
+never fired — caught while validating, and the reason it now matches region terms only.
+
+**Verification:** the five originally-failing cases plus "Canada only", "US citizens" and "reside
+within the EU" now reject with the matched phrase in the reason; worldwide, LATAM, Brasil, plain
+remote, "worldwide + US HQ", "Brazil, United States" and an unqualified US mention stay accepted;
+global-remote and non-remote profiles are unaffected. 8 new tests / 38 assertions. Full suite 332
+runs / 2631 assertions green, RuboCop, Zeitwerk and Brakeman clean.
+
+---
+
 ## 2026-09-02 - Native adapter for HireRubyDevs, with a guard for inverted validThrough
 
 **Decision:** Added `hirerubydevs_jobs_sitemap`, discovering through the sitemap rather than the

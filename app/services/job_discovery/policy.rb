@@ -196,6 +196,46 @@ module JobDiscovery
     /ix
     CLOSED_PATTERNS = /\b(expirad[ao]|encerrad[ao]|indispon[ií]vel|closed|expired|unavailable|vencida)\b/i
 
+    # Terms that mean "you may apply from anywhere". A posting carrying one of
+    # these is never treated as geographically restricted, even when it also
+    # names a foreign country (for example "Remote worldwide, HQ in Berlin").
+    GLOBAL_ELIGIBILITY_PATTERNS = /
+      \b(
+        worldwide|world[-\s]?wide|global(?:ly)?|anywhere|any\s+country
+        |work\s+from\s+anywhere|location\s+independent|no\s+location\s+restriction
+      )\b
+    /ix
+
+    # The candidate's own region. Naming it anywhere in the posting clears the
+    # foreign-restriction guard, since a role open to Brazil or LatAm is
+    # reachable regardless of which other countries it also lists.
+    HOME_REGION_PATTERNS = /\b(brasil|brazil|brazilian|latam|latin\s+america|south\s+america|americas)\b/i
+
+    # Regions that exclude a candidate based in Brazil/LatAm when the posting
+    # restricts hiring to them. Kept separate from the free-text country names
+    # so a restriction phrase is only built from an explicit region.
+    FOREIGN_REGION_TERMS = [
+      "us", "u\\.s\\.", "usa", "u\\.s\\.a\\.", "united states", "america",
+      "canada", "uk", "u\\.k\\.", "united kingdom", "britain", "england", "ireland",
+      "eu", "europe", "european union", "eea", "emea", "schengen",
+      "germany", "france", "spain", "portugal", "netherlands", "poland", "italy",
+      "australia", "new zealand", "india", "singapore", "japan", "israel"
+    ].join("|").freeze
+
+    # A restriction is only recognised when a region is paired with an explicit
+    # limiting phrase ("US only", "must be based in Canada", "EU residents").
+    # Merely mentioning a country is not a restriction: plenty of global roles
+    # name the employer's headquarters.
+    FOREIGN_RESTRICTION_PATTERNS = [
+      /\b(?:#{FOREIGN_REGION_TERMS})[-\s]*(?:based|resident|residents|only|based\s+only)\b/i,
+      /\bonly\b[^.;|]{0,40}\b(?:#{FOREIGN_REGION_TERMS})\b/i,
+      /\b(?:must|need|required?)\s+(?:to\s+)?(?:be\s+)?(?:located|based|living|reside|residing|authorized|authorised|eligible)\b[^.;|]{0,60}\b(?:#{FOREIGN_REGION_TERMS})\b/i,
+      /\b(?:work(?:ing)?\s+)?(?:authorization|authorisation|eligibility|permit|visa)\b[^.;|]{0,40}\b(?:#{FOREIGN_REGION_TERMS})\b/i,
+      /\b(?:#{FOREIGN_REGION_TERMS})\s+(?:work\s+)?(?:authorization|authorisation|citizens?|citizenship|nationals?|residency)\b/i,
+      /\b(?:restricted|limited|open)\s+to\b[^.;|]{0,40}\b(?:#{FOREIGN_REGION_TERMS})\b/i,
+      /\bwithin\s+the\s+(?:#{FOREIGN_REGION_TERMS})\b/i
+    ].freeze
+
     DefaultProfile = Struct.new(
       :id,
       :name,

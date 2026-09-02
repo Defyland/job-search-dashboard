@@ -42,6 +42,12 @@ module JobDiscovery
 
       remote_signal = [ remote_text, location_text ].compact_blank.join(" ").presence || posted_text
       return reject("localidade sem sinal remoto compativel") if remote_blocked?(remote_signal, normalized_haystack, source_slug)
+      # A remote role can still be closed to a Brazil/LatAm candidate: "Remote
+      # (US only)" is remote and unreachable at the same time. The remote check
+      # above cannot catch that, so eligibility is evaluated separately.
+      if (restriction = foreign_restriction(remote_signal, haystack))
+        return reject("vaga restrita a outra regiao: #{restriction}")
+      end
 
       classification =
         if title_tags.any?
@@ -88,6 +94,37 @@ module JobDiscovery
         base_score += 4 if published_at.present? && published_at >= 7.days.ago
         base_score += 2 if published_at.present? && published_at >= 24.hours.ago
         [ base_score, 99 ].min
+      end
+
+      # Returns the matched restriction phrase when the posting limits hiring to
+      # a region that excludes the profile's own, and nil otherwise.
+      #
+      # Only profiles targeting Brazil/LatAm are filtered: a profile explicitly
+      # scoped to global remote has no reason to reject a US-only role, and one
+      # already scoped to a foreign region would filter itself out.
+      def foreign_restriction(remote_signal, haystack)
+        return unless brazil_latam_profile?
+
+        text = [ remote_signal, haystack ].compact_blank.join(" ")
+        return if text.blank?
+        # An explicit worldwide signal wins: those roles accept LatAm even when
+        # the text also names a foreign office.
+        return if text.match?(Policy::GLOBAL_ELIGIBILITY_PATTERNS)
+        # So does an explicit mention of the profile's own region. This checks
+        # region terms only: the profile's `location_terms` also carry "remote"
+        # and "remoto", and matching those would clear every remote posting,
+        # including the US-only ones this guard exists to catch.
+        return if text.match?(Policy::HOME_REGION_PATTERNS)
+
+        Policy::FOREIGN_RESTRICTION_PATTERNS.filter_map { |pattern| text[pattern] }.first&.squish
+      end
+
+      # The profile's own location terms decide this: a Brazil/LatAm profile is
+      # the one that can be excluded by a foreign-only posting.
+      def brazil_latam_profile?
+        return false unless @criteria.profile.required_remote?
+
+        normalize(Array(@criteria.profile.location_terms).join(" ")).match?(/brasil|brazil|latam/)
       end
 
       def remote_blocked?(remote_signal, haystack, source_slug)

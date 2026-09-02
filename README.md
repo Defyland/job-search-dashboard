@@ -90,6 +90,14 @@ The Google Sheets company lists (`European Tech Companies Visa Sponsorship`, `Re
 
 `HireRubyDevs` is a Ruby/Rails-only board whose `/jobs` listing spans 230+ pages, so discovery goes through the sitemap instead: it carries every vacancy with a precise `lastmod`, which is what recency sorting and the window cutoff use before any page is fetched. Its `robots.txt` allows `/jobs` but disallows `/jobs/*/apply` and `/jobs/*/website`, so the vacancy page itself is both the canonical identity and the applyable link and the apply route is never requested. Two details are worth knowing: the JobPosting block carries a `skills` field ("rails, ruby") that the prose may never repeat, so it is prepended to the description to keep the stack signal available to the policy; and some rows carry a `validThrough` that predates their own `datePosted` — observed live on 2026-09-02, a vacancy posted that morning declaring it expired on 08-16 — which is a stale field on a republished posting rather than a real expiry, so a `validThrough` at or before the posting date is ignored instead of burying an active role.
 
+### Geographic eligibility
+
+A remote role can still be closed to a candidate in Brazil or LatAm: "Remote (US only)" is remote and unreachable at the same time, and the remote check alone accepted it because the posting genuinely says "remote". The policy therefore evaluates eligibility separately and rejects a posting when it restricts hiring to a region that excludes the profile's own, with the matched phrase kept in the reason (`vaga restrita a outra regiao: US only`) so the call is auditable in the rejected list.
+
+The rule only fires on an explicit restriction — a region paired with a limiting phrase such as "US only", "must be based in the United Kingdom", "open to Canada only", "US citizens", or "reside within the EU". Naming a country is not a restriction, since plenty of global roles list the employer's headquarters, so "Remote worldwide / United States (HQ)" stays accepted. An explicit worldwide signal (`worldwide`, `global`, `anywhere`, `work from anywhere`) always wins, and so does any mention of the candidate's own region, which keeps "Brazil, United States" and "Latin America and Canada" in the results.
+
+Only profiles that require remote *and* target Brazil/LatAm are filtered: a profile scoped to global remote has no region to be excluded from, and one already scoped to a foreign region would filter itself out. This is matched on the profile's own `location_terms`, so changing a profile's region scope changes the filter with it.
+
 ## Source provenance and unverified terms
 
 Discovery only reads endpoints the sites publish for machine consumption, and each candidate keeps
