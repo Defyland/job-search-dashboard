@@ -141,6 +141,17 @@ module JobDiscovery
           url.to_s.strip.delete_suffix("/")
         end
 
+        # Every adapter parses timestamps out of third-party payloads, where a
+        # malformed or missing value is normal rather than exceptional, so the
+        # nil-on-unparseable contract is shared here instead of being copied
+        # into each one. Adapters whose source needs different parsing (epoch
+        # millis, for example) still override it.
+        def parse_time(value)
+          Time.zone.parse(value.to_s)
+        rescue ArgumentError, TypeError
+          nil
+        end
+
         def normalized_host_suffixes(host_suffixes)
           Array(host_suffixes).filter_map do |suffix|
             normalized = suffix.to_s.downcase.strip

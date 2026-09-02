@@ -5,6 +5,32 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-09-02 - Fix the "us" pronoun false positive in the geo filter; dedupe parse_time
+
+**Found by:** a strict review pass over the whole project (structure, Rails smells, overengineering).
+
+**P1 fixed — the pronoun "us" was read as the United States.** `FOREIGN_REGION_TERMS` listed `"us"`
+and the patterns were flagged `/i`, so ordinary English rejected healthy postings: "Reach out to us
+only if you have Rails experience", "Work with us - only remote" and "join us ... only" were all
+classified as US-restricted. This was silently discarding good jobs — the exact opposite of what the
+filter is for. Short forms that collide with ordinary words (`US`, `UK`, `EU`, `EEA`, `EMEA`; and
+`eu` is also Portuguese for "I") are now matched **as written acronyms**, while spelled-out regions
+stay case-insensitive. The `/i` flag was removed from the restriction patterns for the same reason —
+a global `/i` would undo the acronym case-sensitivity — and case-insensitivity is applied
+per-fragment with `(?i:...)` on the surrounding English words instead.
+
+**D2 fixed — `parse_time` was copied into 27 adapters.** 24 of them were byte-for-byte identical
+(`Time.zone.parse` + `rescue ArgumentError, TypeError` → nil). The contract is shared by every
+adapter — third-party payloads where an unparseable date is normal — so it moved to `Adapters::Base`
+and the 24 copies were deleted. The three genuine variants were kept as overrides: `itjobcafe` and
+`solides` guard on `blank?`, and `lever` parses epoch milliseconds.
+
+**Verification:** 4 new regression tests pin the pronoun cases as accepted and the written acronyms
+as still blocked; 11 tests / 52 assertions on the geo filter. Full suite 335 runs / 2645 assertions,
+RuboCop, Zeitwerk and Brakeman clean.
+
+---
+
 ## 2026-09-02 - Reject remote roles restricted to regions that exclude Brazil/LatAm
 
 **Decision:** The policy now rejects a posting that limits hiring to a foreign region, as a check

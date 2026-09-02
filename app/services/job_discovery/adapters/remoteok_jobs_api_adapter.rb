@@ -61,12 +61,6 @@ module JobDiscovery
           )
         end
 
-        def parse_time(value)
-          Time.zone.parse(value.to_s)
-        rescue ArgumentError, TypeError
-          nil
-        end
-
         def epoch_time(value)
           Time.zone.at(Integer(value)) if value.present?
         rescue ArgumentError, TypeError

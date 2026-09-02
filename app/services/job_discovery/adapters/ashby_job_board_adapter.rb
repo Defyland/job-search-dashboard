@@ -83,12 +83,6 @@ module JobDiscovery
           secondary = Array(job_posting["secondaryLocations"]).map { |entry| entry["locationName"].to_s.squish }.reject(&:blank?)
           [ primary, secondary.join(", ") ].reject(&:blank?).join(" | ")
         end
-
-        def parse_time(value)
-          Time.zone.parse(value.to_s)
-        rescue ArgumentError, TypeError
-          nil
-        end
     end
   end
 end

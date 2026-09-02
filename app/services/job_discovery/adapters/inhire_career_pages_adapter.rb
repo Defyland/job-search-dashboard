@@ -151,12 +151,6 @@ module JobDiscovery
             {}
           end
         end
-
-        def parse_time(value)
-          Time.zone.parse(value.to_s)
-        rescue ArgumentError, TypeError
-          nil
-        end
     end
   end
 end

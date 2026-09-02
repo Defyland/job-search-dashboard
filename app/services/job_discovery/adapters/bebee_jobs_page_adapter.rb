@@ -147,12 +147,6 @@ module JobDiscovery
         def remote_policy_label(value)
           REMOTE_POLICY_LABELS.fetch(value.to_s, value.to_s.presence)
         end
-
-        def parse_time(value)
-          Time.zone.parse(value.to_s)
-        rescue ArgumentError, TypeError
-          nil
-        end
     end
   end
 end

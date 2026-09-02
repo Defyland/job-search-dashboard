@@ -97,4 +97,45 @@ class JobDiscovery::PolicyGeoEligibilityTest < ActiveSupport::TestCase
 
     assert result.accepted?
   end
+
+  # Regression: "us" was matched case-insensitively, so the English pronoun in
+  # "contact us", "join us" and "work with us" was read as the United States and
+  # rejected healthy postings. Acronyms are now matched as written.
+  test "does not treat the English pronoun 'us' as the United States" do
+    [
+      "Reach out to us only if you have Rails experience",
+      "Work with us - only remote",
+      "This role is only for people who love Ruby, join us",
+      "Only senior engineers; write us a short intro"
+    ].each do |location_text|
+      result = classify(remote_text: "Remote", location_text:)
+
+      assert result.accepted?, "the pronoun in #{location_text.inspect} must not read as a US restriction"
+    end
+  end
+
+  test "still blocks the written acronyms it is meant to catch" do
+    {
+      "US only" => "US only",
+      "EU residents only" => "EU residents",
+      "UK based only" => "UK based",
+      "Applicants must reside within the EU" => "must reside within the EU"
+    }.each do |location_text, expected_phrase|
+      result = classify(remote_text: "Remote", location_text:)
+
+      assert_not result.accepted?, "#{location_text.inspect} must be rejected"
+      assert_equal "vaga restrita a outra regiao: #{expected_phrase}", result.reason
+    end
+  end
+
+  test "an unrestricted mention of a foreign region stays accepted" do
+    [
+      "We overlap with Europe timezones but hire globally",
+      "Our India office supports the team"
+    ].each do |location_text|
+      result = classify(remote_text: "Remote", location_text:)
+
+      assert result.accepted?, "#{location_text.inspect} names a region without restricting it"
+    end
+  end
 end

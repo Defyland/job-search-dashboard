@@ -214,26 +214,44 @@ module JobDiscovery
     # Regions that exclude a candidate based in Brazil/LatAm when the posting
     # restricts hiring to them. Kept separate from the free-text country names
     # so a restriction phrase is only built from an explicit region.
-    FOREIGN_REGION_TERMS = [
-      "us", "u\\.s\\.", "usa", "u\\.s\\.a\\.", "united states", "america",
-      "canada", "uk", "u\\.k\\.", "united kingdom", "britain", "england", "ireland",
-      "eu", "europe", "european union", "eea", "emea", "schengen",
+    #
+    # Unambiguous names, matched case-insensitively.
+    FOREIGN_REGION_WORDS = [
+      "usa", "united states", "canada", "united kingdom", "britain", "england", "ireland",
+      "europe", "european union", "schengen",
       "germany", "france", "spain", "portugal", "netherlands", "poland", "italy",
       "australia", "new zealand", "india", "singapore", "japan", "israel"
     ].join("|").freeze
+
+    # Short forms that collide with ordinary English when lowercased: "us" is
+    # also the pronoun ("contact us", "join us", "work with us"), and "eu" is
+    # Portuguese for "I". Matching those case-insensitively rejected perfectly
+    # good postings, so these are matched only as written acronyms.
+    FOREIGN_REGION_ACRONYMS = [
+      "US", "U\\.S\\.", "U\\.S\\.A\\.", "UK", "U\\.K\\.", "EU", "EEA", "EMEA"
+    ].join("|").freeze
+
+    # Builds "<region>" as an alternation that keeps the acronyms case-sensitive
+    # while the spelled-out names stay case-insensitive.
+    FOREIGN_REGION_TERMS = "(?:(?i:#{FOREIGN_REGION_WORDS})|#{FOREIGN_REGION_ACRONYMS})".freeze
 
     # A restriction is only recognised when a region is paired with an explicit
     # limiting phrase ("US only", "must be based in Canada", "EU residents").
     # Merely mentioning a country is not a restriction: plenty of global roles
     # name the employer's headquarters.
+    #
+    # These patterns are deliberately NOT flagged `/i`: a global `/i` would undo
+    # the case-sensitivity of the acronyms above and bring back the "contact us"
+    # false positive. Case-insensitivity is applied per-fragment instead, via
+    # `(?i:...)` on the surrounding English words and on the spelled-out regions.
     FOREIGN_RESTRICTION_PATTERNS = [
-      /\b(?:#{FOREIGN_REGION_TERMS})[-\s]*(?:based|resident|residents|only|based\s+only)\b/i,
-      /\bonly\b[^.;|]{0,40}\b(?:#{FOREIGN_REGION_TERMS})\b/i,
-      /\b(?:must|need|required?)\s+(?:to\s+)?(?:be\s+)?(?:located|based|living|reside|residing|authorized|authorised|eligible)\b[^.;|]{0,60}\b(?:#{FOREIGN_REGION_TERMS})\b/i,
-      /\b(?:work(?:ing)?\s+)?(?:authorization|authorisation|eligibility|permit|visa)\b[^.;|]{0,40}\b(?:#{FOREIGN_REGION_TERMS})\b/i,
-      /\b(?:#{FOREIGN_REGION_TERMS})\s+(?:work\s+)?(?:authorization|authorisation|citizens?|citizenship|nationals?|residency)\b/i,
-      /\b(?:restricted|limited|open)\s+to\b[^.;|]{0,40}\b(?:#{FOREIGN_REGION_TERMS})\b/i,
-      /\bwithin\s+the\s+(?:#{FOREIGN_REGION_TERMS})\b/i
+      /\b#{FOREIGN_REGION_TERMS}[-\s]*(?i:based|residents?|only)\b/,
+      /(?i:\bonly\b)[^.;|]{0,40}\b#{FOREIGN_REGION_TERMS}\b/,
+      /(?i:\b(?:must|need|required?)\s+(?:to\s+)?(?:be\s+)?(?:located|based|living|reside|residing|authorized|authorised|eligible)\b)[^.;|]{0,60}\b#{FOREIGN_REGION_TERMS}\b/,
+      /(?i:\b(?:work(?:ing)?\s+)?(?:authorization|authorisation|eligibility|permit|visa)\b)[^.;|]{0,40}\b#{FOREIGN_REGION_TERMS}\b/,
+      /\b#{FOREIGN_REGION_TERMS}\s+(?i:(?:work\s+)?(?:authorization|authorisation|citizens?|citizenship|nationals?|residency))\b/,
+      /(?i:\b(?:restricted|limited|open)\s+to\b)[^.;|]{0,40}\b#{FOREIGN_REGION_TERMS}\b/,
+      /(?i:\bwithin\s+the\s+)#{FOREIGN_REGION_TERMS}\b/
     ].freeze
 
     DefaultProfile = Struct.new(

@@ -74,12 +74,6 @@ module JobDiscovery
           description.to_s[/\b(?:worldwide|global|latin america|latam|brazil|brasil|portugal|americas|europe)\b/i]&.squish
         end
 
-        def parse_time(value)
-          Time.zone.parse(value.to_s)
-        rescue ArgumentError, TypeError
-          nil
-        end
-
         def external_job_id_for(url)
           URI.parse(url).path[%r{/jobs/(\d+)}, 1]
         rescue URI::InvalidURIError

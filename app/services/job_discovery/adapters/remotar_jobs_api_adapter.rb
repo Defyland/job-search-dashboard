@@ -75,12 +75,6 @@ module JobDiscovery
           )
         end
 
-        def parse_time(value)
-          Time.zone.parse(value.to_s)
-        rescue ArgumentError, TypeError
-          nil
-        end
-
         def extract_location_name(value)
           case value
           when Hash

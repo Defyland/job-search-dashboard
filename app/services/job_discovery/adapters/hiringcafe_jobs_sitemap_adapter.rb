@@ -199,12 +199,6 @@ module JobDiscovery
           configured = value.is_a?(Numeric) || value.to_s.match?(/\A\d+\z/) ? value.to_i : nil
           [ configured || fallback, 1 ].max
         end
-
-        def parse_time(value)
-          Time.zone.parse(value.to_s)
-        rescue ArgumentError, TypeError
-          nil
-        end
     end
   end
 end

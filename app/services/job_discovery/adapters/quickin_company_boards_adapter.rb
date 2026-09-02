@@ -216,12 +216,6 @@ module JobDiscovery
           Nokogiri::HTML.fragment(CGI.unescapeHTML(value.to_s)).text.squish
         end
 
-        def parse_time(value)
-          Time.zone.parse(value.to_s)
-        rescue ArgumentError, TypeError
-          nil
-        end
-
         def default_page_limit(window_days)
           window_days >= 20 ? 6 : 3
         end

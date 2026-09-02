@@ -150,12 +150,6 @@ module JobDiscovery
           url.to_s.strip.delete_suffix("/")
         end
 
-        def parse_time(value)
-          Time.zone.parse(value.to_s)
-        rescue ArgumentError, TypeError
-          nil
-        end
-
         def default_page_limit(window_days)
           window_days >= 20 ? 3 : 1
         end

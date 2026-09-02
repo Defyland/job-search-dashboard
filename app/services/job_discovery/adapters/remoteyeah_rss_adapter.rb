@@ -147,12 +147,6 @@ module JobDiscovery
           valid_through.present? && valid_through < Time.current
         end
 
-        def parse_time(value)
-          Time.zone.parse(value.to_s)
-        rescue ArgumentError, TypeError
-          nil
-        end
-
         def external_job_id_for(url)
           URI.parse(url).path.split("/").reject(&:blank?).last.to_s.presence
         rescue URI::InvalidURIError
