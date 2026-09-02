@@ -411,6 +411,23 @@ module JobSources
         }
       },
       {
+        name: "HireRubyDevs",
+        slug: "hirerubydevs",
+        source_kind: :platform,
+        base_url: "https://hirerubydevs.com/jobs",
+        host: "hirerubydevs.com",
+        priority: 26,
+        adapter_key: "hirerubydevs_jobs_sitemap",
+        supports_backfill: true,
+        scan_window_days: 20,
+        settings: {
+          sitemap_url: "https://hirerubydevs.com/sitemap.xml",
+          max_jobs: 30,
+          stacks: %w[ruby rails sinatra],
+          regions: %w[global remote]
+        }
+      },
+      {
         name: "HiringCafe",
         slug: "hiringcafe",
         source_kind: :aggregator,

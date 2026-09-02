@@ -9,6 +9,7 @@ module JobDiscovery
       "greenhouse_boards_api" => JobDiscovery::Adapters::GreenhouseBoardsApiAdapter,
       "gogloby_jobs_sitemap" => JobDiscovery::Adapters::GoglobyJobsSitemapAdapter,
       "himalayas_jobs_api" => JobDiscovery::Adapters::HimalayasJobsApiAdapter,
+      "hirerubydevs_jobs_sitemap" => JobDiscovery::Adapters::HirerubydevsJobsSitemapAdapter,
       "hiringcafe_jobs_sitemap" => JobDiscovery::Adapters::HiringcafeJobsSitemapAdapter,
       "inhire_career_pages" => JobDiscovery::Adapters::InhireCareerPagesAdapter,
       "itjobcafe_jobs_api" => JobDiscovery::Adapters::ItjobcafeJobsApiAdapter,

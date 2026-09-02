@@ -55,6 +55,7 @@ What Rails currently discovers by itself:
 - `Himalayas` via the public jobs API
 - `GoGloby` via its dedicated jobs sitemap and SSR vacancy pages
 - `HiringCafe` via its public job-posting sitemaps and per-vacancy schema.org `JobPosting` blocks
+- `HireRubyDevs` via its sitemap and per-vacancy schema.org `JobPosting` blocks
 - `ITJobCafe` via the public JSON listing endpoint its AngularJS front end calls
 - public `Notion` job pages via Notion's own public page API
 - `Artificial Intelligence Jobs` (assisted since 2026-08-26: the host now returns `403` behind a Vercel checkpoint)
@@ -87,6 +88,8 @@ The Google Sheets company lists (`European Tech Companies Visa Sponsorship`, `Re
 
 `HiringCafe` and `ITJobCafe` are both client-side front ends, so each is read through the only machine-readable surface it actually publishes. HiringCafe's search API answers `401`, but its `robots.txt` advertises job-posting sitemaps and allows `/job/`, and every vacancy page ships a complete schema.org `JobPosting` block; the adapter walks the newest sitemap chunks, filters by `lastmod` and by the role encoded in the slug before spending a request, pins every hop to `hiringcafe.com`, and drops postings whose `validThrough` has already passed. That host answered `403` behind a Vercel checkpoint on 2026-08-26 and answers `200` today, so the block may return — a failure surfaces as a failed scan rather than an empty source. `ITJobCafe` renders its listings with AngularJS and its sitemap carries no vacancy URLs, so the adapter calls the same unauthenticated `JobSearch/GetLatestJobs` endpoint the page's own controller calls, one POST per configured query. That payload already carries the description the detail page renders, so no per-vacancy request is made and there is no third-party URL to follow. The listing has no remote flag — the board mixes on-site and remote rows and only signals it in the title — so the title is passed through to the policy instead of asserting a remote role, and the window cutoff is derived from the relative `PostedOn` field ("7 Hours ago", "13 Days ago").
 
+`HireRubyDevs` is a Ruby/Rails-only board whose `/jobs` listing spans 230+ pages, so discovery goes through the sitemap instead: it carries every vacancy with a precise `lastmod`, which is what recency sorting and the window cutoff use before any page is fetched. Its `robots.txt` allows `/jobs` but disallows `/jobs/*/apply` and `/jobs/*/website`, so the vacancy page itself is both the canonical identity and the applyable link and the apply route is never requested. Two details are worth knowing: the JobPosting block carries a `skills` field ("rails, ruby") that the prose may never repeat, so it is prepended to the description to keep the stack signal available to the policy; and some rows carry a `validThrough` that predates their own `datePosted` — observed live on 2026-09-02, a vacancy posted that morning declaring it expired on 08-16 — which is a stale field on a republished posting rather than a real expiry, so a `validThrough` at or before the posting date is ignored instead of burying an active role.
+
 ## Source provenance and unverified terms
 
 Discovery only reads endpoints the sites publish for machine consumption, and each candidate keeps
@@ -116,6 +119,12 @@ following stay **UNVERIFIED** and must not be reported as cleared:
 - **`itjobcafe.com`.** Its `robots.txt` only disallows SemrushBot, AhrefsBot and Baidu, and the
   endpoint this adapter calls is not under a disallowed path, but the endpoint is undocumented — it
   was found in the site's own public AngularJS controller — and the terms of service were not read.
+- **`hirerubydevs.com`.** Its `robots.txt` explicitly allows `/jobs` and the adapter honours the
+  `/jobs/*/apply` and `/jobs/*/website` disallows, but the file also carries a Cloudflare
+  `Content-Signal: search=yes,ai-train=no,use=reference` header, expressed as a reservation of rights
+  under Article 4 of EU Directive 2019/790. This adapter indexes postings and links back to them
+  rather than training on them, which is consistent with `search=yes`/`use=reference`, but that is an
+  engineering reading, not a legal one, and the terms of service were not read.
 
 Next delimited step for any of the above: read the specific ToS, record the verdict here with a
 date, and only then change a source's mode. Until that happens the honest status is unverified.

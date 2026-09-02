@@ -5,6 +5,44 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-09-02 - Native adapter for HireRubyDevs, with a guard for inverted validThrough
+
+**Decision:** Added `hirerubydevs_jobs_sitemap`, discovering through the sitemap rather than the
+`/jobs` listing, and ignoring a `validThrough` that is at or before the posting's own `datePosted`.
+
+**Why the sitemap:** the listing is paginated across 230+ pages, while the sitemap carries all 1612
+vacancies with a precise `lastmod`. Sorting by `lastmod` and applying the window cutoff there means
+recency is decided before any page request, instead of walking pages to find fresh rows.
+
+**Why the validThrough guard:** a live vacancy fetched on 2026-09-02 reported
+`datePosted: 2026-09-02T00:49:17Z` with `validThrough: 2026-08-16T06:02:05Z` — expired more than two
+weeks *before* it was posted. Other rows on the same board were internally consistent
+(posted 08-21, valid through 10-20), so this is a stale field carried into a republished posting, not
+a real expiry. Trusting it blindly would have buried an active Cloudflare role posted hours earlier.
+A `validThrough` that is genuinely in the past and after the posting date still marks the candidate
+`expired` through the same `Policy::Result` path RailsFullstack uses, so the row stays visible with a
+reason instead of disappearing.
+
+**Skills field:** the JobPosting block carries `skills` ("rails, ruby") which the prose may never
+repeat. It is prepended to the description so the stack signal does not depend on the description
+wording.
+
+**Apply route:** `robots.txt` allows `/jobs` but disallows `/jobs/*/apply` and `/jobs/*/website`, so
+the vacancy page is both canonical identity and apply link, and only the two-segment `/jobs/<slug>`
+path is accepted from the sitemap. Every hop is pinned to `hirerubydevs.com`.
+
+**UNVERIFIED:** the `robots.txt` carries a Cloudflare `Content-Signal:
+search=yes,ai-train=no,use=reference` header framed as an Article 4 (EU 2019/790) reservation of
+rights. Indexing and linking back is consistent with `search=yes`/`use=reference`, but that is an
+engineering reading and the terms of service were not read. Recorded in the README.
+
+**Verification:** 6 new tests covering the skills field reaching the policy, host pinning plus never
+requesting the disallowed apply route, window/path filtering before fetch, a genuine expiry, the
+inverted-`validThrough` case, and the `max_jobs` budget picking the newest rows. Full suite and
+RuboCop green.
+
+---
+
 ## 2026-08-27 - Native adapters for HiringCafe and ITJobCafe
 
 **Decision:** Added two native adapters instead of registering either source as assisted:
