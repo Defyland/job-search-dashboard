@@ -5,6 +5,37 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-09-04 - Search Workable per stack instead of crawling its 170k-job feed
+
+**Decision:** `workable_global_api` now runs one paginated search per configured term
+(`search_queries`, defaulting to ruby/rails/golang/elixir/react) instead of walking the unfiltered
+global feed.
+
+**Why:** `jobs.workable.com` was already in the catalog with a native adapter, so the question was
+whether it still worked — not whether to add it. It answered `200`, but measuring the adapter's real
+behaviour showed the crawl was almost pure waste: the feed reports **170,349** live jobs across every
+industry, paginated 20 at a time, and a 15-page crawl (its default budget) read **300 rows and
+matched zero Ruby/Rails titles**.
+
+The endpoint accepts a `query` parameter that the previous code never used. Re-measured with the
+same 15-request budget, one search per stack returned **89 unique jobs, 46 with a target stack in the
+title** — Ruby, Rails, React and Elixir roles across the UK, US, Greece, India, Pakistan and Thailand.
+Same cost, 0 → 46 relevant results.
+
+**Design:** vacancies are deduped by id across terms, because the same posting answers to both
+"ruby" and "rails". `search_queries: []` remains an explicit escape hatch back to the raw feed, so
+the previous behaviour is still reachable by configuration rather than deleted.
+
+**Rejected:** `workplace=remote` as a server-side filter. It works (48,629 rows), but remote
+eligibility is already the policy's job, and hard-coding it here would hide hybrid roles that the
+profile might still accept.
+
+**Verification:** 3 new tests (one search per term, dedupe across terms, empty list still reads the
+raw feed) plus the two existing ones; live measurement recorded above. Full suite 338 runs / 2650
+assertions, RuboCop, Zeitwerk and Brakeman clean.
+
+---
+
 ## 2026-09-02 - Fix the "us" pronoun false positive in the geo filter; dedupe parse_time
 
 **Found by:** a strict review pass over the whole project (structure, Rails smells, overengineering).

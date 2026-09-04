@@ -326,7 +326,23 @@ module JobSources
         }
       },
       { name: "Teamtailor", slug: "teamtailor", source_kind: :ats, base_url: "https://career.teamtailor.com", host: "teamtailor.com", priority: 20, adapter_key: "teamtailor_company_boards", supports_backfill: true, scan_window_days: 20 },
-      { name: "Workable", slug: "workable", source_kind: :ats, base_url: "https://jobs.workable.com", host: "jobs.workable.com", priority: 20, adapter_key: "workable_global_api", supports_backfill: true, scan_window_days: 20 },
+      {
+        name: "Workable",
+        slug: "workable",
+        source_kind: :ats,
+        base_url: "https://jobs.workable.com",
+        host: "jobs.workable.com",
+        priority: 20,
+        adapter_key: "workable_global_api",
+        supports_backfill: true,
+        scan_window_days: 20,
+        settings: {
+          # The global feed holds ~170k jobs from every industry, so it is
+          # searched per stack instead of crawled. Set search_queries: [] to go
+          # back to the unfiltered feed.
+          search_queries: %w[ruby rails golang elixir react]
+        }
+      },
       { name: "Rails Job Board", slug: "rails-job-board", source_kind: :platform, base_url: "https://jobs.rubyonrails.org", host: "jobs.rubyonrails.org", priority: 18, adapter_key: "rails_jobs_rss", supports_backfill: true, scan_window_days: 20, settings: { feed_url: "https://jobs.rubyonrails.org/jobs.rss" } },
       { name: "RemoteOK", slug: "remoteok", source_kind: :platform, base_url: "https://remoteok.com", host: "remoteok.com", priority: 25, adapter_key: "remoteok_jobs_api", supports_backfill: true, scan_window_days: 20 },
       {

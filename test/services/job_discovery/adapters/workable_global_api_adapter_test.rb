@@ -6,14 +6,17 @@ class JobDiscovery::Adapters::WorkableGlobalApiAdapterTest < ActiveSupport::Test
       @responses = responses
     end
 
+    attr_reader :requests
+
     def call(url, limit: 5)
+      (@requests ||= []) << url
       @responses.fetch(url)
     end
   end
 
   test "scans workable api pages and extracts remote senior ruby matches" do
     source = job_sources(:workable)
-    source.update!(adapter_key: "workable_global_api", supports_backfill: true, scan_window_days: 20, settings: { "max_pages" => 1 })
+    source.update!(adapter_key: "workable_global_api", supports_backfill: true, scan_window_days: 20, settings: { "max_pages" => 1, "search_queries" => [] })
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "20d", started_at: Time.current)
     source_scan = search_run.source_scans.create!(job_source: source, status: :running, started_at: Time.current)
     recent_timestamp = 2.days.ago.change(usec: 0).iso8601
@@ -63,7 +66,7 @@ class JobDiscovery::Adapters::WorkableGlobalApiAdapterTest < ActiveSupport::Test
 
   test "stops on old workable jobs outside the requested window" do
     source = job_sources(:workable)
-    source.update!(adapter_key: "workable_global_api", supports_backfill: true, scan_window_days: 20, settings: { "max_pages" => 1 })
+    source.update!(adapter_key: "workable_global_api", supports_backfill: true, scan_window_days: 20, settings: { "max_pages" => 1, "search_queries" => [] })
     search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "7d", started_at: Time.current)
     source_scan = search_run.source_scans.create!(job_source: source, status: :running, started_at: Time.current)
 
@@ -93,4 +96,81 @@ class JobDiscovery::Adapters::WorkableGlobalApiAdapterTest < ActiveSupport::Test
 
     assert_empty candidates
   end
+
+  # The unfiltered feed carries ~170k jobs across every industry, so a crawl
+  # budget spent on it returns almost nothing for a stack-specific profile.
+  # Measured live on 2026-09-04: 15 pages / 300 rows matched zero Ruby titles,
+  # while a "ruby" search reported 278 matching jobs.
+  test "searches one query per configured term instead of walking the global feed" do
+    source_scan = build_scan(search_queries: [ "ruby", "rails" ])
+    fetcher = FakeFetcher.new(
+      query_url("ruby") => workable_page(id: "ruby-1", title: "Senior Ruby Engineer"),
+      query_url("rails") => workable_page(id: "rails-1", title: "Senior Ruby on Rails Developer")
+    )
+
+    candidates = JobDiscovery::Adapters::WorkableGlobalApiAdapter.new(fetcher:).scan(source_scan:, window_days: 20)
+
+    assert_equal [ "ruby-1", "rails-1" ], candidates.map { |candidate| candidate[:external_job_id] }
+    assert_equal [ query_url("ruby"), query_url("rails") ], fetcher.requests
+  end
+
+  test "builds a vacancy once when it answers to more than one query" do
+    source_scan = build_scan(search_queries: [ "ruby", "rails" ])
+    shared = workable_page(id: "shared-1", title: "Senior Ruby on Rails Developer")
+    fetcher = FakeFetcher.new(query_url("ruby") => shared, query_url("rails") => shared)
+
+    candidates = JobDiscovery::Adapters::WorkableGlobalApiAdapter.new(fetcher:).scan(source_scan:, window_days: 20)
+
+    assert_equal [ "shared-1" ], candidates.map { |candidate| candidate[:external_job_id] }
+  end
+
+  test "an explicitly empty query list still reads the unfiltered feed" do
+    source_scan = build_scan(search_queries: [])
+    fetcher = FakeFetcher.new(FEED_URL => workable_page(id: "raw-1", title: "Senior Ruby Engineer"))
+
+    candidates = JobDiscovery::Adapters::WorkableGlobalApiAdapter.new(fetcher:).scan(source_scan:, window_days: 20)
+
+    assert_equal [ "raw-1" ], candidates.map { |candidate| candidate[:external_job_id] }
+    assert_equal [ FEED_URL ], fetcher.requests
+  end
+
+  private
+    FEED_URL = "https://jobs.workable.com/api/v1/jobs".freeze
+
+    def query_url(term)
+      "#{FEED_URL}?query=#{term}"
+    end
+
+    def build_scan(search_queries:)
+      source = job_sources(:workable)
+      source.update!(
+        adapter_key: "workable_global_api",
+        supports_backfill: true,
+        scan_window_days: 20,
+        settings: { "max_pages" => 1, "search_queries" => search_queries }
+      )
+      search_run = SearchRun.create!(trigger_source: :manual, status: :running, window_label: "20d", started_at: Time.current)
+      search_run.source_scans.create!(job_source: source, status: :running, started_at: Time.current)
+    end
+
+    def workable_page(id:, title:)
+      timestamp = 2.days.ago.change(usec: 0).iso8601
+      {
+        jobs: [
+          {
+            "id" => id,
+            "title" => title,
+            "state" => "published",
+            "description" => "<p>Remote Ruby on Rails role</p>",
+            "updated" => timestamp,
+            "created" => timestamp,
+            "url" => "https://jobs.workable.com/view/#{id}/role",
+            "workplace" => "remote",
+            "location" => { "countryName" => "Brazil" },
+            "company" => { "title" => "Sur", "url" => "https://apply.workable.com/sur/" }
+          }
+        ],
+        nextPageToken: nil
+      }.to_json
+    end
 end

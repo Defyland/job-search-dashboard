@@ -47,7 +47,7 @@ What Rails currently discovers by itself:
 - `Coodesh` via the public jobs sitemap plus SSR job detail pages on `coodesh.com/jobs/*`
 - `ProgramaThor` remote senior listing pages
 - `Remotar` via public jobs API, incluindo links externos para ATSs como `Gupy` e `Inhire`
-- `Workable` via public global jobs API
+- `Workable` via its public board API, searched per configured stack
 - `RemoteOK` via the public global jobs API
 - `RemoteYeah` via its public RSS feed, plus configured job-page seeds
 - `RailsFullstack` via its SSR remote collection, with sitemap/`JobPosting` fallback
@@ -97,6 +97,8 @@ A remote role can still be closed to a candidate in Brazil or LatAm: "Remote (US
 The rule only fires on an explicit restriction — a region paired with a limiting phrase such as "US only", "must be based in the United Kingdom", "open to Canada only", "US citizens", or "reside within the EU". Naming a country is not a restriction, since plenty of global roles list the employer's headquarters, so "Remote worldwide / United States (HQ)" stays accepted. An explicit worldwide signal (`worldwide`, `global`, `anywhere`, `work from anywhere`) always wins, and so does any mention of the candidate's own region, which keeps "Brazil, United States" and "Latin America and Canada" in the results.
 
 Only profiles that require remote *and* target Brazil/LatAm are filtered: a profile scoped to global remote has no region to be excluded from, and one already scoped to a foreign region would filter itself out. This is matched on the profile's own `location_terms`, so changing a profile's region scope changes the filter with it.
+
+`Workable` is read through its public board API, but searched rather than crawled. The unfiltered feed reports ~170k live jobs from every industry, paginated 20 at a time, so the adapter's default 15-page budget read 300 rows and matched zero Ruby/Rails titles when measured on 2026-09-04. The endpoint accepts a `query` parameter the adapter previously ignored; the same budget spent on one search per configured stack returned 89 unique jobs, 46 of them carrying a target stack in the title. Terms come from `search_queries`, vacancies are deduped by id because the same posting answers to several terms, and `search_queries: []` remains an explicit escape hatch back to the unfiltered feed.
 
 ## Source provenance and unverified terms
 
