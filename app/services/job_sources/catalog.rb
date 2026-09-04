@@ -344,7 +344,22 @@ module JobSources
         }
       },
       { name: "Rails Job Board", slug: "rails-job-board", source_kind: :platform, base_url: "https://jobs.rubyonrails.org", host: "jobs.rubyonrails.org", priority: 18, adapter_key: "rails_jobs_rss", supports_backfill: true, scan_window_days: 20, settings: { feed_url: "https://jobs.rubyonrails.org/jobs.rss" } },
-      { name: "RemoteOK", slug: "remoteok", source_kind: :platform, base_url: "https://remoteok.com", host: "remoteok.com", priority: 25, adapter_key: "remoteok_jobs_api", supports_backfill: true, scan_window_days: 20 },
+      {
+        name: "RemoteOK",
+        slug: "remoteok",
+        source_kind: :platform,
+        base_url: "https://remoteok.com",
+        host: "remoteok.com",
+        priority: 25,
+        adapter_key: "remoteok_jobs_api",
+        supports_backfill: true,
+        scan_window_days: 20,
+        settings: {
+          # The unfiltered feed only returns the ~100 newest jobs across every
+          # category, so it is queried per tag. Set tags: [] for the raw feed.
+          tags: %w[ruby rails golang elixir react]
+        }
+      },
       {
         name: "RemoteYeah",
         slug: "remoteyeah",
@@ -389,15 +404,13 @@ module JobSources
         base_url: "https://artificialintelligencejobs.co/remote-ai-jobs",
         host: "artificialintelligencejobs.co",
         priority: 26,
-        # 2026-08-26: the whole host began answering 403 behind a Vercel
-        # Security Checkpoint — API, detail pages and even robots.txt, for every
-        # user agent including a plain browser one. The native adapter is kept
-        # in the registry so the source can be flipped back by editing settings
-        # once the checkpoint is lifted.
-        adapter_key: "manual_only",
-        supports_backfill: false,
-        codex_fallback_enabled: true,
-        codex_fallback_reason: "Host inteiro protegido por Vercel Security Checkpoint (403 em /api/jobs, paginas de vaga e robots.txt, com qualquer user agent); usar Codex fallback e preferir o ATS do empregador. Reverter para adapter_key artificialintelligencejobs_api quando o checkpoint cair.",
+        # 2026-08-26 the whole host answered 403 behind a Vercel Security
+        # Checkpoint, so it was moved to assisted discovery. Re-probed on
+        # 2026-09-04: robots.txt, the vacancy pages and /api/jobs all answer 200
+        # again (19,022 live jobs, every row carrying the employer's apply_url),
+        # so it is back on its native adapter as the comment then anticipated.
+        adapter_key: "artificialintelligencejobs_api",
+        supports_backfill: true,
         scan_window_days: 20,
         settings: {
           remote_only: true,
@@ -450,14 +463,23 @@ module JobSources
         base_url: "https://hiringcafe.com",
         host: "hiringcafe.com",
         priority: 25,
-        adapter_key: "hiringcafe_jobs_sitemap",
-        supports_backfill: true,
+        # 2026-09-04: the host went back behind a Cloudflare interstitial ("Just
+        # a moment...") and answers 403 for the homepage, the job-posting
+        # sitemaps and the vacancy pages alike; only robots.txt still returns
+        # 200. The native adapter and its tests stay in the repository, and
+        # settings.native_adapter_key records how to switch back with no code
+        # change once the challenge is lifted.
+        adapter_key: "manual_only",
+        supports_backfill: false,
+        codex_fallback_enabled: true,
+        codex_fallback_reason: "Host protegido por desafio Cloudflare (403 em /, nos sitemaps de vagas e nas paginas de vaga; apenas robots.txt responde 200); usar Codex fallback e preferir o ATS do empregador. Reverter para adapter_key hiringcafe_jobs_sitemap quando o desafio cair.",
         scan_window_days: 20,
         settings: {
           sitemap_url: "https://hiringcafe.com/job-posting-sitemap.xml",
           max_chunks: 2,
           max_jobs: 25,
-          regions: %w[us remote]
+          regions: %w[us remote],
+          native_adapter_key: "hiringcafe_jobs_sitemap"
         }
       },
       {

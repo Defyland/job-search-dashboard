@@ -389,13 +389,22 @@ class JobSourceTest < ActiveSupport::TestCase
 
     ai = JobSource.find_by!(slug: "artificial-intelligence-jobs")
     assert_equal true, ai.settings["remote_only"]
-    # The host started answering 403 behind a Vercel checkpoint, so the source
-    # is assisted; the native adapter key is retained for a later flip back.
-    assert_not ai.supports_backfill?
-    assert_equal "manual_only", ai.adapter_key
-    assert ai.codex_fallback_enabled?
-    assert_equal "artificialintelligencejobs_api", ai.settings["native_adapter_key"]
-    assert_match(/checkpoint/i, ai.codex_fallback_reason)
+    # The Vercel checkpoint that forced this source into assisted discovery on
+    # 2026-08-26 was gone when re-probed on 2026-09-04 (robots.txt, vacancy
+    # pages and /api/jobs all answer 200), so it is native again.
+    assert ai.supports_backfill?
+    assert_equal "artificialintelligencejobs_api", ai.adapter_key
+    assert_not ai.codex_fallback_enabled?
+
+    # HiringCafe moved the other way on 2026-09-04: a Cloudflare challenge now
+    # answers 403 for the sitemaps and vacancy pages, so it is assisted and
+    # keeps the native adapter key for a later flip back.
+    hiringcafe = JobSource.find_by!(slug: "hiringcafe")
+    assert_not hiringcafe.supports_backfill?
+    assert_equal "manual_only", hiringcafe.adapter_key
+    assert hiringcafe.codex_fallback_enabled?
+    assert_equal "hiringcafe_jobs_sitemap", hiringcafe.settings["native_adapter_key"]
+    assert_match(/cloudflare/i, hiringcafe.codex_fallback_reason)
 
     JobSources::Catalog::COMPANY_LIST_SPECS.each do |spec|
       source = JobSource.find_by!(slug: spec.fetch(:slug))

@@ -48,17 +48,17 @@ What Rails currently discovers by itself:
 - `ProgramaThor` remote senior listing pages
 - `Remotar` via public jobs API, incluindo links externos para ATSs como `Gupy` e `Inhire`
 - `Workable` via its public board API, searched per configured stack
-- `RemoteOK` via the public global jobs API
+- `RemoteOK` via the public jobs API, queried per configured tag
 - `RemoteYeah` via its public RSS feed, plus configured job-page seeds
 - `RailsFullstack` via its SSR remote collection, with sitemap/`JobPosting` fallback
 - `Remotive` via the public remote jobs API
 - `Himalayas` via the public jobs API
 - `GoGloby` via its dedicated jobs sitemap and SSR vacancy pages
-- `HiringCafe` via its public job-posting sitemaps and per-vacancy schema.org `JobPosting` blocks
+- `Artificial Intelligence Jobs` via its documented public API (`/api/jobs`)
 - `HireRubyDevs` via its sitemap and per-vacancy schema.org `JobPosting` blocks
 - `ITJobCafe` via the public JSON listing endpoint its AngularJS front end calls
 - public `Notion` job pages via Notion's own public page API
-- `Artificial Intelligence Jobs` (assisted since 2026-08-26: the host now returns `403` behind a Vercel checkpoint)
+- `HiringCafe` (assisted since 2026-09-04: the host returns `403` behind a Cloudflare challenge)
 - `We Work Remotely` via its public category RSS feeds
 - `beBee` via its public BR job search pages (profile-driven queries and remote
   filter configured in the source settings)
@@ -80,13 +80,13 @@ Portugal coverage is intentionally broad in Codex fallback mode: local tech port
 
 Public `Notion` vacancy pages are read through Notion's `loadPageChunk` endpoint, the same public API the browser calls, because the HTML those URLs serve is an empty JavaScript shell. Notion offers no way to enumerate a workspace's public pages — its search endpoint returns nothing without membership and the parent block of a shared page is normally private — so this source is seeded with explicit `page_urls` rather than crawled. Each entry may be a plain URL or a hash with `mirror_of` pointing at the same vacancy on the company's own site; when set, the site URL becomes the canonical identity so the two sources collapse into one job while the Notion page stays the apply link.
 
-`Artificial Intelligence Jobs` was read through its documented public API (`/api/jobs`), but since 2026-08-26 the whole host answers `403` behind a Vercel Security Checkpoint — API, vacancy pages and `robots.txt` alike, for any user agent — so the source is currently assisted. The adapter and its tests remain in the repository and `settings.native_adapter_key` records how to switch back without code changes. Its two deliberate behaviours still apply when it works: candidates canonicalize to the employer's own `apply_url` so the same vacancy found directly through Greenhouse/Lever/Ashby collapses into one job, and because the list API carries no technology fields, titles passing the pre-filter earn a bounded number of detail fetches (`max_detail_pages`) — restricted to the board's own host, so a third-party `url` cannot steer the worker elsewhere.
+`Artificial Intelligence Jobs` is read through its documented public API (`/api/jobs`). It spent 2026-08-26 to 2026-09-04 as an assisted source because the whole host sat behind a Vercel Security Checkpoint; re-probed on 2026-09-04 the checkpoint is gone (`robots.txt`, vacancy pages and the API all answer `200`, reporting 19,022 live jobs), so it is native again — the flip was a settings change because `settings.native_adapter_key` had recorded the way back. Two deliberate behaviours: candidates canonicalize to the employer's own `apply_url` so the same vacancy found directly through Greenhouse/Lever/Ashby collapses into one job, and because the list API carries no technology fields, titles passing the pre-filter earn a bounded number of detail fetches (`max_detail_pages`) — restricted to the board's own host, so a third-party `url` cannot steer the worker elsewhere.
 
 The Google Sheets company lists (`European Tech Companies Visa Sponsorship`, `Remotive Remote Startups`, `100% Remote Hiring Companies`, `Recently Funded Startups`, `Pragmatic Engineer Companies Hiring`) are registered as assisted sources with a distinct role: they list *companies*, not vacancies. Their fallback job is to extract careers pages and promote any board running on an ATS this project already reads natively into that source's settings — which is exactly how the current Greenhouse, Lever, Ashby and SmartRecruiters board lists were expanded.
 
 `Lever` also has one important optimization: the adapter now applies the active profile union policy against the board payload before materializing a candidate. That keeps strong and borderline matches for any configured profile, while avoiding obvious generic roles that do not fit any active radar.
 
-`HiringCafe` and `ITJobCafe` are both client-side front ends, so each is read through the only machine-readable surface it actually publishes. HiringCafe's search API answers `401`, but its `robots.txt` advertises job-posting sitemaps and allows `/job/`, and every vacancy page ships a complete schema.org `JobPosting` block; the adapter walks the newest sitemap chunks, filters by `lastmod` and by the role encoded in the slug before spending a request, pins every hop to `hiringcafe.com`, and drops postings whose `validThrough` has already passed. That host answered `403` behind a Vercel checkpoint on 2026-08-26 and answers `200` today, so the block may return — a failure surfaces as a failed scan rather than an empty source. `ITJobCafe` renders its listings with AngularJS and its sitemap carries no vacancy URLs, so the adapter calls the same unauthenticated `JobSearch/GetLatestJobs` endpoint the page's own controller calls, one POST per configured query. That payload already carries the description the detail page renders, so no per-vacancy request is made and there is no third-party URL to follow. The listing has no remote flag — the board mixes on-site and remote rows and only signals it in the title — so the title is passed through to the policy instead of asserting a remote role, and the window cutoff is derived from the relative `PostedOn` field ("7 Hours ago", "13 Days ago").
+`HiringCafe` is assisted as of 2026-09-04: the host now sits behind a Cloudflare challenge ("Just a moment...") and answers `403` for the homepage, the job-posting sitemaps and the vacancy pages, with only `robots.txt` still returning `200`. Its native adapter and tests stay in the repository and `settings.native_adapter_key` records how to switch back with no code change - when it worked, the adapter walked the newest sitemap chunks, filtered by `lastmod` and by the role encoded in the slug before spending a request, pinned every hop to `hiringcafe.com`, and dropped postings whose `validThrough` had passed. `ITJobCafe` renders its listings with AngularJS and its sitemap carries no vacancy URLs, so the adapter calls the same unauthenticated `JobSearch/GetLatestJobs` endpoint the page's own controller calls, one POST per configured query. That payload already carries the description the detail page renders, so no per-vacancy request is made and there is no third-party URL to follow. The listing has no remote flag — the board mixes on-site and remote rows and only signals it in the title — so the title is passed through to the policy instead of asserting a remote role, and the window cutoff is derived from the relative `PostedOn` field ("7 Hours ago", "13 Days ago").
 
 `HireRubyDevs` is a Ruby/Rails-only board whose `/jobs` listing spans 230+ pages, so discovery goes through the sitemap instead: it carries every vacancy with a precise `lastmod`, which is what recency sorting and the window cutoff use before any page is fetched. Its `robots.txt` allows `/jobs` but disallows `/jobs/*/apply` and `/jobs/*/website`, so the vacancy page itself is both the canonical identity and the applyable link and the apply route is never requested. Two details are worth knowing: the JobPosting block carries a `skills` field ("rails, ruby") that the prose may never repeat, so it is prepended to the description to keep the stack signal available to the policy; and some rows carry a `validThrough` that predates their own `datePosted` — observed live on 2026-09-02, a vacancy posted that morning declaring it expired on 08-16 — which is a stale field on a republished posting rather than a real expiry, so a `validThrough` at or before the posting date is ignored instead of burying an active role.
 
@@ -115,17 +115,16 @@ following stay **UNVERIFIED** and must not be reported as cleared:
   ingests vacancies from them.
 - **Licensing of harvested board lists.** Company names and ATS tokens are treated as factual
   identifiers, but no license was reviewed for the sheets themselves.
-- **`artificialintelligencejobs.co`.** Verified on 2026-08-26: the site now answers `403` behind a
-  "Vercel Security Checkpoint" for the homepage, `robots.txt` and `/api/jobs` alike, including with
-  a browser user agent. Its `/developers` page previously documented the API and robots previously
-  allowed crawling. The adapter surfaces this as a failed scan instead of pretending the source is
-  empty. Next step: re-probe before relying on it, and move the source to Codex fallback if the
-  block persists.
-- **`hiringcafe.com`.** Its `robots.txt` allows `/job/` and `/jobs/` and advertises the sitemaps this
+- **`artificialintelligencejobs.co`.** Answered `403` behind a "Vercel Security Checkpoint" on
+  2026-08-26 and `200` again on 2026-09-04 (`robots.txt` now explicitly allows `/`, including named
+  AI crawlers), so the source is native again. Its `/developers` page documents the API. The terms
+  of service were not read, and the two reversals in ten days mean its availability is not something
+  to depend on; a block surfaces as a failed scan rather than an empty source.
+- **`hiringcafe.com`.** Its `robots.txt` allows `/job/` and `/jobs/` and advertises the sitemaps the
   adapter reads, and the adapter honours the `/viewjob/`, `/org/`, `/company/`, `/b/` and
-  `?searchState=`/`?page=` disallows. The terms of service were not read. The host also answered
-  `403` behind a Vercel checkpoint on 2026-08-26 and `200` on 2026-08-27, so its availability is not
-  something to depend on.
+  `?searchState=`/`?page=` disallows. The terms of service were not read. Availability has flipped
+  twice: `403` behind a Vercel checkpoint on 2026-08-26, `200` on 2026-08-27, and `403` behind a
+  Cloudflare challenge on 2026-09-04, which is why the source is currently assisted.
 - **`itjobcafe.com`.** Its `robots.txt` only disallows SemrushBot, AhrefsBot and Baidu, and the
   endpoint this adapter calls is not under a disallowed path, but the endpoint is undocumented — it
   was found in the site's own public AngularJS controller — and the terms of service were not read.

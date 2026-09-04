@@ -5,6 +5,40 @@ rejected, and the commit/refs. Newest entries first. One entry per decision.
 
 ---
 
+## 2026-09-04 - Provider review: RemoteOK tag search, AI jobs back to native, HiringCafe assisted
+
+**Decision:** re-probed every adapter endpoint live and changed only the three that were broken or
+unproductive. The other adapters answered `200` with fresh, relevant rows and were left untouched.
+
+**RemoteOK — same waste pattern as Workable.** The unfiltered `/api` feed only returns the ~100 most
+recent jobs across every category: measured on 2026-09-04 it carried **zero** target-stack roles
+(store manager, vehicle detailer, produce clerk). The endpoint accepts a `tag` parameter the adapter
+never used; one request per configured tag returned **277 unique jobs, all carrying a target stack**.
+Vacancies are deduped by id because the same posting is tagged both "ruby" and "rails", and
+`tags: []` stays an explicit escape hatch back to the raw feed.
+
+**Artificial Intelligence Jobs — the block is gone, so it is native again.** The Vercel checkpoint
+that forced it into assisted discovery on 2026-08-26 no longer applies: `robots.txt`, the vacancy
+pages and `/api/jobs` all answer `200` (19,022 live jobs, every row carrying the employer's
+`apply_url`). The catalog comment written back then anticipated exactly this flip, and
+`native_adapter_key` made it a settings change with no code change.
+
+**HiringCafe — moved the other way.** It answered `200` on 2026-08-27 and now sits behind a
+Cloudflare interstitial ("Just a moment..."): `403` for the homepage, the job-posting sitemaps and
+the vacancy pages, with only `robots.txt` still returning `200`. It follows the established assisted
+pattern, keeping the adapter, its tests and `native_adapter_key` for a later flip back.
+
+**Checked and deliberately left alone:** rails.jobs RSS, RemoteYeah, Remotive, Himalayas, Trampos,
+Remotar, Coodesh, GoGloby, RailsFullstack, Programathor and beBee all answered `200` with relevant
+rows. RailsFullstack looked suspicious (a 392-byte sitemap) but is a sitemap *index* the adapter
+already handles, and its primary collection path returned 38 fresh jobs.
+
+**Verification:** 1 new RemoteOK test (one request per tag + dedupe) and the catalog test updated to
+pin both flips. The pre-existing catalog test caught the AI jobs change, which is the contract
+working as intended. Full suite 339 runs / 2655 assertions, RuboCop, Zeitwerk and Brakeman clean.
+
+---
+
 ## 2026-09-04 - Search Workable per stack instead of crawling its 170k-job feed
 
 **Decision:** `workable_global_api` now runs one paginated search per configured term
