@@ -57,6 +57,9 @@ What Rails currently discovers by itself:
 - `Artificial Intelligence Jobs` via its documented public API (`/api/jobs`)
 - `HireRubyDevs` via its sitemap and per-vacancy schema.org `JobPosting` blocks
 - `ITJobCafe` via the public JSON listing endpoint its AngularJS front end calls
+- `Braintrust` via its public paginated jobs API, with bounded detail fetches for accepted titles
+- `TalentLift` company boards via each board's sitemap and per-vacancy `JobPosting` blocks
+- `Careers-Page` company boards by walking the server-rendered board root and posting pages
 - public `Notion` job pages via Notion's own public page API
 - `HiringCafe` (assisted since 2026-09-04: the host returns `403` behind a Cloudflare challenge)
 - `We Work Remotely` via its public category RSS feeds
@@ -89,6 +92,12 @@ The Google Sheets company lists (`European Tech Companies Visa Sponsorship`, `Re
 `HiringCafe` is assisted as of 2026-09-04: the host now sits behind a Cloudflare challenge ("Just a moment...") and answers `403` for the homepage, the job-posting sitemaps and the vacancy pages, with only `robots.txt` still returning `200`. Its native adapter and tests stay in the repository and `settings.native_adapter_key` records how to switch back with no code change - when it worked, the adapter walked the newest sitemap chunks, filtered by `lastmod` and by the role encoded in the slug before spending a request, pinned every hop to `hiringcafe.com`, and dropped postings whose `validThrough` had passed. `ITJobCafe` renders its listings with AngularJS and its sitemap carries no vacancy URLs, so the adapter calls the same unauthenticated `JobSearch/GetLatestJobs` endpoint the page's own controller calls, one POST per configured query. That payload already carries the description the detail page renders, so no per-vacancy request is made and there is no third-party URL to follow. The listing has no remote flag — the board mixes on-site and remote rows and only signals it in the title — so the title is passed through to the policy instead of asserting a remote role, and the window cutoff is derived from the relative `PostedOn` field ("7 Hours ago", "13 Days ago").
 
 `HireRubyDevs` is a Ruby/Rails-only board whose `/jobs` listing spans 230+ pages, so discovery goes through the sitemap instead: it carries every vacancy with a precise `lastmod`, which is what recency sorting and the window cutoff use before any page is fetched. Its `robots.txt` allows `/jobs` but disallows `/jobs/*/apply` and `/jobs/*/website`, so the vacancy page itself is both the canonical identity and the applyable link and the apply route is never requested. Two details are worth knowing: the JobPosting block carries a `skills` field ("rails, ruby") that the prose may never repeat, so it is prepended to the description to keep the stack signal available to the policy; and some rows carry a `validThrough` that predates their own `datePosted` — observed live on 2026-09-02, a vacancy posted that morning declaring it expired on 08-16 — which is a stale field on a republished posting rather than a real expiry, so a `validThrough` at or before the posting date is ignored instead of burying an active role.
+
+`Braintrust` is a freelance marketplace whose own SPA loads `/api/jobs`—a public, unauthenticated JSON API with the employer, locations, skills and creation date per row but no description or status. To keep traffic bounded, titles that pass the pre-filter earn a detail request (`/api/jobs/:id`) up to `max_detail_pages`; a posting whose detail says `is_open` is false or `job_status` is closed/filled is kept as an expired candidate rather than dropped silently. The canonical and apply links are the posting page itself because candidacy happens inside the platform.
+
+`TalentLift` hosts each company's board at `{company}.talentlyft.com` with a sitemap that carries every vacancy and a precise `lastmod`, and each vacancy page server-renders a schema.org `JobPosting` block. Its `robots.txt` disallows the list endpoints but advertises the sitemap, so discovery goes through it; the `/{slug}/new` application route is normalized back to the canonical posting so it is never treated as a separate vacancy, and every redirect hop is pinned to the board host. Boards are configured via `board_urls` and also discovered from posting URLs already persisted in the database.
+
+`Careers-Page` boards (`{company}.careers-page.com`) publish no sitemap, robots file or JSON-LD, but the board root server-renders every vacancy card and each posting page renders the description and location, so the adapter walks the root page and fetches details only for titles that pass the pre-filter. Posting pages expose no publish date, so candidates always report `sem data publica` and rely on the window filter plus manual review; the apply link is the posting's `/apply` route.
 
 ### Geographic eligibility
 
@@ -134,6 +143,9 @@ following stay **UNVERIFIED** and must not be reported as cleared:
   under Article 4 of EU Directive 2019/790. This adapter indexes postings and links back to them
   rather than training on them, which is consistent with `search=yes`/`use=reference`, but that is an
   engineering reading, not a legal one, and the terms of service were not read.
+- **`talentlyft.com` boards.** Each board `robots.txt` explicitly advertises its `sitemap` and disallows the list endpoints (`/JobList`, `/joblist`, `/ArticleList`, `/articlelist`), so discovery goes through the `sitemap` and in-window vacancy pages only. The file also declares `Crawl-delay: 150`, which the shared Fetcher does not honor (its default floor is 0.4s); scans are bounded by the window cutoff and `max_jobs`. The terms of service were not read.
+- **`app.usebraintrust.com`.** The jobs API is undocumented, discovered from the site's own SPA, and `robots.txt` only disallows URLs carrying query params (`?page=`, `?key=`, `utm_`*...) while its `sitemap` index is empty, so the API is the only listing surface. The terms of service were not read.
+- **`careers-page.com` boards.** The boards answer 404 for `/robots.txt` and `/sitemap.xml`, so there is no robots directive to consult, and no Terms of Service was reviewed. Posting pages expose no publish date, so candidates always report `sem data publica` and rely on the window filter plus manual review.
 
 Next delimited step for any of the above: read the specific ToS, record the verdict here with a
 date, and only then change a source's mode. Until that happens the honest status is unverified.
