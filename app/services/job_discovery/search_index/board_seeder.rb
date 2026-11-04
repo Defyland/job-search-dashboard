@@ -4,14 +4,15 @@ module JobDiscovery
       DEFAULT_MAX_QUERIES = 60
       DEFAULT_RESULTS_PER_QUERY = 10
 
-      Result = Struct.new(:enabled, :query_count, :result_count, :seeded_count, :errors, keyword_init: true) do
+      Result = Struct.new(:enabled, :query_count, :result_count, :seeded_count, :errors, :queries, keyword_init: true) do
         def to_h
           {
             enabled:,
             query_count:,
             result_count:,
             seeded_count:,
-            errors:
+            errors:,
+            queries:
           }
         end
       end
@@ -31,6 +32,9 @@ module JobDiscovery
         @max_queries = max_queries
         @results_per_query = results_per_query
         @errors = []
+        @query_entries = []
+        @known_values = known_values_from(@sources)
+        @discovered_values = Set.new
       end
 
       def call
@@ -40,6 +44,7 @@ module JobDiscovery
           search(query)
         end
 
+        # A concurrent writer can persist a value first, so sum(discovered_seed_count) may exceed seeded_count.
         result(enabled: true, seeded_count: persist_additions)
       end
 
@@ -50,20 +55,47 @@ module JobDiscovery
         end
 
         def search(query)
+          entry = query_entry(query)
           @client.search(query.query, max_results: @results_per_query).each do |search_result|
             @result_count = result_count + 1
-            track_discovery(search_result.url)
+            entry[:result_count] += 1
+            track_discovery(search_result.url, entry)
           end
         rescue StandardError => error
           @errors << "#{query.host}: #{error.message}"
+          entry[:error] = error.class.name
         end
 
-        def track_discovery(url)
+        def query_entry(query)
+          {
+            host: query.host,
+            source_slug: query.source_slug,
+            target_stack: query.target_stack,
+            search_profile_ids: query.search_profile_ids,
+            result_count: 0,
+            discovered_seed_count: 0
+          }.tap { |entry| @query_entries << entry }
+        end
+
+        def track_discovery(url, entry)
           discovery = @classifier.call(url)
           return unless discovery
           return unless sources_by_slug.key?(discovery.source_slug)
 
           additions[discovery.source_slug][discovery.setting_key] << discovery.setting_value
+
+          value_key = [ discovery.source_slug, discovery.setting_key, discovery.setting_value ]
+          return if @known_values.include?(value_key) || !@discovered_values.add?(value_key)
+
+          entry[:discovered_seed_count] += 1
+        end
+
+        def known_values_from(sources)
+          sources.each_with_object(Set.new) do |source, known|
+            source.settings.each do |setting_key, values|
+              Array(values).each { |value| known << [ source.slug, setting_key.to_s, value.to_s.dup ] }
+            end
+          end
         end
 
         def persist_additions
@@ -108,7 +140,8 @@ module JobDiscovery
             query_count: enabled ? queries.size : 0,
             result_count:,
             seeded_count:,
-            errors: @errors
+            errors: @errors,
+            queries: @query_entries
           )
         end
 

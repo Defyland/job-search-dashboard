@@ -46,16 +46,32 @@
     </div>
   </div>
 
-  <% tab_query = request.query_parameters.except("page", "user_state").merge("search_profile_id" => @search_profile.id) %>
+  <% base_query = request.query_parameters.except("page", "market").merge("search_profile_id" => @search_profile.id) %>
+  <% market_param = @filters[:market] ? { "market" => @filters[:market] } : {} %>
   <% tabs = [["Novas", "new_match"], ["Todas", "all"], ["Vistas", "seen"], ["Aplicadas", "applied"], ["Ignoradas", "ignored"]] %>
   <div class="mt-6 flex flex-wrap gap-2">
     <% tabs.each do |label, state| %>
       <% active = (@filters[:user_state] || "new_match") == state %>
-      <%= link_to label, jobs_path(tab_query.merge("user_state" => state)), class: "rounded-full px-4 py-2 text-sm font-semibold transition #{active ? 'bg-white text-slate-950' : 'border border-white/10 text-slate-300 hover:bg-white/5 hover:text-white'}" %>
+      <%= link_to label, jobs_path(base_query.except("user_state").merge(market_param).merge("user_state" => state)), class: "rounded-full px-4 py-2 text-sm font-semibold transition #{active ? 'bg-white text-slate-950' : 'border border-white/10 text-slate-300 hover:bg-white/5 hover:text-white'}" %>
+    <% end %>
+  </div>
+
+  <% market_tabs = [["Todas", nil], ["Nacionais", "national"], ["Internacionais", "international"]] %>
+  <div data-testid="market-filter" class="mt-3 flex flex-wrap items-center gap-2">
+    <span class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Mercado</span>
+    <% market_tabs.each do |label, market| %>
+      <% active = @filters[:market] == market %>
+      <%= link_to label, jobs_path(market ? base_query.merge("market" => market) : base_query), "aria-current": (active ? "page" : nil), class: "rounded-full px-4 py-2 text-sm font-semibold transition #{active ? 'bg-white text-slate-950' : 'border border-white/10 text-slate-300 hover:bg-white/5 hover:text-white'}" %>
+    <% end %>
+    <% if @filters[:market].nil? && @unknown_market_count.positive? %>
+      <span data-testid="unknown-market-notice" class="text-xs text-amber-100/80"><%= @unknown_market_count %> sem mercado identificado</span>
     <% end %>
   </div>
 
   <%= form_with url: jobs_path, method: :get, **submit_state_form_options(default_loading_text: "Filtrando...", class: "mt-6 grid gap-4 md:grid-cols-6 xl:grid-cols-9") do |form| %>
+    <% if @filters[:market] %>
+      <%= hidden_field_tag :market, @filters[:market], id: nil %>
+    <% end %>
     <div class="md:col-span-2">
       <%= form.label :search_profile_id, "Perfil", class: "text-xs font-semibold uppercase tracking-[0.18em] text-slate-400" %>
       <%= form.select :search_profile_id, options_for_select(@search_profiles.map { |profile| [profile.name, profile.id] }, @search_profile.id), {}, class: "mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white" %>
@@ -273,7 +289,7 @@
     <p class="text-sm text-slate-400">Pagina <%= @page %> de <%= @total_pages %></p>
     <div class="flex items-center gap-2">
       <% pagination_window(@page, @total_pages).each do |page| %>
-        <% query_params = request.query_parameters.merge(page: page, search_profile_id: @search_profile.id) %>
+        <% query_params = base_query.merge(market_param).merge(page: page) %>
         <%= link_to page, jobs_path(query_params), class: "inline-flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold #{page == @page ? 'bg-sky-400 text-slate-950' : 'border border-white/10 text-slate-200 hover:bg-white/5'}" %>
       <% end %>
     </div>

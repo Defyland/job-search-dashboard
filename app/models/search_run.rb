@@ -1,4 +1,6 @@
 class SearchRun < ApplicationRecord
+  CLIENT_RUN_INDEX = "index_search_runs_on_client_run_id".freeze
+
   enum :trigger_source, { codex_automation: 0, manual: 1, cron: 2 }, prefix: true
   enum :status, { pending: 0, running: 1, succeeded: 2, failed: 3, partial: 4 }, prefix: true
 

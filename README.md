@@ -295,6 +295,9 @@ Successful responses return the `search_run_id` plus ingestion counters. Rails s
 
 ## Codex Fallback API
 
+For the complementary agent schedule, executor diagnosis, and run contract, see
+[Assisted daily discovery](docs/discovery-automation.md).
+
 Endpoint:
 
 ```text
@@ -376,3 +379,27 @@ This repository is published under the MIT License. See
 
 That keeps the operator workflows, ingestion patterns, and documentation
 reusable for study and internal tooling experiments.
+
+## Assisted discovery contract (local, not deployed)
+
+Short summary of the complementary agent discovery contract. The full contract,
+with its explicit differences from the earlier run contract, is in
+[docs/discovery-automation.md](docs/discovery-automation.md).
+
+- Status on 2026-11-04: implemented in the local working tree and **not
+  deployed**. The production backend is still the previous build, so it has no
+  `coverage` block, no `replayed` flag, and no client-run idempotency yet.
+- Schedule: the complementary agent is reported active at 08:00
+  America/Sao_Paulo. The native Rails worker stays at 08:30 BRT (11:30 UTC) in
+  [config/recurring.yml](config/recurring.yml).
+- Ingestion: `POST /api/v1/job_ingestions` accepts an optional
+  `run.client_run_id`. A same-key, same-body retry returns the original receipt
+  (`200`, `replayed: true`). A same-key, different-body request returns `409`.
+- Coverage: `GET /api/v1/codex_fallback_sources` adds `coverage.native_sources`
+  and `coverage.last_successful_codex_run`. A timestamp is not proof that the
+  full scope was covered.
+- Market: `jobs.market` is `national`, `international` or `unknown`, derived
+  from location and remote text only. It is display-only and separate from
+  geographic eligibility.
+- Scheduled prompt, literal text for review before scheduling:
+  [docs/discovery-agent-prompt.md](docs/discovery-agent-prompt.md).

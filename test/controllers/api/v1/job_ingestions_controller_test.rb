@@ -66,9 +66,98 @@ class Api::V1::JobIngestionsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "replays a retried request with the same client_run_id" do
+    with_env("INGEST_SHARED_TOKEN" => "secret-token") do
+      body = ingestion_body(run_extra: { client_run_id: "ctrl-replay-1" })
+
+      post api_v1_job_ingestions_path, params: body, headers: auth_headers, as: :json
+      assert_response :created
+      first_id = response.parsed_body.fetch("search_run_id")
+      assert_equal false, response.parsed_body.fetch("replayed")
+
+      assert_no_difference([ "SearchRun.count", "Job.count", "JobMatch.count", "SearchRunItem.count" ]) do
+        post api_v1_job_ingestions_path, params: body, headers: auth_headers, as: :json
+      end
+
+      assert_response :ok
+      assert_equal first_id, response.parsed_body.fetch("search_run_id")
+      assert_equal true, response.parsed_body.fetch("replayed")
+      assert_equal 1, response.parsed_body.dig("summary", "imported_count")
+    end
+  end
+
+  test "returns 409 when a client_run_id is reused with a different payload" do
+    with_env("INGEST_SHARED_TOKEN" => "secret-token") do
+      post api_v1_job_ingestions_path,
+           params: ingestion_body(run_extra: { client_run_id: "ctrl-conflict-1" }),
+           headers: auth_headers,
+           as: :json
+      assert_response :created
+
+      assert_no_difference([ "SearchRun.count", "Job.count" ]) do
+        post api_v1_job_ingestions_path,
+             params: ingestion_body(run_extra: { client_run_id: "ctrl-conflict-1" }, title: "Staff React Native Developer"),
+             headers: auth_headers,
+             as: :json
+      end
+
+      assert_response :conflict
+      assert_equal "client_run_id_conflict", response.parsed_body.fetch("error")
+      assert_includes response.parsed_body.fetch("details").join, "already used with a different payload"
+    end
+  end
+
+  test "creates a run on every request without a client_run_id" do
+    with_env("INGEST_SHARED_TOKEN" => "secret-token") do
+      assert_difference("SearchRun.count", 2) do
+        2.times do
+          post api_v1_job_ingestions_path, params: ingestion_body, headers: auth_headers, as: :json
+          assert_response :created
+          assert_equal false, response.parsed_body.fetch("replayed")
+        end
+      end
+    end
+  end
+
+  test "treats a blank client_run_id as no key" do
+    with_env("INGEST_SHARED_TOKEN" => "secret-token") do
+      assert_difference("SearchRun.count", 2) do
+        2.times do
+          post api_v1_job_ingestions_path,
+               params: ingestion_body(run_extra: { client_run_id: "" }),
+               headers: auth_headers,
+               as: :json
+          assert_response :created
+        end
+      end
+    end
+  end
+
   private
     def auth_headers(token = "secret-token")
       { "Authorization" => "Bearer #{token}" }
+    end
+
+    def ingestion_body(run_extra: {}, title: "Senior React Native Developer")
+      {
+        run: { window_label: "24h", trigger_source: "codex_automation" }.merge(run_extra),
+        jobs: [
+          {
+            title:,
+            company: "CI&T",
+            apply_url: "https://jobs.lever.co/ciandt/ff314e5d-e080-43cf-bb51-a581c2701199",
+            canonical_url: "https://jobs.lever.co/ciandt/ff314e5d-e080-43cf-bb51-a581c2701199",
+            source_name: "Lever",
+            source_kind: "ats",
+            remote_signal: "Remote Brazil",
+            location: "Brazil",
+            reason: "Titulo senior com React Native e remoto BR.",
+            stack_tags: [ "react native" ],
+            match_strength: "strong",
+            score: 91
+          }
+        ]
+      }
     end
 
     def with_env(pairs)

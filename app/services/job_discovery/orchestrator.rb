@@ -1,5 +1,7 @@
 module JobDiscovery
   class Orchestrator
+    CRON_RECOVERY_MAX_DAYS = 7
+
     Result = Struct.new(:search_run, :summary, :errors, keyword_init: true) do
       def success?
         errors.blank?
@@ -78,7 +80,7 @@ module JobDiscovery
       def scan_source(search_run:, source:, recorder:, discovery_counts:)
         source_scan = search_run.source_scans.create!(job_source: source, status: :running, started_at: Time.current)
         adapter = @registry.fetch(source.adapter_key).new(policy: scoped_policy)
-        candidates = adapter.scan(source_scan:, window_days: @window_days)
+        candidates = adapter.scan(source_scan:, window_days: scan_window_days_for(source))
 
         persist_scan_results(search_run:, source_scan:, source:, recorder:, discovery_counts:, candidates:)
       rescue StandardError => error
@@ -223,6 +225,15 @@ module JobDiscovery
 
       def scoped_policy
         @scoped_policy ||= JobDiscovery::Policy.new(search_profiles: @search_profiles.presence)
+      end
+
+      # A cron run that missed scans (failed or skipped) reaches back to the last successful
+      # full scan of each source, capped at CRON_RECOVERY_MAX_DAYS. Other triggers keep the requested window.
+      def scan_window_days_for(source)
+        return @window_days unless @trigger_source.to_s == "cron" && source.last_full_scan_at
+
+        days_since_full_scan = ((Time.current - source.last_full_scan_at) / 1.day).ceil
+        [ CRON_RECOVERY_MAX_DAYS, [ @window_days, days_since_full_scan ].max ].min
       end
   end
 end

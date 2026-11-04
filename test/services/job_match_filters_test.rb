@@ -172,7 +172,73 @@ class JobMatchFiltersTest < ActiveSupport::TestCase
     assert_equal [ second_match, first_match ], filtered
   end
 
+  test "filters matches to exactly the national or international market" do
+    national_match = create_market_match(location_text: "Brasil", remote_text: "Remoto", slug: "market-national")
+    international_match = create_market_match(location_text: "Worldwide", remote_text: "", slug: "market-international")
+    unknown_match = create_market_match(location_text: "Remote", remote_text: "", slug: "market-unknown")
+
+    assert_equal "national", national_match.job.market
+    assert_equal "international", international_match.job.market
+    assert_equal "unknown", unknown_match.job.market
+
+    expected_national = [ job_matches(:react_default), job_matches(:ruby_default), national_match ].map(&:id).sort
+
+    assert_equal expected_national, market_match_ids("national")
+    assert_equal [ international_match.id ], market_match_ids("international")
+  end
+
+  test "does not filter by market when the value is all, unknown, invalid or blank" do
+    create_market_match(location_text: "Remote", remote_text: "", slug: "market-ignored-unknown")
+    expected = JobMatch.for_profile(search_profiles(:default)).ids.sort
+
+    [ nil, "", "all", "unknown", "bogus" ].each do |market|
+      assert_equal expected, market_match_ids(market), "market=#{market.inspect} must not filter"
+    end
+  end
+
   private
+    def market_match_ids(market)
+      JobMatchFilters.new(
+        scope: JobMatch.for_profile(search_profiles(:default)).includes(job: :job_source),
+        params: { market:, lifecycle_state: "all" }
+      ).call.map(&:id).sort
+    end
+
+    def create_market_match(location_text:, remote_text:, slug:)
+      job = Job.create!(
+        job_source: job_sources(:gupy),
+        title: "Engenheiro React #{slug}",
+        company_name: "Acme #{slug}",
+        apply_url: "https://acme.example/jobs/#{slug}",
+        canonical_url: "https://acme.example/jobs/#{slug}",
+        source_url: "https://acme.example/jobs/#{slug}",
+        remote_text:,
+        location_text:,
+        lifecycle_state: :active,
+        posted_text: "publicada hoje",
+        published_at: Time.current,
+        first_seen_at: Time.current,
+        last_seen_at: Time.current,
+        last_validated_at: Time.current,
+        fingerprint: "#{slug}::market"
+      )
+      JobMatch.create!(
+        search_profile: search_profiles(:default),
+        job:,
+        match_strength: :strong,
+        user_state: :new_match,
+        score: 90,
+        reason: "Mercado #{slug}",
+        seniority: "senior",
+        stack_tags: [ "react" ],
+        eligibility_flags: [],
+        raw_decision: {},
+        first_seen_at: Time.current,
+        last_seen_at: Time.current,
+        last_validated_at: Time.current
+      )
+    end
+
     def create_job(title:, company_name:, slug:, source: job_sources(:gupy), posted_text: "publicada hoje", published_at: 1.day.ago, seen_at: Time.current, last_seen_at: seen_at)
       Job.create!(
         job_source: source,

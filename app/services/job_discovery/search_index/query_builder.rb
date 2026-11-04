@@ -2,6 +2,7 @@ module JobDiscovery
   module SearchIndex
     class QueryBuilder
       DEFAULT_LIMIT = 600
+      ROTATION_EPOCH = Date.new(2026, 1, 1)
       MAX_PHRASES_PER_QUERY = 10
       MAX_ROLE_TERMS_PER_QUERY = 8
       MAX_NEGATIVE_TERMS = 6
@@ -98,6 +99,7 @@ module JobDiscovery
         :search_profile_name,
         :target_stack,
         :query,
+        :search_profile_ids,
         keyword_init: true
       ) do
         def to_h
@@ -107,7 +109,8 @@ module JobDiscovery
             search_profile_id:,
             search_profile_name:,
             target_stack:,
-            query:
+            query:,
+            search_profile_ids:
           }
         end
       end
@@ -115,42 +118,82 @@ module JobDiscovery
       def initialize(search_profiles:, targets: TARGETS)
         @search_profiles = Array(search_profiles).presence || [ JobDiscovery::Policy.default_profile ]
         @targets = Array(targets)
+        @fragments = {}
       end
 
-      def queries(limit: DEFAULT_LIMIT)
-        query_groups = @search_profiles.flat_map { |profile| query_groups_for_profile(profile) }
-        ordered_queries = if limit && limit < query_groups.length
-          query_groups.flatten
-        else
-          interleave_query_groups(query_groups)
-        end
+      def queries(limit: DEFAULT_LIMIT, as_of: Time.zone.today)
+        ordered = interleave_queues(query_queues)
+        return ordered if limit.nil?
+        return [] if limit <= 0
+        return ordered if limit >= ordered.length
 
-        ordered_queries.first(limit)
+        # The window advances by one budget per day, so consecutive days cover the whole list.
+        start = ((as_of.to_date - ROTATION_EPOCH).to_i * limit) % ordered.length
+        ordered.rotate(start).first(limit)
       end
 
       private
-        def query_groups_for_profile(profile)
-          stacks = normalize_list(profile.target_stacks)
-          stacks.map do |stack|
-            targets_for_stack(stack).map do |target|
-              Query.new(
-                source_slug: target.fetch(:source_slug),
-                host: target.fetch(:host),
-                search_profile_id: profile.id,
-                search_profile_name: profile.name,
-                target_stack: stack,
-                query: query_for(profile:, stack:, host: target.fetch(:host))
-              )
+        # Identical query strings are emitted once, carrying every profile that generates them.
+        # Each logical group (stack + phrases + remote + negatives) keeps a queue of its hosts,
+        # strided by group index so that groups do not all start on the same host.
+        def query_queues
+          records = {}
+          queues = {}
+
+          @search_profiles.each do |profile|
+            normalize_list(profile.target_stacks).each do |stack|
+              fragments = fragments_for(profile, stack)
+              signature = [ stack, fragments.fetch(:phrases), fragments.fetch(:remote), fragments.fetch(:negatives) ]
+
+              targets_for_stack(stack).each do |target|
+                text = query_for(host: target.fetch(:host), fragments:)
+
+                if (existing = records[text])
+                  existing.search_profile_ids << profile.id unless existing.search_profile_ids.include?(profile.id)
+                  next
+                end
+
+                records[text] = Query.new(
+                  source_slug: target.fetch(:source_slug),
+                  host: target.fetch(:host),
+                  search_profile_id: profile.id,
+                  search_profile_name: profile.name,
+                  target_stack: stack,
+                  query: text,
+                  search_profile_ids: [ profile.id ]
+                )
+                (queues[signature] ||= []) << records[text]
+              end
             end
+          end
+
+          queues.values.each_with_index.map { |queue, g| stride_order(queue, g, queues.length) }
+        end
+
+        def stride_order(queue, group_index, group_count)
+          t = queue.length
+          cycle = group_count.lcm(t)
+
+          (0...t).map do |r|
+            q = group_index + r * group_count
+            queue[(q + q / cycle) % t]
           end
         end
 
-        def interleave_query_groups(query_groups)
-          max_group_size = query_groups.map(&:length).max.to_i
+        def interleave_queues(queues)
+          max_queue_size = queues.map(&:length).max.to_i
 
-          (0...max_group_size).flat_map do |index|
-            query_groups.filter_map { |group| group[index] }
+          (0...max_queue_size).flat_map do |round|
+            queues.filter_map { |queue| queue[round] }
           end
+        end
+
+        def fragments_for(profile, stack)
+          @fragments[[ profile.object_id, stack ]] ||= {
+            phrases: title_phrases(profile, stack),
+            remote: remote_group(profile),
+            negatives: negative_terms(profile)
+          }
         end
 
         def targets_for_stack(stack)
@@ -162,12 +205,12 @@ module JobDiscovery
           end
         end
 
-        def query_for(profile:, stack:, host:)
+        def query_for(host:, fragments:)
           [
             "site:#{host}",
-            boolean_group(title_phrases(profile, stack)),
-            remote_group(profile),
-            negative_terms(profile)
+            boolean_group(fragments.fetch(:phrases)),
+            fragments.fetch(:remote),
+            fragments.fetch(:negatives)
           ].compact_blank.join(" ")
         end
 

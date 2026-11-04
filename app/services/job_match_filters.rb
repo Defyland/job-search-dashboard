@@ -1,4 +1,6 @@
 class JobMatchFilters
+  MARKETS = %w[national international].freeze
+
   def initialize(scope:, params:)
     @scope = scope
     @params = params
@@ -14,6 +16,7 @@ class JobMatchFilters
     filtered_scope = apply_match_strength_filter(filtered_scope)
     filtered_scope = apply_user_state_filter(filtered_scope)
     filtered_scope = apply_title_language_filter(filtered_scope)
+    filtered_scope = apply_market_filter(filtered_scope)
     filtered_scope = apply_lifecycle_filter(filtered_scope)
     filtered_scope = apply_recency_filter(filtered_scope)
     apply_sort(filtered_scope)
@@ -68,6 +71,12 @@ class JobMatchFilters
       return scope if @params[:title_language].blank? || @params[:title_language] == "all"
 
       JobTitleLanguage.filter_scope(scope, @params[:title_language])
+    end
+
+    def apply_market_filter(scope)
+      return scope unless MARKETS.include?(@params[:market])
+
+      scope.where(jobs: { market: Job.markets.fetch(@params[:market]) })
     end
 
     def apply_lifecycle_filter(scope)

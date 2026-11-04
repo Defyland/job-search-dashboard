@@ -8,6 +8,7 @@ class Job < ApplicationRecord
 
   enum :lifecycle_state, { active: 0, expired: 1 }, prefix: true
   enum :contract_type, { unknown: 0, clt: 1, pj: 2, clt_or_pj: 3 }, prefix: true
+  enum :market, { unknown: 0, national: 1, international: 2 }, prefix: true
 
   normalizes :title, with: ->(value) { value.to_s.squish }
   normalizes :company_name, with: ->(value) { value.to_s.squish }
@@ -69,5 +70,6 @@ class Job < ApplicationRecord
         posted_text:,
         raw_payload:
       )
+      self.market = JobMarketClassifier.call(location_text:, remote_text:)
     end
 end

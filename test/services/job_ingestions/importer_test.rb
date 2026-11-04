@@ -597,4 +597,255 @@ class JobIngestions::ImporterTest < ActiveSupport::TestCase
     job = Job.find_by!(canonical_url: "https://scoped-import.invalid/jobs/senior-java-developer")
     assert_equal [ profile ], job.job_matches.map(&:search_profile)
   end
+
+  test "replays the original run when the same client_run_id and payload arrive again" do
+    payload = ImporterIdempotencyPayload.build(client_run_id: "run-replay-1")
+
+    first = JobIngestions::Importer.new(payload: payload.deep_dup).call
+    assert first.success?
+    refute first.replayed
+
+    assert_no_difference([ "SearchRun.count", "Job.count", "JobMatch.count", "SearchRunItem.count" ]) do
+      replay = JobIngestions::Importer.new(payload: payload.deep_dup).call
+
+      assert replay.success?
+      assert replay.replayed
+      assert_equal first.search_run, replay.search_run
+      assert_equal first.summary, replay.summary
+      assert_equal 1, replay.summary[:imported_count]
+    end
+  end
+
+  test "treats reordered JSON keys as the same request" do
+    payload = ImporterIdempotencyPayload.build(client_run_id: "run-reordered-1")
+    first = JobIngestions::Importer.new(payload: payload.deep_dup).call
+    assert first.success?
+
+    assert_no_difference([ "SearchRun.count", "Job.count", "SearchRunItem.count" ]) do
+      replay = JobIngestions::Importer.new(payload: ImporterIdempotencyPayload.reverse_keys(payload)).call
+
+      assert replay.success?
+      assert replay.replayed
+      assert_equal first.search_run, replay.search_run
+    end
+  end
+
+  test "rejects a reused client_run_id that carries a different payload without mutating anything" do
+    payload = ImporterIdempotencyPayload.build(client_run_id: "run-conflict-1")
+    first = JobIngestions::Importer.new(payload: payload.deep_dup).call
+    assert first.success?
+
+    changed = ImporterIdempotencyPayload.build(client_run_id: "run-conflict-1", title: "Staff Ruby Engineer")
+
+    assert_no_difference([ "SearchRun.count", "Job.count", "SearchRunItem.count" ]) do
+      result = JobIngestions::Importer.new(payload: changed).call
+
+      refute result.success?
+      assert result.conflict
+      assert_nil result.search_run
+      assert_match(/already used with a different payload/, result.errors.first)
+    end
+
+    assert_equal 1, first.search_run.reload.imported_count
+  end
+
+  test "creates a separate run for each request without a client_run_id" do
+    payload = ImporterIdempotencyPayload.build(client_run_id: nil)
+
+    assert_difference("SearchRun.count", 2) do
+      2.times do
+        result = JobIngestions::Importer.new(payload: payload.deep_dup).call
+
+        assert result.success?
+        refute result.replayed
+      end
+    end
+  end
+
+  test "treats a blank client_run_id as no key" do
+    payload = ImporterIdempotencyPayload.build(client_run_id: "   ")
+
+    assert_difference("SearchRun.count", 2) do
+      2.times { assert JobIngestions::Importer.new(payload: payload.deep_dup).call.success? }
+    end
+
+    assert_nil SearchRun.order(:id).last.client_run_id
+  end
+
+  test "a failed attempt keeps no client_run_id so a corrected retry can reuse the key" do
+    # A URL without host yields a blank source name, which JobSource rejects on save (a real validation failure).
+    broken = ImporterIdempotencyPayload.build(
+      client_run_id: "run-retry-1",
+      apply_url: "not-a-url",
+      canonical_url: "not-a-url",
+      source_name: nil,
+      source_slug: nil
+    )
+
+    assert_no_difference([ "SearchRun.count", "Job.count" ]) do
+      failed = JobIngestions::Importer.new(payload: broken).call
+
+      refute failed.success?
+      assert_nil failed.search_run
+    end
+
+    refute SearchRun.exists?(client_run_id: "run-retry-1")
+
+    retry_result = JobIngestions::Importer.new(payload: ImporterIdempotencyPayload.build(client_run_id: "run-retry-1")).call
+
+    assert retry_result.success?
+    refute retry_result.replayed
+    assert_equal 1, SearchRun.where(client_run_id: "run-retry-1").count
+  end
+
+  test "replay does not touch jobs already recorded by the original run" do
+    payload = ImporterIdempotencyPayload.build(client_run_id: "run-recorder-1")
+    first = JobIngestions::Importer.new(payload: payload.deep_dup).call
+    assert first.success?
+    job = Job.order(:created_at).last
+    job_updated_at = job.updated_at
+
+    replay = JobIngestions::Importer.new(payload: payload.deep_dup).call
+
+    assert replay.replayed
+    assert_equal job_updated_at, job.reload.updated_at
+  end
+end
+
+module ImporterIdempotencyPayload
+  APPLY_URL = "https://idempotent.invalid/jobs/ruby".freeze
+
+  module_function
+
+  def build(client_run_id:, title: "Senior Ruby Idempotent", apply_url: APPLY_URL, canonical_url: APPLY_URL, source_name: "Idempotent Careers", source_slug: "idempotent-careers")
+    run = { window_label: "24h", trigger_source: "manual" }
+    run[:client_run_id] = client_run_id unless client_run_id.nil?
+
+    {
+      run:,
+      jobs: [
+        {
+          title:,
+          company: "Idempotent Co",
+          apply_url:,
+          canonical_url:,
+          source_name:,
+          source_slug:,
+          source_kind: "company",
+          remote_signal: "Remoto Brasil",
+          location: "Brasil",
+          reason: "Titulo senior com ruby no titulo.",
+          stack_tags: [ "ruby" ],
+          match_strength: "strong"
+        }
+      ]
+    }
+  end
+
+  def reverse_keys(value)
+    case value
+    when Hash then value.to_a.reverse.to_h { |key, item| [ key, reverse_keys(item) ] }
+    when Array then value.map { |item| reverse_keys(item) }
+    else value
+    end
+  end
+end
+
+# Runs against independent database connections, so fixture transactions cannot serialize the race.
+class JobIngestions::ImporterIdempotencyRaceTest < ActiveSupport::TestCase
+  self.use_transactional_tests = false
+
+  RUN_KEYS = %w[race-held-1 race-parallel-1].freeze
+
+  teardown do
+    runs = SearchRun.where(client_run_id: RUN_KEYS)
+    jobs = Job.where(apply_url: ImporterIdempotencyPayload::APPLY_URL)
+
+    SearchRunItem.where(search_run: runs).or(SearchRunItem.where(job: jobs)).delete_all
+    JobMatch.where(job: jobs).delete_all
+    jobs.delete_all
+    runs.delete_all
+    JobSource.where(slug: "idempotent-careers").delete_all
+  end
+
+  test "a request racing a winner that is still uncommitted replays it once the winner commits" do
+    payload = ImporterIdempotencyPayload.build(client_run_id: "race-held-1")
+    digest = JobIngestions::Importer.new(payload: payload.deep_dup).request_digest
+    inserted = Queue.new
+    release = Queue.new
+
+    holder = Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection do
+        ActiveRecord::Base.transaction do
+          SearchRun.create!(
+            trigger_source: :manual, status: :succeeded, window_label: "24h", started_at: Time.current,
+            client_run_id: "race-held-1", request_digest: digest, imported_count: 1, summary: {}
+          )
+          inserted << :inserted
+          release.pop
+        end
+      end
+    end
+
+    inserted.pop
+    importer = Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection do
+        JobIngestions::Importer.new(payload: payload.deep_dup).call
+      end
+    end
+
+    begin
+      wait_until_blocked_on_a_lock
+    ensure
+      release << :commit
+      holder.join
+    end
+    result = importer.value
+
+    assert result.success?
+    assert result.replayed
+    assert_equal SearchRun.find_by!(client_run_id: "race-held-1"), result.search_run
+    assert_equal 1, result.summary[:imported_count]
+    assert_equal 0, Job.where(apply_url: ImporterIdempotencyPayload::APPLY_URL).count
+  end
+
+  test "two simultaneous requests with the same client_run_id create exactly one run" do
+    payload = ImporterIdempotencyPayload.build(client_run_id: "race-parallel-1")
+    start = Queue.new
+
+    threads = Array.new(2) do
+      Thread.new do
+        start.pop
+        ActiveRecord::Base.connection_pool.with_connection do
+          JobIngestions::Importer.new(payload: payload.deep_dup).call
+        end
+      end
+    end
+    2.times { start << :go }
+    results = threads.map(&:value)
+
+    assert results.all?(&:success?)
+    assert_equal({ false => 1, true => 1 }, results.map(&:replayed).tally)
+    assert_equal 1, SearchRun.where(client_run_id: "race-parallel-1").count
+    assert_equal 1, Job.where(apply_url: ImporterIdempotencyPayload::APPLY_URL).count
+  end
+
+  private
+    def wait_until_blocked_on_a_lock
+      deadline = Time.current + 5
+      until blocked_sessions.positive?
+        raise "importer never blocked on the client_run_id index" if Time.current > deadline
+
+        sleep 0.05
+      end
+    end
+
+    def blocked_sessions
+      # Uncached: the query cache would otherwise replay the first count forever.
+      ActiveRecord::Base.uncached do
+        ActiveRecord::Base.connection.select_value(
+          "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'"
+        ).to_i
+      end
+    end
 end

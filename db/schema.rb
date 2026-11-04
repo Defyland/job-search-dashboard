@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_15_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_04_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -116,6 +116,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_100000) do
     t.datetime "last_validated_at", null: false
     t.integer "lifecycle_state", default: 0, null: false
     t.string "location_text"
+    t.integer "market", default: 0, null: false
     t.string "posted_text"
     t.datetime "published_at"
     t.jsonb "raw_payload", default: {}, null: false
@@ -129,6 +130,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_100000) do
     t.index ["fingerprint"], name: "index_jobs_on_fingerprint", unique: true
     t.index ["job_source_id"], name: "index_jobs_on_job_source_id"
     t.index ["last_seen_at"], name: "index_jobs_on_last_seen_at"
+    t.index ["market"], name: "index_jobs_on_market"
   end
 
   create_table "search_profiles", force: :cascade do |t|
@@ -176,12 +178,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_100000) do
   end
 
   create_table "search_runs", force: :cascade do |t|
+    t.string "client_run_id"
     t.datetime "created_at", null: false
     t.text "error_message"
     t.integer "expired_count", default: 0, null: false
     t.datetime "finished_at"
     t.integer "imported_count", default: 0, null: false
     t.integer "rejected_count", default: 0, null: false
+    t.string "request_digest"
     t.datetime "started_at", null: false
     t.integer "status", default: 0, null: false
     t.jsonb "summary", default: {}, null: false
@@ -189,6 +193,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_100000) do
     t.datetime "updated_at", null: false
     t.integer "updated_count", default: 0, null: false
     t.string "window_label", default: "24h", null: false
+    t.index ["client_run_id"], name: "index_search_runs_on_client_run_id", unique: true, where: "(client_run_id IS NOT NULL)"
     t.index ["started_at"], name: "index_search_runs_on_started_at"
     t.index ["status"], name: "index_search_runs_on_status"
   end

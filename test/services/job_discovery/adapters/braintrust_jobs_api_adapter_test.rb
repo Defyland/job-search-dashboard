@@ -127,10 +127,10 @@ class JobDiscovery::Adapters::BraintrustJobsApiAdapterTest < ActiveSupport::Test
 
   test "stale rows are dropped on the list before any detail fetch" do
     source_scan = build_source_scan(max_detail_pages: 5)
-    stale = api_job("stale").merge("created" => 60.days.ago.iso8601)
-    fetcher = FakeFetcher.new([ { "count" => 1, "results" => [ stale ] }.to_json ], detail_body: "{}")
 
     travel_to Time.zone.parse("2026-08-26 12:00:00") do
+      stale = api_job("stale").merge("created" => 60.days.ago.iso8601)
+      fetcher = FakeFetcher.new([ { "count" => 1, "results" => [ stale ] }.to_json ], detail_body: "{}")
       candidates = JobDiscovery::Adapters::BraintrustJobsApiAdapter.new(fetcher:).scan(source_scan:, window_days: 20)
 
       assert_empty candidates

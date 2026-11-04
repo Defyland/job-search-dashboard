@@ -80,4 +80,158 @@ class JobsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to new_search_profile_path(onboarding: 1)
   end
+
+  test "filters by national market and keeps the market across pagination" do
+    profile = create_market_profile
+
+    get jobs_path(search_profile_id: profile.id, market: "national")
+
+    assert_response :success
+    assert_match "26 vagas retornadas", response.body
+    assert_select "a[aria-current=page]", text: "Nacionais", count: 1
+    assert_select "a[aria-current=page]", text: "Todas", count: 0
+    assert_no_match "sem mercado identificado", response.body
+
+    get jobs_path(search_profile_id: profile.id, market: "national", page: 2)
+
+    assert_response :success
+    assert_match "Pagina 2 de 2", response.body
+    assert_match "26-26", response.body
+    assert_select "a[href=?]", jobs_path(search_profile_id: profile.id, market: "national", page: 1)
+    assert_select "input[type=hidden][name=market][value=national]", count: 1
+  end
+
+  test "filters by international market" do
+    profile = create_market_profile
+
+    get jobs_path(search_profile_id: profile.id, market: "international")
+
+    assert_response :success
+    assert_match "1 vaga retornada", response.body
+    assert_select "a[aria-current=page]", text: "Internacionais", count: 1
+  end
+
+  test "default tab shows every market and the unknown notice" do
+    profile = create_market_profile
+
+    get jobs_path(search_profile_id: profile.id)
+
+    assert_response :success
+    assert_match "30 vagas retornadas", response.body
+    assert_select "a[aria-current=page]", text: "Todas", count: 1
+    assert_match "3 sem mercado identificado", response.body
+    assert_select "input[type=hidden][name=market]", count: 0
+  end
+
+  test "ignores unknown and invalid market params instead of filtering" do
+    profile = create_market_profile
+
+    %w[all unknown bogus].each do |market|
+      get jobs_path(search_profile_id: profile.id, market:)
+
+      assert_response :success
+      assert_match "30 vagas retornadas", response.body
+      assert_select "a[aria-current=page]", text: "Todas", count: 1
+      assert_select "input[type=hidden][name=market]", count: 0
+    end
+  end
+
+  test "switching market pills resets the page and keeps other filters" do
+    profile = create_market_profile
+
+    get jobs_path(search_profile_id: profile.id, market: "national", page: 2, q: "Frontend")
+
+    assert_response :success
+    assert_select "a[href=?]", jobs_path(search_profile_id: profile.id, q: "Frontend", market: "international")
+    assert_select "a[href=?]", jobs_path(search_profile_id: profile.id, q: "Frontend")
+    assert_select "input[type=hidden][name=market][value=national]", count: 1
+    assert_select "input[name=q][value=?]", "Frontend", count: 1
+  end
+
+  test "status tabs keep the normalized market and drop the page" do
+    profile = create_market_profile
+
+    get jobs_path(search_profile_id: profile.id, market: "national", page: 2, q: "Frontend")
+
+    assert_response :success
+    assert_select "a[href=?]", jobs_path(search_profile_id: profile.id, market: "national", q: "Frontend", user_state: "applied")
+  end
+
+  test "bogus market is not echoed into links or the hidden form field" do
+    profile = create_market_profile
+
+    get jobs_path(search_profile_id: profile.id, market: "bogus", page: 2)
+
+    assert_response :success
+    assert_select "input[name=market]", count: 0
+    assert_select "a[href*=bogus]", count: 0
+  end
+
+  test "unknown notice counts unknown matches of the selected profile under the current filters" do
+    profile = create_market_profile
+    other_profile = SearchProfile.create!(SearchProfile.default_attributes.merge(user: users(:one), name: "Outro", slug: "outro"))
+    other_user_profile = SearchProfile.create!(SearchProfile.default_attributes.merge(user: users(:two), name: "Outro usuario", slug: "outro-usuario"))
+    create_market_match(profile: other_profile, slug: "other-profile-unknown", title: "Frontend Engineer Other", location_text: "Remote")
+    create_market_match(profile: other_user_profile, slug: "other-user-unknown", title: "Frontend Engineer Other User", location_text: "Remote")
+
+    get jobs_path(search_profile_id: profile.id)
+    assert_match "3 sem mercado identificado", response.body
+
+    get jobs_path(search_profile_id: profile.id, q: "Frontend")
+    assert_match "2 sem mercado identificado", response.body
+
+    get jobs_path(search_profile_id: profile.id, market: "national")
+    assert_no_match "sem mercado identificado", response.body
+  end
+
+  private
+    def create_market_profile
+      profile = SearchProfile.create!(SearchProfile.default_attributes.merge(user: users(:one), name: "Mercado", slug: "mercado"))
+
+      26.times do |index|
+        create_market_match(profile:, slug: "national-#{index}", title: "Ruby Engineer #{index}", location_text: "Brasil")
+      end
+      create_market_match(profile:, slug: "international", title: "Frontend Engineer Global", location_text: "Worldwide")
+      create_market_match(profile:, slug: "unknown-a", title: "Frontend Engineer Remote A", location_text: "Remote")
+      create_market_match(profile:, slug: "unknown-b", title: "Frontend Engineer Remote B", location_text: "Remote")
+      create_market_match(profile:, slug: "unknown-c", title: "Backend Engineer Remote C", location_text: "Remote")
+      create_market_match(profile:, slug: "unknown-seen", title: "Frontend Engineer Remote D", location_text: "Remote", user_state: :seen)
+
+      profile
+    end
+
+    def create_market_match(profile:, slug:, title:, location_text:, user_state: :new_match)
+      job = Job.create!(
+        job_source: job_sources(:gupy),
+        title:,
+        company_name: "Acme #{slug}",
+        apply_url: "https://acme.example/jobs/#{slug}",
+        canonical_url: "https://acme.example/jobs/#{slug}",
+        source_url: "https://acme.example/jobs/#{slug}",
+        remote_text: "",
+        location_text:,
+        lifecycle_state: :active,
+        posted_text: "publicada hoje",
+        published_at: Time.current,
+        first_seen_at: Time.current,
+        last_seen_at: Time.current,
+        last_validated_at: Time.current,
+        fingerprint: "#{slug}::market"
+      )
+      JobMatch.create!(
+        search_profile: profile,
+        job:,
+        match_strength: :strong,
+        user_state:,
+        score: 90,
+        reason: "Mercado #{slug}",
+        seniority: "senior",
+        stack_tags: [ "react" ],
+        eligibility_flags: [],
+        raw_decision: {},
+        first_seen_at: Time.current,
+        last_seen_at: Time.current,
+        last_validated_at: Time.current
+      )
+    end
 end

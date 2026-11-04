@@ -9,6 +9,7 @@ react_role:
   external_job_id: "10970184"
   remote_text: Trabalho remoto
   location_text: Brasil
+  market: national
   lifecycle_state: active
   posted_text: reindexada ha 3 dias
   published_at: <%= 2.days.ago %>
@@ -43,6 +44,7 @@ ruby_role:
   external_job_id: vFiUCegceZETVwRh5nAx32
   remote_text: Brazil remote
   location_text: Sao Paulo
+  market: national
   lifecycle_state: active
   posted_text: publicada ha 7 dias
   published_at: <%= 7.days.ago %>

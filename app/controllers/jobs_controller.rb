@@ -6,6 +6,7 @@ class JobsController < ApplicationController
   def index
     @filters = filter_params.to_h.symbolize_keys
     @filters[:user_state] = "new_match" if @filters[:user_state].blank?
+    @filters[:market] = JobMatchFilters::MARKETS.include?(@filters[:market]) ? @filters[:market] : nil
     @source_options = JobSource.order(priority: :asc, name: :asc)
     @search_profiles = current_user.search_profiles.ordered
     @stack_options = @search_profile.target_stacks
@@ -13,6 +14,8 @@ class JobsController < ApplicationController
     base_scope = JobMatch.for_profile(@search_profile).includes(job: :job_source)
     filtered_scope = JobMatchFilters.new(scope: base_scope, params: @filters).call
     @has_any_matches = base_scope.exists?
+    @unknown_market_count = JobMatchFilters.new(scope: base_scope, params: @filters.except(:market)).call
+      .where(jobs: { market: Job.markets.fetch("unknown") }).count
 
     @counts = {
       active: base_scope.joins(:job).where(jobs: { lifecycle_state: Job.lifecycle_states.fetch("active") }).count,
@@ -66,7 +69,7 @@ class JobsController < ApplicationController
     end
 
     def filter_params
-      params.permit(:q, :stack, :source, :contract_type, :match_strength, :user_state, :title_language, :lifecycle_state, :recency, :sort)
+      params.permit(:q, :stack, :source, :contract_type, :match_strength, :user_state, :title_language, :market, :lifecycle_state, :recency, :sort)
     end
 
     def set_search_profile
