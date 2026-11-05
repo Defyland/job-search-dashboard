@@ -1,6 +1,10 @@
 module JobDiscovery
   module Adapters
     class GupyCompanyBoardsAdapter < Base
+      MAX_DISCOVERED_BOARDS = 25
+      # Gupy hosts that are not a company board: the job portal itself.
+      NON_BOARD_LABELS = %w[portal].freeze
+
       def scan(source_scan:, window_days:)
         board_urls(source_scan).flat_map do |board_url|
           source_scan.record_page!
@@ -28,6 +32,7 @@ module JobDiscovery
             next if published_at.present? && published_at < window_days.days.ago.beginning_of_day
 
             external_job_id = job_url[%r{/jobs/(\d+)}, 1]
+            canonical_url = canonical_listing_url(job_url)
 
             build_candidate(
               source_scan:,
@@ -37,8 +42,8 @@ module JobDiscovery
               title:,
               company_name: posting.dig("hiringOrganization", "name").presence || company_name,
               apply_url:,
-              canonical_url: job_url,
-              source_url: job_url,
+              canonical_url:,
+              source_url: canonical_url,
               remote_text:,
               location_text: nil,
               description:,
@@ -54,14 +59,47 @@ module JobDiscovery
           end
         end
 
-        def board_urls(source_scan)
-          configured_urls = Array(source_scan.job_source.settings["board_urls"])
-          discovered_urls = known_hosted_urls(host_suffixes: [ "gupy.io" ]).filter_map do |url|
-            host = normalized_host(url)
-            "https://#{host}/" if host.present?
-          end
+        # Query parameters such as `jobBoardSource` tell where a listing was opened from, not which
+        # listing it is, so the canonical url keeps only scheme, host and path.
+        def canonical_listing_url(job_url)
+          uri = URI.parse(job_url)
+          uri.query = nil
+          uri.fragment = nil
+          uri.to_s
+        end
 
-          (configured_urls + discovered_urls).map { |url| url.to_s.strip }.reject(&:blank?).uniq
+        def board_urls(source_scan)
+          configured_urls = Array(source_scan.job_source.settings["board_urls"]).map { |url| url.to_s.strip }.reject(&:blank?).uniq
+          configured_hosts = configured_urls.map { |url| normalized_host(url) }
+
+          discovered_hosts = known_hosted_urls(host_suffixes: [ "gupy.io" ])
+            .filter_map { |url| normalized_host(url).presence }
+            .select { |host| company_board_host?(host) }
+            .uniq
+            .sort
+            .reject { |host| configured_hosts.include?(host) }
+
+          # Configured boards are always kept. Dynamic discovery is capped at MAX_DISCOVERED_BOARDS distinct
+          # hosts, not urls, so one scan cannot fan out to every Gupy host in the database.
+          configured_urls + rotated_hosts(source_scan, discovered_hosts).map { |host| "https://#{host}/" }
+        end
+
+        def company_board_host?(host)
+          label = host.delete_suffix(".gupy.io")
+          label.present? && label != host && NON_BOARD_LABELS.exclude?(label)
+        end
+
+        # Each scan of the source takes the next MAX_DISCOVERED_BOARDS hosts after the previous scan's,
+        # wrapping around, so every discovered board is reached over the scans and none is starved.
+        def rotated_hosts(source_scan, hosts)
+          return hosts if hosts.size <= MAX_DISCOVERED_BOARDS
+
+          start = (previous_scan_count(source_scan) * MAX_DISCOVERED_BOARDS) % hosts.size
+          hosts.rotate(start).first(MAX_DISCOVERED_BOARDS)
+        end
+
+        def previous_scan_count(source_scan)
+          source_scan.job_source.source_scans.where("source_scans.id < ?", source_scan.id).count
         end
     end
   end

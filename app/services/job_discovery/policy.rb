@@ -339,6 +339,9 @@ module JobDiscovery
       )
     end
 
+    # The profiles this scan searches for. Adapters read their search terms from them.
+    attr_reader :profiles
+
     def initialize(search_profile: nil, search_profiles: nil)
       @profiles =
         if search_profile

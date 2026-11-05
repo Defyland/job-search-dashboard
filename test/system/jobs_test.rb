@@ -149,9 +149,9 @@ class JobsTest < ApplicationSystemTestCase
     find("a[href*='page=2']").click
     assert_selector "[data-testid='filtered-results-summary']", text: "Mostrando 26-27 nesta pagina."
 
-    # Filtrar from page 2 must land on page 1 with market kept; waiting for "Mostrando 1-25"
+    # Buscar from page 2 must land on page 1 with market kept; waiting for "Mostrando 1-25"
     # (only true after the submit) avoids reading the old page, which also shows 27 results.
-    click_button "Filtrar"
+    click_button "Buscar"
 
     assert_selector "[data-testid='filtered-results-summary']", text: "Mostrando 1-25 nesta pagina."
     assert_selector "[data-testid='filtered-results-summary']", text: "27 vagas retornadas"
@@ -169,6 +169,85 @@ class JobsTest < ApplicationSystemTestCase
     assert_equal "national", current_query["market"]
     assert_equal @profile.id.to_s, current_query["search_profile_id"]
     refute current_query.key?("page")
+  end
+
+  test "advanced filters stay collapsed until opened, count applied filters and Limpar keeps the profile" do
+    seed_market_profile
+    use_desktop_window
+    sign_in_with_form(users(:one))
+
+    visit market_radar_path(sort: "newest")
+
+    assert_selector "[data-testid='job-search'] input[name='q']"
+    assert_selector "[data-testid='state-tabs']", text: "Novas"
+    assert_no_selector "[data-testid='advanced-filter-count']"
+    refute advanced_filters_open?
+
+    find("[data-testid='advanced-filters'] summary", text: "Filtros avançados").click
+    assert advanced_filters_open?
+
+    select "CLT", from: "Contrato"
+    click_search_button
+
+    assert_selector "[data-testid='advanced-filter-count']", text: "1"
+    assert_equal "clt", current_query["contract_type"]
+    assert advanced_filters_open?, "an applied advanced filter must keep the panel open after reload"
+
+    click_link "Limpar"
+
+    assert_no_selector "[data-testid='advanced-filter-count']"
+    refute current_query.key?("contract_type")
+    assert_equal({ "search_profile_id" => @profile.id.to_s }, current_query)
+    assert_equal @profile.id.to_s, find("select[name='search_profile_id']").value
+    refute advanced_filters_open?
+  end
+
+  test "state tabs keep the search text, market and advanced filters" do
+    seed_market_profile
+    use_desktop_window
+    sign_in_with_form(users(:one))
+
+    visit market_radar_path(q: "Vaga Nacional", market: "national", sort: "score")
+
+    assert_selector "[data-testid='filtered-results-summary']", text: "27 vagas retornadas"
+
+    click_state_tab "Vistas"
+
+    assert_selector "[data-testid='state-tabs'] a[aria-current='page']", text: "Vistas"
+    assert_equal "seen", current_query["user_state"]
+    assert_equal "Vaga Nacional", current_query["q"]
+    assert_equal "national", current_query["market"]
+    assert_equal "score", current_query["sort"]
+    assert_selector "input[name='q'][value='Vaga Nacional']"
+    assert_selector "input[name='market'][value='national']", visible: :all
+    assert_equal "Nacionais", active_market
+  end
+
+  test "job filters capture desktop and mobile screenshots when UI_SCREENSHOTS is set" do
+    skip "Set UI_SCREENSHOTS=1 to capture job radar screenshots" unless ENV["UI_SCREENSHOTS"] == "1"
+
+    seed_market_profile
+    sign_in_with_form(users(:one))
+
+    stage = ENV.fetch("UI_SCREENSHOT_STAGE", "current")
+    screenshot_dir = Rails.root.join("tmp/jobs-ui-evidence", stage)
+    FileUtils.mkdir_p(screenshot_dir)
+
+    [ [ 1440, 1000 ], [ 390, 844 ] ].each do |width, height|
+      page.driver.browser.manage.window.resize_to(width, height)
+      visit market_radar_path(market: "national", sort: "newest")
+      assert_selector "[data-testid='filtered-results-summary']", text: "27 vagas retornadas"
+      # A stale precompiled public/assets/tailwind-*.css shadows app/assets/builds, so the
+      # screenshot would miss new utilities. Inject the current build for evidence only.
+      inject_current_tailwind_build
+
+      refute advanced_filters_open?
+      page.save_screenshot(screenshot_dir.join("#{width}x#{height}-collapsed.png").to_s)
+
+      find("[data-testid='advanced-filters'] summary", text: "Filtros avançados").click
+      assert advanced_filters_open?
+      page.save_screenshot(screenshot_dir.join("#{width}x#{height}-advanced-open.png").to_s)
+    end
   end
 
   test "market group screenshots at mobile, tablet and desktop widths" do
@@ -209,6 +288,27 @@ class JobsTest < ApplicationSystemTestCase
       within "[data-testid='market-filter']" do
         click_link label
       end
+    end
+
+    def click_state_tab(label)
+      assert_no_selector "html[aria-busy='true']", visible: :all
+      within "[data-testid='state-tabs']" do
+        click_link label
+      end
+    end
+
+    def click_search_button
+      assert_no_selector "html[aria-busy='true']", visible: :all
+      click_button "Buscar"
+    end
+
+    def advanced_filters_open?
+      page.evaluate_script("document.querySelector(\"[data-testid='advanced-filters']\").open")
+    end
+
+    def inject_current_tailwind_build
+      css = Rails.root.join("app/assets/builds/tailwind.css").read
+      page.execute_script("const style = document.createElement('style'); style.textContent = arguments[0]; document.head.appendChild(style)", css)
     end
 
     def use_desktop_window

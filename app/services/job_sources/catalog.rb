@@ -140,6 +140,21 @@ module JobSources
           ]
         }
       },
+      {
+        name: "Gupy Portal",
+        slug: "gupy-portal",
+        source_kind: :ats,
+        base_url: "https://portal.gupy.io",
+        host: "portal.gupy.io",
+        priority: 11,
+        adapter_key: "gupy_portal_search",
+        supports_backfill: true,
+        scan_window_days: 20,
+        settings: {
+          # The search terms come from the active profiles' stacks, not from here.
+          workplace_type: "remote"
+        }
+      },
       { name: "Sólides", slug: "solides", source_kind: :ats, base_url: "https://vagas.solides.com.br", host: "vagas.solides.com.br", priority: 20, adapter_key: "solides_portal_vacancies", supports_backfill: true, scan_window_days: 20 },
       {
         name: "Recrutei",
@@ -397,6 +412,23 @@ module JobSources
       },
       { name: "Remotive", slug: "remotive", source_kind: :platform, base_url: "https://remotive.com", host: "remotive.com", priority: 25, adapter_key: "remotive_remote_jobs", supports_backfill: true, scan_window_days: 20 },
       { name: "Himalayas", slug: "himalayas", source_kind: :platform, base_url: "https://himalayas.app", host: "himalayas.app", priority: 25, adapter_key: "himalayas_jobs_api", supports_backfill: true, scan_window_days: 20 },
+      {
+        name: "Jobicy",
+        slug: "jobicy",
+        source_kind: :platform,
+        base_url: "https://jobicy.com",
+        host: "jobicy.com",
+        priority: 25,
+        adapter_key: "jobicy_jobs_api",
+        supports_backfill: true,
+        # The public feed only covers the last 7 days, so the window matches it.
+        scan_window_days: 7,
+        settings: {
+          geo: "brazil",
+          count: 100,
+          max_pages: 3
+        }
+      },
       {
         name: "Artificial Intelligence Jobs",
         slug: "artificial-intelligence-jobs",

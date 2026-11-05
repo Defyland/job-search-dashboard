@@ -184,6 +184,79 @@ class JobsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match "sem mercado identificado", response.body
   end
 
+  test "search is the primary control, followed by state tabs and the market filter" do
+    profile = create_market_profile
+
+    get jobs_path(search_profile_id: profile.id)
+
+    assert_response :success
+    assert_select "[data-testid=job-search] input[type=search][name=q]", count: 1
+    assert_select "[data-testid=job-search] input[type=submit][value=Buscar]", count: 1
+    assert_select "[data-testid=state-tabs] a", count: 5
+    assert_select "[data-testid=state-tabs] a[aria-current=page]", text: "Novas", count: 1
+    assert_select "[data-testid=market-filter]", count: 1
+
+    body = response.body
+    assert_operator body.index('data-testid="job-search"'), :<, body.index('data-testid="state-tabs"')
+    assert_operator body.index('data-testid="state-tabs"'), :<, body.index('data-testid="market-filter"')
+    assert_operator body.index('data-testid="market-filter"'), :<, body.index('data-testid="advanced-filters"')
+  end
+
+  test "advanced filters stay collapsed without advanced filters and do not count search or tabs" do
+    profile = create_market_profile
+
+    get jobs_path(search_profile_id: profile.id, q: "Frontend", user_state: "seen", market: "national")
+
+    assert_response :success
+    assert_select "details[data-testid=advanced-filters]", count: 1
+    assert_select "details[data-testid=advanced-filters][open]", count: 0
+    assert_select "[data-testid=advanced-filter-count]", count: 0
+  end
+
+  test "advanced filters open with a count of the active advanced filters" do
+    profile = create_market_profile
+
+    get jobs_path(search_profile_id: profile.id, contract_type: "clt", sort: "score", q: "Frontend")
+
+    assert_response :success
+    assert_select "details[data-testid=advanced-filters][open]", count: 1
+    assert_select "[data-testid=advanced-filter-count]", text: "2", count: 1
+  end
+
+  test "limpar keeps the selected profile and drops every other filter" do
+    profile = create_market_profile
+
+    get jobs_path(search_profile_id: profile.id, q: "Frontend", market: "national", contract_type: "clt", user_state: "applied")
+
+    assert_response :success
+    assert_select "a[href=?]", jobs_path(search_profile_id: profile.id), text: "Limpar", count: 1
+  end
+
+  test "state tabs keep q, market and advanced filters while changing the state" do
+    profile = create_market_profile
+    filters = { search_profile_id: profile.id, q: "Frontend", market: "national", contract_type: "clt", sort: "score" }
+
+    get jobs_path(filters.merge(page: 2))
+
+    assert_response :success
+    %w[all seen applied ignored new_match].each do |state|
+      assert_select "[data-testid=state-tabs] a[href=?]", jobs_path(filters.merge(user_state: state)), count: 1
+    end
+  end
+
+  test "form submission carries the current tab, market and profile as hidden state" do
+    profile = create_market_profile
+
+    get jobs_path(search_profile_id: profile.id, market: "national", user_state: "seen", q: "Frontend")
+
+    assert_response :success
+    assert_select "form[data-testid=job-filters-form]", count: 1
+    assert_select "form[data-testid=job-filters-form] input[type=hidden][name=user_state][value=seen]", count: 1
+    assert_select "form[data-testid=job-filters-form] input[type=hidden][name=market][value=national]", count: 1
+    assert_select "form[data-testid=job-filters-form] select[name=search_profile_id] option[selected][value=?]", profile.id.to_s, count: 1
+    assert_select "form[data-testid=job-filters-form] input[name=q][value=?]", "Frontend", count: 1
+  end
+
   private
     def create_market_profile
       profile = SearchProfile.create!(SearchProfile.default_attributes.merge(user: users(:one), name: "Mercado", slug: "mercado"))

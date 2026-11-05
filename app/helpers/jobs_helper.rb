@@ -1,4 +1,20 @@
 module JobsHelper
+  # Values that mean "no restriction" for each control inside "Filtros avancados".
+  ADVANCED_FILTER_DEFAULTS = {
+    stack: [ "" ],
+    source: [ "" ],
+    contract_type: [ "", "all" ],
+    match_strength: [ "", "all" ],
+    title_language: [ "", "all" ],
+    lifecycle_state: [ "", "active" ],
+    recency: [ "" ],
+    sort: [ "", "newest" ]
+  }.freeze
+
+  def advanced_filter_count(filters)
+    ADVANCED_FILTER_DEFAULTS.count { |key, defaults| !defaults.include?(filters[key].to_s) }
+  end
+
   def radar_seen_label(job_match)
     timestamp = job_match.first_seen_at || job_match.created_at
     return "Captura sem data" unless timestamp
