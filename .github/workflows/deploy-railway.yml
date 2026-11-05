@@ -38,7 +38,7 @@ jobs:
           test -n "$RAILWAY_HEALTHCHECK_URL" || { echo "::error::Set the RAILWAY_HEALTHCHECK_URL repository variable."; exit 1; }
 
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
